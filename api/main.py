@@ -79,7 +79,6 @@ def search_html(q: str = ""):
 
         ORDER BY bm25(sermons_search)
 
-        LIMIT 50
     """, (q,)).fetchall()
 
     conn.close()
