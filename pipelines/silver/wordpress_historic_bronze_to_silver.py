@@ -32,6 +32,7 @@ def clean_text(text):
 
     return (
         text.replace("\u00A0", " ")
+        .replace("\xa0", " ")
         .replace("–", "-")
         .strip()
     )
@@ -83,35 +84,29 @@ def extract_mp3(content):
     if not content:
         return ""
 
-    # 1️⃣ procurar no player HTML5
-    m = re.search(
-        r'<source[^>]+src="([^"]+\.mp3)"',
-        content,
-        re.IGNORECASE
-    )
+    # extensões de áudio permitidas
+    audio_ext = (".mp3", ".m4a", ".wav", ".ogg", ".aac")
 
-    if m:
-        return m.group(1)
+    # extrair TODOS os links do HTML
+    urls = re.findall(r'https?://[^\s"\']+', content)
 
-    # 2️⃣ procurar em links href
-    m = re.search(
-        r'href="([^"]+\.mp3)"',
-        content,
-        re.IGNORECASE
-    )
+    # filtrar apenas áudio
+    audio_urls = []
 
-    if m:
-        return m.group(1)
+    for url in urls:
 
-    # 3️⃣ fallback geral
-    m = re.search(
-        r'https?://[^\s"\']+\.mp3',
-        content,
-        re.IGNORECASE
-    )
+        # remover possíveis caracteres extras
+        clean_url = url.strip().lower()
 
-    if m:
-        return m.group(0)
+        # garantir que termina com extensão de áudio
+        for ext in audio_ext:
+            if clean_url.endswith(ext):
+                audio_urls.append(url)
+                break
+
+    # retornar o primeiro áudio encontrado
+    if audio_urls:
+        return audio_urls[0]
 
     return ""
 
