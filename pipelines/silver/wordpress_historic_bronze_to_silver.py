@@ -83,15 +83,35 @@ def extract_mp3(content):
     if not content:
         return ""
 
-    # pegar todas as URLs
-    urls = re.findall(r'https?://[^\s"\']+', content)
+    # 1️⃣ procurar no player HTML5
+    m = re.search(
+        r'<source[^>]+src="([^"]+\.mp3)"',
+        content,
+        re.IGNORECASE
+    )
 
-    # filtrar apenas arquivos de áudio
-    audio_ext = (".mp3", ".m4a", ".wav", ".ogg")
+    if m:
+        return m.group(1)
 
-    for url in urls:
-        if url.lower().endswith(audio_ext):
-            return url
+    # 2️⃣ procurar em links href
+    m = re.search(
+        r'href="([^"]+\.mp3)"',
+        content,
+        re.IGNORECASE
+    )
+
+    if m:
+        return m.group(1)
+
+    # 3️⃣ fallback geral
+    m = re.search(
+        r'https?://[^\s"\']+\.mp3',
+        content,
+        re.IGNORECASE
+    )
+
+    if m:
+        return m.group(0)
 
     return ""
 
