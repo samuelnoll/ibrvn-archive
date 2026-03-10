@@ -2,7 +2,7 @@
 
 cd /opt/sermon-platform
 
-git pull
+git pull origin master
 
 source venv/bin/activate
 
