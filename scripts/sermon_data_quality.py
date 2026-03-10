@@ -81,6 +81,30 @@ def list_missing_reference(conn):
     return cursor.fetchall()
 
 
+def list_missing_series(conn):
+
+    cursor = conn.execute("""
+        SELECT preaching_date, preacher_name, text_reference
+        FROM sermons
+        WHERE serie = ''
+    """)
+
+    return cursor.fetchall()
+
+
+def detect_multiple_preachers_same_series(conn):
+
+    cursor = conn.execute("""
+        SELECT serie, preaching_date, COUNT(DISTINCT preacher_name)
+        FROM sermons
+        WHERE serie != ''
+        GROUP BY serie, preaching_date
+        HAVING COUNT(DISTINCT preacher_name) > 1
+    """)
+
+    return cursor.fetchall()
+
+
 def run():
 
     conn = sqlite3.connect(DB_PATH)
@@ -91,10 +115,13 @@ def run():
     missing_reference = count_missing(conn, "text_reference")
     missing_date = count_missing(conn, "preaching_date")
     missing_link = count_missing(conn, "source_link")
+    missing_series = count_missing(conn, "serie")
 
     duplicates = count_duplicates(conn)
     invalid_dates = count_invalid_dates(conn)
     old_dates = count_old_dates(conn)
+
+    multi_preachers_series = detect_multiple_preachers_same_series(conn)
 
     print("\n==============================")
     print(" SERMON DATA QUALITY REPORT")
@@ -107,13 +134,18 @@ def run():
     print(f"preacher_name: {missing_preacher}")
     print(f"text_reference: {missing_reference}")
     print(f"preaching_date: {missing_date}")
-    print(f"source_link: {missing_link}\n")
+    print(f"source_link: {missing_link}")
+    print(f"serie: {missing_series}\n")
 
     print("Integrity checks")
     print("----------------")
     print(f"Duplicate preaching_date values: {duplicates}")
     print(f"Invalid preaching_date format: {invalid_dates}")
     print(f"Dates earlier than 1980: {old_dates}\n")
+
+    print("Series checks")
+    print("----------------")
+    print(f"multiple preachers in same series/day: {len(multi_preachers_series)}\n")
 
     print("Problematic rows")
     print("----------------")
@@ -132,8 +164,17 @@ def run():
         for row in missing_refs:
             print(row)
 
-    if not missing_preachers and not missing_refs:
-        print("No problematic rows found.")
+    missing_series_rows = list_missing_series(conn)
+
+    if missing_series_rows:
+        print("\nRows missing serie:")
+        for row in missing_series_rows:
+            print(row)
+
+    if multi_preachers_series:
+        print("\nMultiple preachers in same series/day:")
+        for row in multi_preachers_series:
+            print(row)
 
     conn.close()
 
