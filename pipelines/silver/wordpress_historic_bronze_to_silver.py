@@ -25,18 +25,6 @@ def normalize_date(date_str):
     except:
         return ""
 
-def clean_text(text):
-
-    if not text:
-        return ""
-
-    return (
-        text.replace("\u00A0", " ")
-        .replace("\xa0", " ")
-        .replace("–", "-")
-        .strip()
-    )
-
 def extract_preacher(content):
 
     m = re.search(r"por ([A-Za-zÀ-ÿ\s]+)", content or "")
@@ -45,13 +33,9 @@ def extract_preacher(content):
 
 def extract_text(title, content):
 
-    title = clean_text(title)
-    content = clean_text(content)
-
     if not title:
         return "", "", "", ""
 
-    # pega tudo após o último hífen
     parts = title.split("-")
 
     if len(parts) < 2:
@@ -61,20 +45,16 @@ def extract_text(title, content):
 
     reference = reference.replace("–", "-").strip()
 
-    pattern = r"((?:[1-3]\s)?[A-Za-zÀ-ÿ]+)\s+(\d+):([\d\-]+)"
+    pattern = r"([1-3]?\s?[A-Za-zÀ-ÿ]+)\s+(\d+):([\d\-]+)"
 
     m = re.search(pattern, reference)
-
-    reference = clean_text(reference)
 
     if not m:
         return reference, "", "", ""
 
     book = m.group(1).strip()
-    chapter = m.group(2)
-    verses = m.group(3)
-
-    reference = f"{book} {chapter}:{verses}"
+    chapter = m.group(2).strip()
+    verses = m.group(3).strip()
 
     return reference, book, chapter, verses
 
@@ -84,29 +64,15 @@ def extract_mp3(content):
     if not content:
         return ""
 
-    # extensões de áudio permitidas
-    audio_ext = (".mp3", ".m4a", ".wav", ".ogg", ".aac")
-
-    # extrair TODOS os links do HTML
+    # pegar todas as URLs
     urls = re.findall(r'https?://[^\s"\']+', content)
 
-    # filtrar apenas áudio
-    audio_urls = []
+    # filtrar apenas arquivos de áudio
+    audio_ext = (".mp3", ".m4a", ".wav", ".ogg")
 
     for url in urls:
-
-        # remover possíveis caracteres extras
-        clean_url = url.strip().lower()
-
-        # garantir que termina com extensão de áudio
-        for ext in audio_ext:
-            if clean_url.endswith(ext):
-                audio_urls.append(url)
-                break
-
-    # retornar o primeiro áudio encontrado
-    if audio_urls:
-        return audio_urls[0]
+        if url.lower().endswith(audio_ext):
+            return url
 
     return ""
 
