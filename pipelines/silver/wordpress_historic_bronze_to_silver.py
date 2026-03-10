@@ -5,7 +5,7 @@ import os
 from datetime import datetime
 
 INPUT_XML = "data/bronze/ibrvn.WordPress.2026-03-09.xml"
-OUTPUT_CSV = "data/silver/wordpress_sermons_clean.csv"
+OUTPUT_CSV = "data/silver/wordpress_sermons.csv"
 
 ns = {
     "content": "http://purl.org/rss/1.0/modules/content/",
@@ -34,20 +34,29 @@ def extract_preacher(content):
 
 def extract_text(title, content):
 
+    if not title:
+        return "", "", "", ""
+
+    # pega tudo após o último hífen
+    parts = title.split("-")
+
+    if len(parts) < 2:
+        reference = title.strip()
+    else:
+        reference = parts[-1].strip()
+
     pattern = r"([1-3]?\s?[A-Za-zÀ-ÿ]+)\s+(\d+):([\d\-]+)"
 
-    m = re.search(pattern, title or "")
-    if not m:
-        m = re.search(pattern, content or "")
+    m = re.search(pattern, reference)
 
     if not m:
-        return "", "", "", ""
+        return reference, "", "", ""
 
     book = m.group(1)
     chapter = m.group(2)
     verses = m.group(3)
 
-    return f"{book} {chapter}:{verses}", book, chapter, verses
+    return reference, book, chapter, verses
 
 
 def extract_mp3(content):
@@ -93,6 +102,7 @@ def extract_file_info(mp3_url):
         preacher = m.group(4)
         return date, preacher
 
+
     # PREGADOR_DD_MM_YY
     m = re.search(r'([A-Za-zÀ-ÿ]+)[_\-](\d{2})[_\-](\d{2})[_\-](\d{2})', filename)
 
@@ -100,6 +110,25 @@ def extract_file_info(mp3_url):
         preacher = m.group(1)
         date = f"20{m.group(4)}-{m.group(3)}-{m.group(2)}"
         return date, preacher
+
+
+    # NOME DD.MM.YYYY
+    m = re.search(r'([A-Za-zÀ-ÿ]+)[\s\-](\d{2})\.(\d{2})\.(\d{4})', filename)
+
+    if m:
+        preacher = m.group(1)
+        date = f"{m.group(4)}-{m.group(3)}-{m.group(2)}"
+        return date, preacher
+
+
+    # NOME DD-MM-YYYY
+    m = re.search(r'([A-Za-zÀ-ÿ]+)[\s\-](\d{2})\-(\d{2})\-(\d{4})', filename)
+
+    if m:
+        preacher = m.group(1)
+        date = f"{m.group(4)}-{m.group(3)}-{m.group(2)}"
+        return date, preacher
+
 
     return "", ""
 

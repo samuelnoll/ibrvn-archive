@@ -7,4 +7,3 @@ git pull origin main
 source venv/bin/activate
 
 make pipeline
-

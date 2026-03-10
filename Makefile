@@ -4,7 +4,7 @@ install:
 	pip install -r requirements.txt
 
 pipeline:
-	python -m pipelines.run_pipeline
+	python -m pipelines.wordpress_historic_pipeline
 
 api:
 	uvicorn api.main:app --host 0.0.0.0 --port 8000
