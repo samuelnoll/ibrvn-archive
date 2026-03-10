@@ -1,7 +1,7 @@
 import sqlite3
 import pandas as pd
 
-CSV_PATH = "data/silver/sermons_clean.csv"
+CSV_PATH = "data/silver/wordpress_sermons_clean.csv"
 DB_PATH = "data/gold/sermons.db"
 
 
