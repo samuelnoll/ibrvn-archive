@@ -48,6 +48,7 @@ def create_search_table(conn):
         preacher_name,
         text_reference,
         text_book,
+        tags,
         categories
     )
     """)
