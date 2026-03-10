@@ -25,6 +25,16 @@ def normalize_date(date_str):
     except:
         return ""
 
+def clean_text(text):
+
+    if not text:
+        return ""
+
+    return (
+        text.replace("\u00A0", " ")
+        .replace("–", "-")
+        .strip()
+    )
 
 def extract_preacher(content):
 
@@ -33,6 +43,9 @@ def extract_preacher(content):
 
 
 def extract_text(title, content):
+
+    title = clean_text(title)
+    content = clean_text(content)
 
     if not title:
         return "", "", "", ""
@@ -51,6 +64,8 @@ def extract_text(title, content):
 
     m = re.search(pattern, reference)
 
+    reference = clean_text(reference)
+
     if not m:
         return reference, "", "", ""
 
@@ -68,11 +83,17 @@ def extract_mp3(content):
     if not content:
         return ""
 
-    m = re.search(r'audio.*?src="([^"]+)"', content)
+    m = re.search(r'\[audio.*?src="([^"]+)"', content)
+
     if m:
         return m.group(1)
 
-    m = re.search(r'https?://[^\s"]+\.mp3', content)
+    m = re.search(
+        r'https?://[^\s"]+\.(mp3|m4a|wav|ogg)',
+        content,
+        re.IGNORECASE
+    )
+
     if m:
         return m.group(0)
 
