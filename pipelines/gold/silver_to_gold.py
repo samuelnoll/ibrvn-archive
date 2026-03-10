@@ -11,7 +11,7 @@ def create_table(conn):
     CREATE TABLE IF NOT EXISTS sermons (
         file_preaching_date TEXT,
         post_date TEXT,
-        body_date TEXT,
+        body_date TEXT PRIMARY KEY,
         preacher_name TEXT,
         poster_name TEXT,
         file_preacher_name TEXT,
@@ -50,7 +50,7 @@ def upsert_rows(conn, df):
         )
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 
-        ON CONFLICT(body_date, preacher_name) DO UPDATE SET
+        ON CONFLICT(body_date) DO UPDATE SET
             file_preaching_date=excluded.file_preaching_date,
             post_date=excluded.post_date,
             body_date=excluded.body_date,
