@@ -19,10 +19,13 @@ PREACHER_MAP = load_preacher_map()
 
 def normalize_text(text):
 
-    if not text:
+    if pd.isna(text):
         return ""
 
+    text = str(text)
+
     text = unicodedata.normalize("NFKD", text)
+
     text = "".join(c for c in text if not unicodedata.combining(c))
 
     return text.lower().strip()
