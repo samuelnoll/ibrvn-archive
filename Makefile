@@ -14,3 +14,9 @@ clean:
 
 dev:
 	source venv/bin/activate
+
+export:
+	python scripts/export_tables_to_csv.py
+
+quality:
+	python scripts/sermon_data_quality.py
