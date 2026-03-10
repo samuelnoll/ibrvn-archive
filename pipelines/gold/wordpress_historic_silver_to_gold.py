@@ -102,7 +102,7 @@ def create_table(conn):
     conn.execute("""
     CREATE TABLE IF NOT EXISTS sermons (
 
-        preaching_date TEXT,
+        preaching_date TEXT PRIMARY KEY,
         preacher_name TEXT,
         text_reference TEXT,
         serie TEXT,
@@ -112,13 +112,27 @@ def create_table(conn):
     """)
 
 
-def insert_rows(conn, df):
+def upsert_rows(conn, df):
 
     for _, row in df.iterrows():
 
         conn.execute("""
-        INSERT INTO sermons
+        INSERT INTO sermons (
+            preaching_date,
+            preacher_name,
+            text_reference,
+            serie,
+            source,
+            source_link
+        )
         VALUES (?, ?, ?, ?, ?, ?)
+
+        ON CONFLICT(preaching_date) DO UPDATE SET
+            preacher_name = excluded.preacher_name,
+            text_reference = excluded.text_reference,
+            serie = excluded.serie,
+            source = excluded.source,
+            source_link = excluded.source_link;
         """, tuple(row))
 
 
@@ -132,7 +146,7 @@ def run():
 
     create_table(conn)
 
-    insert_rows(conn, df_gold)
+    upsert_rows(conn, df_gold)
 
     conn.commit()
     conn.close()
