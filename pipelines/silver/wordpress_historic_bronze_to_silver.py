@@ -83,21 +83,13 @@ def extract_mp3(content):
     if not content:
         return ""
 
-    m = re.search(r'\[audio.*?src="([^"]+)"', content)
-
-    if m:
-        return m.group(1)
-
-    m = re.search(
-        r'https?://[^\s"]+\.(mp3|m4a|wav|ogg)',
+    matches = re.findall(
+        r'https?://[^\s"\']+\.(?:mp3|m4a|wav|ogg)',
         content,
         re.IGNORECASE
     )
 
-    if m:
-        return m.group(0)
-
-    return ""
+    return matches[0] if matches else ""
 
 
 def extract_youtube(content):
