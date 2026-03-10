@@ -47,16 +47,18 @@ def extract_text(title, content):
 
     reference = reference.replace("–", "-").strip()
 
-    pattern = r"([1-3]?\s?[A-Za-zÀ-ÿ]+)\s+(\d+):([\d\-]+)"
+    pattern = r"((?:[1-3]\s)?[A-Za-zÀ-ÿ]+)\s+(\d+):([\d\-]+)"
 
     m = re.search(pattern, reference)
 
     if not m:
         return reference, "", "", ""
 
-    book = m.group(1)
+    book = m.group(1).strip()
     chapter = m.group(2)
     verses = m.group(3)
+
+    reference = f"{book} {chapter}:{verses}"
 
     return reference, book, chapter, verses
 
