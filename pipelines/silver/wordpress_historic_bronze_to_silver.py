@@ -45,6 +45,8 @@ def extract_text(title, content):
     else:
         reference = parts[-1].strip()
 
+    reference = reference.replace("–", "-").strip()
+
     pattern = r"([1-3]?\s?[A-Za-zÀ-ÿ]+)\s+(\d+):([\d\-]+)"
 
     m = re.search(pattern, reference)
