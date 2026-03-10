@@ -4,8 +4,8 @@ import re
 import unicodedata
 import yaml
 
-CSV_PATH = "data/silver/wordpress_sermons_clean.csv"
-DB_PATH = "data/gold/wordpress_sermons.db"
+CSV_PATH = "data/silver/wordpress_sermons.csv"
+DB_PATH = "data/gold/sermons.db"
 
 def load_preacher_map():
 
