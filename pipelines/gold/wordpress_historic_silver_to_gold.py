@@ -124,7 +124,7 @@ def insert_rows(conn, df):
 
 def run():
 
-    df = pd.read_csv(CSV_PATH)
+    df = pd.read_csv(CSV_PATH).fillna("")
 
     df_gold = transform_dataframe(df)
 
