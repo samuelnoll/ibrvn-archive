@@ -1,7 +1,10 @@
 from fastapi import FastAPI
 import sqlite3
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 
 app = FastAPI()
+app.mount("/", StaticFiles(directory="web", html=True), name="web")
 
 DB_PATH = "data/gold/sermons.db"
 
@@ -55,3 +58,48 @@ def search(q: str):
     conn.close()
 
     return rows
+
+@app.get("/search_html", response_class=HTMLResponse)
+def search_html(q: str = ""):
+
+    conn = get_conn()
+
+    rows = conn.execute("""
+        SELECT
+            s.body_date,
+            s.preacher_name,
+            s.text_reference,
+            s.file_path,
+            s.youtube_link
+
+        FROM sermons_search f
+        JOIN sermons s
+        ON f.body_date = s.body_date
+
+        WHERE sermons_search MATCH ?
+
+        ORDER BY bm25(sermons_search)
+
+        LIMIT 50
+    """, (q,)).fetchall()
+
+    conn.close()
+
+    html = ""
+
+    for r in rows:
+
+        date, preacher, text, mp3, youtube = r
+
+        link = mp3 if mp3 else youtube
+
+        html += f"""
+        <div class="sermon">
+            <div class="date">{date}</div>
+            <b>{preacher}</b><br>
+            {text}<br>
+            <a href="{link}" target="_blank">▶ ouvir</a>
+        </div>
+        """
+
+    return html
