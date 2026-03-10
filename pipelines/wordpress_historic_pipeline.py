@@ -1,6 +1,6 @@
 from pipelines.silver.wordpress_historic_bronze_to_silver import run as silver
-from pipelines.gold.wordpress_historic_silver_to_gold.py import run as gold
-from pipelines.gold.optimize_gold.py import run as gold_optimize
+from pipelines.gold.wordpress_historic_silver_to_gold import run as gold
+from pipelines.gold.optimize_gold import run as gold_optimize
 
 
 def run():
