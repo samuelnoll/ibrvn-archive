@@ -4,7 +4,6 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
 app = FastAPI()
-app.mount("/", StaticFiles(directory="web", html=True), name="web")
 
 DB_PATH = "data/gold/sermons.db"
 
@@ -103,3 +102,5 @@ def search_html(q: str = ""):
         """
 
     return html
+
+app.mount("/", StaticFiles(directory="web", html=True), name="web")
