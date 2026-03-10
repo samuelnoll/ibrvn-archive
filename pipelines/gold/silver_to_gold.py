@@ -18,7 +18,7 @@ def create_table(conn):
         poster_name TEXT,
         file_preacher_name TEXT,
 
-        text TEXT,
+        text_reference TEXT,
         text_book TEXT,
         text_chapter TEXT,
         text_verses TEXT,
@@ -46,9 +46,8 @@ def create_search_table(conn):
     USING fts5(
         body_date,
         preacher_name,
-        text,
+        text_reference,
         text_book,
-        tags,
         categories
     )
     """)
@@ -63,7 +62,7 @@ def refresh_search_table(conn):
     SELECT
         body_date,
         preacher_name,
-        text,
+        text_reference,
         text_book,
         tags,
         categories
@@ -84,7 +83,7 @@ def upsert_rows(conn, df):
             preacher_name=excluded.preacher_name,
             poster_name=excluded.poster_name,
             file_preacher_name=excluded.file_preacher_name,
-            text=excluded.text,
+            text_reference=excluded.text_reference,
             text_book=excluded.text_book,
             text_chapter=excluded.text_chapter,
             text_verses=excluded.text_verses,
