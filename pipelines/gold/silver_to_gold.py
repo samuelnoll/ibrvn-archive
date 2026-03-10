@@ -9,15 +9,20 @@ def create_table(conn):
 
     conn.execute("""
     CREATE TABLE IF NOT EXISTS sermons (
-        body_date TEXT PRIMARY KEY,
-        file_date TEXT,
-        pregador TEXT,
-        texto_lido TEXT,
-        mp3 TEXT,
-        youtube TEXT,
-        mp3_path TEXT,
+        file_preaching_date TEXT PRIMARY KEY,
+        post_date TEXT,
+        body_date TEXT,
+        preacher_name TEXT,
+        poster_name TEXT,
+        file_preacher_name TEXT,
+        text_reference TEXT,
+        text_book TEXT,
+        text_chapter TEXT,
+        text_verses TEXT,
+        file_path TEXT,
+        youtube_link TEXT,
         tags TEXT,
-        categorias TEXT
+        categories TEXT
     )
     """)
 
@@ -28,9 +33,9 @@ def upsert_rows(conn, df):
 
         conn.execute("""
         INSERT INTO sermons (
+            file_preaching_date,
             post_date,
             body_date,
-            file_preaching_date,
             preacher_name,
             poster_name,
             file_preacher_name,
@@ -43,12 +48,12 @@ def upsert_rows(conn, df):
             tags,
             categories
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 
         ON CONFLICT(body_date) DO UPDATE SET
+            file_preaching_date=excluded.file_preaching_date,
             post_date=excluded.post_date,
             body_date=excluded.body_date,
-            file_preaching_date=excluded.file_preaching_date,
             preacher_name=excluded.preacher_name,
             poster_name=excluded.poster_name,
             file_preacher_name=excluded.file_preacher_name,
