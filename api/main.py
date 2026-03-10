@@ -17,7 +17,7 @@ def list_sermons(limit: int = 50):
     conn = get_conn()
 
     rows = conn.execute("""
-        SELECT body_date, preacher_name, text, file_path, youtube_link
+        SELECT body_date, preacher_name, text_reference, file_path, youtube_link
         FROM sermons
         ORDER BY body_date DESC
         LIMIT ?
@@ -38,7 +38,7 @@ def search(q: str):
         SELECT
             s.body_date,
             s.preacher_name,
-            s.text,
+            s.text_reference,
             s.file_path,
             s.youtube_link
 
