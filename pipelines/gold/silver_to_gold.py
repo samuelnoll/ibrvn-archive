@@ -28,27 +28,40 @@ def upsert_rows(conn, df):
 
         conn.execute("""
         INSERT INTO sermons (
+            post_date,
             body_date,
-            file_date,
-            pregador,
-            texto_lido,
-            mp3,
-            youtube,
-            mp3_path,
+            file_preaching_date,
+            preacher_name,
+            poster_name,
+            file_preacher_name,
+            text_reference,
+            text_book,
+            text_chapter,
+            text_verses,
+            file_path,
+            youtube_link,
             tags,
-            categorias
+            categories
         )
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 
         ON CONFLICT(body_date) DO UPDATE SET
-            file_date=excluded.file_date,
-            pregador=excluded.pregador,
-            texto_lido=excluded.texto_lido,
-            mp3=excluded.mp3,
-            youtube=excluded.youtube,
-            mp3_path=excluded.mp3_path,
+            post_date=excluded.post_date,
+            body_date=excluded.body_date,
+            file_preaching_date=excluded.file_preaching_date,
+            preacher_name=excluded.preacher_name,
+            poster_name=excluded.poster_name,
+            file_preacher_name=excluded.file_preacher_name,
+            text_reference=excluded.text_reference,
+            text_book=excluded.text_book,
+            text_chapter=excluded.text_chapter,
+            text_verses=excluded.text_verses,
+            file_path=excluded.file_path,
+            youtube_link=excluded.youtube_link,
             tags=excluded.tags,
-            categorias=excluded.categorias
+            categories=excluded.categories
+
+
         """, tuple(row))
 
 

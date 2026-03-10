@@ -5,7 +5,7 @@ import os
 from datetime import datetime
 
 INPUT_XML = "data/bronze/ibrvn.WordPress.2026-03-09.xml"
-OUTPUT_CSV = "data/silver/sermons_clean.csv"
+OUTPUT_CSV = "data/silver/wordpress_sermons_clean.csv"
 
 ns = {
     "content": "http://purl.org/rss/1.0/modules/content/",
@@ -165,7 +165,7 @@ def run():
             "preacher_name": preacher_name,
             "poster_name": poster_name,
             "file_preacher_name": file_preacher,
-            "text": text,
+            "text_reference": text,
             "text_book": book,
             "text_chapter": chapter,
             "text_verses": verses,
@@ -188,7 +188,7 @@ def run():
                 "preacher_name",
                 "poster_name",
                 "file_preacher_name",
-                "text",
+                "text_reference",
                 "text_book",
                 "text_chapter",
                 "text_verses",
