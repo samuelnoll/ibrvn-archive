@@ -72,13 +72,29 @@ def extract_text(title, content):
 
             reference = title[start:]
 
-            # remover coisas irrelevantes
+            # remover "Parte II", etc
             reference = re.sub(r'Parte\s+\w+', '', reference, flags=re.IGNORECASE)
 
-            # normalizar "a" para intervalo
-            reference = reference.replace(" a ", "-")
+            # normalizar "7a 13" ou "7 a 13"
+            reference = re.sub(r'(\d)a\s*(\d)', r'\1-\2', reference)
 
-            return reference.strip()
+            # remover espaços depois de :
+            reference = re.sub(r':\s+', ':', reference)
+
+            # pegar apenas referência bíblica válida
+            m = re.match(
+                r'^(' + re.escape(book) + r')\s*(\d+)?(?::\d+(?:-\d+)?)?',
+                reference,
+                flags=re.IGNORECASE
+            )
+
+            if m:
+                reference = m.group(0)
+
+            # remover parênteses vazios
+            reference = reference.replace("()", "").strip()
+
+            return reference
 
     return ""
 
