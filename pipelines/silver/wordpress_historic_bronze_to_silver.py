@@ -99,7 +99,7 @@ def extract_text(title, content):
         if not m_book:
 
             for w in words:
-                if similar_book(w, book_norm):
+                if is_similar_book(w, book_norm):
                     m_book = True
                     break
 
