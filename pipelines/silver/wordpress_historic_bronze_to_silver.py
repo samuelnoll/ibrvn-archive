@@ -16,32 +16,6 @@ ns = {
     "dc": "http://purl.org/dc/elements/1.1/"
 }
 
-
-def normalize_date(date_str):
-
-    if not date_str:
-        return ""
-
-    try:
-        dt = datetime.strptime(date_str[:19], "%Y-%m-%d %H:%M:%S")
-        return dt.date().isoformat()
-    except:
-        return ""
-
-
-def normalize_compare(text):
-
-    text = unicodedata.normalize("NFKD", text)
-    text = "".join(c for c in text if not unicodedata.combining(c))
-    return text.lower()
-
-
-def extract_preacher(content):
-
-    m = re.search(r"por ([A-Za-zÀ-ÿ\s]+)", content or "")
-    return m.group(1).strip() if m else ""
-
-
 BIBLE_BOOKS = [
     "Gênesis","Êxodo","Levítico","Números","Deuteronômio",
     "Josué","Juízes","Rute","1 Samuel","2 Samuel","1 Reis","2 Reis",
@@ -59,15 +33,36 @@ BIBLE_BOOKS = [
 ]
 
 
+def normalize_date(date_str):
+
+    if not date_str:
+        return ""
+
+    try:
+        dt = datetime.strptime(date_str[:19], "%Y-%m-%d %H:%M:%S")
+        return dt.date().isoformat()
+    except:
+        return ""
+
+
+def normalize_compare(text):
+
+    text = unicodedata.normalize("NFKD", text)
+    text = "".join(c for c in text if not unicodedata.combining(c))
+
+    return text.lower()
+
+
 def extract_text(title, content):
 
     if not title:
         return ""
 
+    # normalização básica
     title = (
-    title.replace("\u00A0", " ")
-    .replace("–", "-")
-    .strip()
+        title.replace("\u00A0", " ")
+        .replace("–", "-")
+        .strip()
     )
 
     # normalizar numerais romanos
@@ -79,38 +74,49 @@ def extract_text(title, content):
 
     for book in BIBLE_BOOKS:
 
-        if normalize_compare(book) in lower_title:
+        book_norm = normalize_compare(book)
 
-            start = lower_title.index(normalize_compare(book))
+        if book_norm in lower_title:
+
+            start = lower_title.index(book_norm)
 
             reference = title[start:]
 
-            # remover "Parte II", etc
-            reference = re.sub(r'Parte\s+\w+', '', reference, flags=re.IGNORECASE)
-
-            # normalizar "7a 13" ou "7 a 13"
-            reference = re.sub(r'(\d)a\s*(\d)', r'\1-\2', reference)
-
-            # normalizar "7e 8" ou "7 e 8"
-            reference = re.sub(r'(\d+)\s*e\s*(\d+)', r'\1-\2', reference)
-
-            # remover espaços depois de :
-            reference = re.sub(r':\s+', ':', reference)
-
-            # pegar apenas referência bíblica válida
-            m = re.match(
-                r'^(' + re.escape(book) + r')\s*(\d+)?(?::\d+(?:-\d+)?)?',
+            # remover "Parte II"
+            reference = re.sub(
+                r'Parte\s+\w+',
+                '',
                 reference,
                 flags=re.IGNORECASE
             )
 
-            if m:
-                reference = m.group(0)
+            # normalizar intervalos
+            reference = re.sub(r'(\d+)\s*a\s*(\d+)', r'\1-\2', reference)
+            reference = re.sub(r'(\d+)\s*e\s*(\d+)', r'\1-\2', reference)
 
-            # remover parênteses vazios
-            reference = reference.replace("()", "").strip()
+            # corrigir espaço depois de :
+            reference = re.sub(r':\s+', ':', reference)
 
-            return reference
+            # extrair referência bíblica válida
+            match = re.search(
+                r'(\d+\s+)?[A-Za-zÀ-ÿ]+\s*(\d+)?(?::\d+(?:-\d+)?)?',
+                reference
+            )
+
+            if match:
+
+                extracted = match.group(0)
+
+                # garantir livro canônico
+                extracted = book + extracted[len(match.group(1) or '') + len(book):]
+
+                # remover lixo final
+                extracted = extracted.strip(" -")
+
+                # remover parênteses vazios
+                extracted = extracted.replace("()", "")
+
+                return extracted.strip()
 
     return ""
 
@@ -130,6 +136,12 @@ def extract_mp3(content):
             return url
 
     return ""
+    
+
+def extract_preacher(content):
+
+    m = re.search(r"por ([A-Za-zÀ-ÿ\s]+)", content or "")
+    return m.group(1).strip() if m else ""
 
 
 def extract_file_info(mp3_url):
