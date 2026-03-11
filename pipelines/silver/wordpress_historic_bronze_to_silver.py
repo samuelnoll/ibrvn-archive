@@ -79,7 +79,6 @@ def extract_file_info(mp3_url):
 
     filename = os.path.basename(mp3_url)
 
-    # YYYY_MM_DD_PREGADOR
     m = re.search(r'(20\d{2})[_\-](\d{2})[_\-](\d{2})[_\-]([A-Za-zÀ-ÿ]+)', filename)
 
     if m:
@@ -87,7 +86,6 @@ def extract_file_info(mp3_url):
         preacher = m.group(4)
         return date, preacher
 
-    # PREGADOR_DD_MM_YY
     m = re.search(r'([A-Za-zÀ-ÿ]+)[_\-](\d{2})[_\-](\d{2})[_\-](\d{2})', filename)
 
     if m:
@@ -95,7 +93,6 @@ def extract_file_info(mp3_url):
         date = f"20{m.group(4)}-{m.group(3)}-{m.group(2)}"
         return date, preacher
 
-    # NOME DD.MM.YYYY
     m = re.search(r'([A-Za-zÀ-ÿ]+)[\s\-](\d{2})\.(\d{2})\.(\d{4})', filename)
 
     if m:
@@ -103,7 +100,6 @@ def extract_file_info(mp3_url):
         date = f"{m.group(4)}-{m.group(3)}-{m.group(2)}"
         return date, preacher
 
-    # NOME DD-MM-YYYY
     m = re.search(r'([A-Za-zÀ-ÿ]+)[\s\-](\d{2})\-(\d{2})\-(\d{4})', filename)
 
     if m:
@@ -140,9 +136,10 @@ def run():
             item.findtext("wp:post_date", "", ns)
         )
 
-        # ignorar posts após 2021
         if post_date and post_date > MAX_DATE:
             continue
+
+        source_link = item.findtext("link", "")
 
         poster_name = item.findtext("dc:creator", "")
 
@@ -150,9 +147,9 @@ def run():
 
         text = extract_text(title, content)
 
-        file_path = extract_mp3(content)
+        media_link = extract_mp3(content)
 
-        file_date, file_preacher = extract_file_info(file_path)
+        file_date, file_preacher = extract_file_info(media_link)
 
         body_date = extract_body_date(title)
 
@@ -170,7 +167,6 @@ def run():
             if domain == "category":
                 categories.append(name)
 
-        # aceitar apenas categoria "pregações"
         categories_lower = [c.lower() for c in categories]
 
         if "pregações" not in categories_lower:
@@ -185,7 +181,8 @@ def run():
             "poster_name": poster_name,
             "file_preacher_name": file_preacher,
             "text_reference": text,
-            "file_path": file_path,
+            "source_link": source_link,
+            "media_link": media_link,
             "tags": ";".join(tags),
             "categories": ";".join(categories)
 
@@ -205,7 +202,8 @@ def run():
                 "poster_name",
                 "file_preacher_name",
                 "text_reference",
-                "file_path",
+                "source_link",
+                "media_link",
                 "tags",
                 "categories"
             ]

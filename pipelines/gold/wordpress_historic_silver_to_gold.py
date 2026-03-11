@@ -7,12 +7,14 @@ import yaml
 CSV_PATH = "data/silver/wordpress_sermons.csv"
 DB_PATH = "data/gold/sermons.db"
 
+
 def load_preacher_map():
 
     with open("config/preachers.yaml", "r") as f:
         data = yaml.safe_load(f)
 
     return {k.lower(): v for k, v in data.items()}
+
 
 PREACHER_MAP = load_preacher_map()
 
@@ -54,7 +56,6 @@ def choose_preacher(row):
     if key in PREACHER_MAP:
         return PREACHER_MAP[key]
 
-    # fallback: capitalizar
     return preacher.title()
 
 
@@ -83,15 +84,14 @@ def transform_dataframe(df):
 
     df["source"] = "wordpress"
 
-    df["source_link"] = df["file_path"]
-
     df_gold = df[[
         "preaching_date",
         "preacher_name",
         "text_reference",
         "serie",
         "source",
-        "source_link"
+        "source_link",
+        "media_link"
     ]]
 
     return df_gold
@@ -107,7 +107,8 @@ def create_table(conn):
         text_reference TEXT,
         serie TEXT,
         source TEXT,
-        source_link TEXT
+        source_link TEXT,
+        media_link TEXT
     )
     """)
 
@@ -123,16 +124,18 @@ def upsert_rows(conn, df):
             text_reference,
             serie,
             source,
-            source_link
+            source_link,
+            media_link
         )
-        VALUES (?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
 
         ON CONFLICT(preaching_date) DO UPDATE SET
             preacher_name = excluded.preacher_name,
             text_reference = excluded.text_reference,
             serie = excluded.serie,
             source = excluded.source,
-            source_link = excluded.source_link;
+            source_link = excluded.source_link,
+            media_link = excluded.media_link;
         """, tuple(row))
 
 
