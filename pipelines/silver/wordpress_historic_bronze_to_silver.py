@@ -28,6 +28,13 @@ def normalize_date(date_str):
         return ""
 
 
+def normalize_compare(text):
+
+    text = unicodedata.normalize("NFKD", text)
+    text = "".join(c for c in text if not unicodedata.combining(c))
+    return text.lower()
+
+
 def extract_preacher(content):
 
     m = re.search(r"por ([A-Za-zÀ-ÿ\s]+)", content or "")
@@ -67,11 +74,11 @@ def extract_text(title, content):
     title = re.sub(r'\bII\s+', '2 ', title)
     title = re.sub(r'\bIII\s+', '3 ', title)
 
-    lower_title = title.lower()
+    lower_title = normalize_compare(title)
 
     for book in BIBLE_BOOKS:
 
-        if book.lower() in lower_title:
+        if normalize_compare(book) in lower_title:
 
             start = lower_title.index(book.lower())
 
@@ -82,6 +89,9 @@ def extract_text(title, content):
 
             # normalizar "7a 13" ou "7 a 13"
             reference = re.sub(r'(\d)a\s*(\d)', r'\1-\2', reference)
+            
+            # normalizar "7e 8" ou "7 e 8"
+            reference = re.sub(r'(\d+)\s*e\s*(\d+)', r'\1-\2', reference)
 
             # remover espaços depois de :
             reference = re.sub(r':\s+', ':', reference)
