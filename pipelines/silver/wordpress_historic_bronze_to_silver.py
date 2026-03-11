@@ -43,7 +43,7 @@ def extract_text(title, content):
     parts = title.split("-")
 
     # pegar a última parte
-    reference = parts[-1].strip()
+    reference = parts[1].strip()
 
     # regex apenas para separar livro/capítulo/versos
     m = re.search(r'(.+?)\s+(\d+):([\d\-]+)', reference)
