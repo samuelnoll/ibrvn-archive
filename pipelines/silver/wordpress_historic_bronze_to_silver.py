@@ -135,14 +135,16 @@ def extract_mp3(content):
     if not content:
         return ""
 
-    urls = re.findall(r'https?://[^\s"\']+', content)
+    # pegar URL completa até aspas ou > (HTML)
+    urls = re.findall(r'https?://[^"\'>]+', content)
 
     audio_ext = (".mp3", ".m4a", ".wav", ".ogg")
 
     for url in urls:
         clean_url = url.lower().strip()
+
         if clean_url.endswith(audio_ext):
-            return url
+            return url.strip()
 
     return ""
 
