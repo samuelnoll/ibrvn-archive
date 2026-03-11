@@ -57,10 +57,15 @@ def extract_text(title, content):
         return ""
 
     title = (
-        title.replace("\u00A0", " ")
-        .replace("–", "-")
-        .strip()
+    title.replace("\u00A0", " ")
+    .replace("–", "-")
+    .strip()
     )
+
+    # normalizar numerais romanos
+    title = re.sub(r'\bI\s+', '1 ', title)
+    title = re.sub(r'\bII\s+', '2 ', title)
+    title = re.sub(r'\bIII\s+', '3 ', title)
 
     lower_title = title.lower()
 
