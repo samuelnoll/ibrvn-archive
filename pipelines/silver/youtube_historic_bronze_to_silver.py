@@ -26,7 +26,10 @@ def extract_date(description):
 
 def extract_preacher_description(description):
 
-    m = re.search(r'Pregador\s*-\s*([A-Za-zÀ-ÿ\s]+)', description)
+    m = re.search(
+        r'Pregador\s*-\s*([^\n\r]+)',
+        description
+    )
 
     if m:
         return m.group(1).strip()
