@@ -133,8 +133,16 @@ def upsert_rows(conn, df):
 
         ON CONFLICT(preaching_date) DO UPDATE SET
             preacher_name = excluded.preacher_name,
-            text_reference = excluded.text_reference,
-            serie = excluded.serie,
+            
+            text_reference = COALESCE(
+                excluded.text_reference,
+                sermons.text_reference
+            ),
+
+            serie = COALESCE(
+                excluded.serie,
+                sermons.serie
+            ),
 
             youtube_link = COALESCE(
                 excluded.youtube_link,
