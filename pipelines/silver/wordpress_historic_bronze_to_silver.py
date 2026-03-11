@@ -42,8 +42,11 @@ def extract_text(title, content):
     # dividir pelo hífen
     parts = title.split("-")
 
-    # pegar a última parte
-    reference = parts[1].strip()
+    # pegar a segunda parte se houver
+    if len(parts) < 2:
+        return parts[0].strip()
+    else:
+        reference = parts[1].strip()
 
     # regex apenas para separar livro/capítulo/versos
     m = re.search(r'(.+?)\s+(\d+):([\d\-]+)', reference)
