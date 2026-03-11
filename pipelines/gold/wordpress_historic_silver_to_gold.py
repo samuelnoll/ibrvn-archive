@@ -82,15 +82,17 @@ def transform_dataframe(df):
 
     df["serie"] = df.apply(extract_serie, axis=1)
 
-    df["source"] = "wordpress"
+    df["youtube_link"] = None
+
+    df["wordpress_link"] = df["source_link"]
 
     df_gold = df[[
         "preaching_date",
         "preacher_name",
         "text_reference",
         "serie",
-        "source",
-        "source_link",
+        "youtube_link",
+        "wordpress_link",
         "media_link"
     ]]
 
@@ -106,8 +108,8 @@ def create_table(conn):
         preacher_name TEXT,
         text_reference TEXT,
         serie TEXT,
-        source TEXT,
-        source_link TEXT,
+        youtube_link TEXT,
+        wordpress_link TEXT,
         media_link TEXT
     )
     """)
@@ -123,8 +125,8 @@ def upsert_rows(conn, df):
             preacher_name,
             text_reference,
             serie,
-            source,
-            source_link,
+            youtube_link,
+            wordpress_link,
             media_link
         )
         VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -133,9 +135,21 @@ def upsert_rows(conn, df):
             preacher_name = excluded.preacher_name,
             text_reference = excluded.text_reference,
             serie = excluded.serie,
-            source = excluded.source,
-            source_link = excluded.source_link,
-            media_link = excluded.media_link;
+
+            youtube_link = COALESCE(
+                excluded.youtube_link,
+                sermons.youtube_link
+            ),
+
+            wordpress_link = COALESCE(
+                excluded.wordpress_link,
+                sermons.wordpress_link
+            ),
+
+            media_link = COALESCE(
+                excluded.media_link,
+                sermons.media_link
+            );
         """, tuple(row))
 
 
