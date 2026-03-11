@@ -79,13 +79,17 @@ def extract_text(title, content):
 
         book_norm = normalize_compare(book)
 
-        if book_norm in title_norm:
+        pattern = r'\b' + re.escape(book_norm) + r'\b'
 
-            start = title_norm.index(book_norm)
+        m_book = re.search(pattern, title_norm)
+
+        if m_book:
+
+            start = m_book.start()
 
             fragment = title[start:]
 
-            # extrair capítulo e versos
+            # procurar capítulo e versículos após o livro
             m = re.search(r'(\d+)(?::\s*(\d+(?:-\d+)?))?', fragment)
 
             if m:
@@ -95,8 +99,8 @@ def extract_text(title, content):
 
                 if verse:
                     return f"{book} {chapter}:{verse}"
-                else:
-                    return f"{book} {chapter}"
+
+                return f"{book} {chapter}"
 
             return book
 
