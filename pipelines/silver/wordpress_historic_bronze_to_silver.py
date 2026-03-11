@@ -4,6 +4,7 @@ import re
 import os
 import unicodedata
 from datetime import datetime
+from difflib import SequenceMatcher
 
 INPUT_XML = "data/bronze/ibrvn.WordPress.2026-03-09.xml"
 OUTPUT_CSV = "data/silver/wordpress_sermons.csv"
@@ -32,6 +33,15 @@ BIBLE_BOOKS = [
     "Judas","Apocalipse"
 ]
 
+
+def is_similar_book(a, b):
+
+    if any(c.isdigit() for c in a + b):
+        return False
+
+    ratio = SequenceMatcher(None, a, b).ratio()
+
+    return ratio >= 0.9
 
 def normalize_date(date_str):
 
@@ -75,6 +85,8 @@ def extract_text(title, content):
 
     title_norm = normalize_compare(title)
 
+    words = title_norm.split()
+
     for book in BIBLE_BOOKS:
 
         book_norm = normalize_compare(book)
@@ -83,11 +95,22 @@ def extract_text(title, content):
 
         m_book = re.search(pattern, title_norm)
 
+        # fallback fuzzy
+        if not m_book:
+
+            for w in words:
+                if similar_book(w, book_norm):
+                    m_book = True
+                    break
+
         if m_book:
 
-            start = m_book.start()
+            start = title_norm.find(book_norm)
 
-            fragment = title[start + len(book):]
+            if start == -1:
+                start = title_norm.find(w)
+
+            fragment = title[start + len(book):].strip()
 
             # procurar capítulo e versículos após o livro
             m = re.search(r'(\d+)(?::\s*(\d+(?:-\d+)?))?', fragment)
@@ -122,7 +145,7 @@ def extract_mp3(content):
             return url
 
     return ""
-    
+
 
 def extract_preacher(content):
 
