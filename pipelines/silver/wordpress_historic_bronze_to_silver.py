@@ -58,7 +58,6 @@ def extract_text(title, content):
     if not title:
         return ""
 
-    # normalização básica
     title = (
         title.replace("\u00A0", " ")
         .replace("–", "-")
@@ -70,53 +69,36 @@ def extract_text(title, content):
     title = re.sub(r'\bII\s+', '2 ', title)
     title = re.sub(r'\bIII\s+', '3 ', title)
 
-    lower_title = normalize_compare(title)
+    # normalizar intervalos
+    title = re.sub(r'(\d+)\s*a\s*(\d+)', r'\1-\2', title)
+    title = re.sub(r'(\d+)\s*e\s*(\d+)', r'\1-\2', title)
+
+    title_norm = normalize_compare(title)
 
     for book in BIBLE_BOOKS:
 
         book_norm = normalize_compare(book)
 
-        if book_norm in lower_title:
+        if book_norm in title_norm:
 
-            start = lower_title.index(book_norm)
+            start = title_norm.index(book_norm)
 
-            reference = title[start:]
+            fragment = title[start:]
 
-            # remover "Parte II"
-            reference = re.sub(
-                r'Parte\s+\w+',
-                '',
-                reference,
-                flags=re.IGNORECASE
-            )
+            # extrair capítulo e versos
+            m = re.search(r'(\d+)(?::\s*(\d+(?:-\d+)?))?', fragment)
 
-            # normalizar intervalos
-            reference = re.sub(r'(\d+)\s*a\s*(\d+)', r'\1-\2', reference)
-            reference = re.sub(r'(\d+)\s*e\s*(\d+)', r'\1-\2', reference)
+            if m:
 
-            # corrigir espaço depois de :
-            reference = re.sub(r':\s+', ':', reference)
+                chapter = m.group(1)
+                verse = m.group(2)
 
-            # extrair referência bíblica válida
-            match = re.search(
-                r'(\d+\s+)?[A-Za-zÀ-ÿ]+\s*(\d+)?(?::\d+(?:-\d+)?)?',
-                reference
-            )
+                if verse:
+                    return f"{book} {chapter}:{verse}"
+                else:
+                    return f"{book} {chapter}"
 
-            if match:
-
-                extracted = match.group(0)
-
-                # garantir livro canônico
-                extracted = book + extracted[len(match.group(1) or '') + len(book):]
-
-                # remover lixo final
-                extracted = extracted.strip(" -")
-
-                # remover parênteses vazios
-                extracted = extracted.replace("()", "")
-
-                return extracted.strip()
+            return book
 
     return ""
 
