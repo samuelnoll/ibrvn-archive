@@ -87,7 +87,7 @@ def extract_text(title, content):
 
             start = m_book.start()
 
-            fragment = title[start:]
+            fragment = title[start + len(book):]
 
             # procurar capítulo e versículos após o livro
             m = re.search(r'(\d+)(?::\s*(\d+(?:-\d+)?))?', fragment)
