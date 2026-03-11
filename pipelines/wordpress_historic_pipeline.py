@@ -1,5 +1,7 @@
 import logging
 import time
+import os
+import sys
 from datetime import datetime
 
 from pipelines.silver.wordpress_historic_bronze_to_silver import run as bronze_to_silver
@@ -7,7 +9,9 @@ from pipelines.gold.wordpress_historic_silver_to_gold import run as silver_to_go
 from pipelines.gold.optimize_gold import run as optimize_gold
 
 
-LOG_FILE = f"logs/pipeline_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+script_name = os.path.splitext(os.path.basename(sys.argv[0]))[0]
+
+LOG_FILE = f"logs/{script_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
 
 
 PIPELINE = [
