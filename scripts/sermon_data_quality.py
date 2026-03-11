@@ -22,6 +22,18 @@ def count_missing(conn, column):
     return cursor.fetchone()[0]
 
 
+def count_missing_links(conn):
+
+    cursor = conn.execute("""
+        SELECT COUNT(*)
+        FROM sermons
+        WHERE (youtube_link IS NULL OR youtube_link = '')
+        AND (wordpress_link IS NULL OR wordpress_link = '')
+    """)
+
+    return cursor.fetchone()[0]
+
+
 def count_duplicates(conn):
 
     cursor = conn.execute("""
@@ -58,7 +70,7 @@ def find_missing_sundays(dates):
     start = datetime.fromisoformat(dates[0])
     end = datetime.fromisoformat(dates[-1])
 
-    # encontrar o primeiro domingo
+    # encontrar primeiro domingo
     while start.weekday() != 6:
         start += timedelta(days=1)
 
@@ -91,8 +103,10 @@ def run():
     missing_preacher = count_missing(conn, "preacher_name")
     missing_reference = count_missing(conn, "text_reference")
     missing_date = count_missing(conn, "preaching_date")
-    missing_link = count_missing(conn, "source_link")
     missing_series = count_missing(conn, "serie")
+    missing_media = count_missing(conn, "media_link")
+
+    missing_links = count_missing_links(conn)
 
     duplicates = count_duplicates(conn)
 
@@ -111,8 +125,9 @@ def run():
     print(f"preacher_name: {missing_preacher}")
     print(f"text_reference: {missing_reference}")
     print(f"preaching_date: {missing_date}")
-    print(f"source_link: {missing_link}")
-    print(f"serie: {missing_series}\n")
+    print(f"serie: {missing_series}")
+    print(f"media_link (audio): {missing_media}")
+    print(f"missing source (no youtube_link and no wordpress_link): {missing_links}\n")
 
     print("Integrity checks")
     print("----------------")
