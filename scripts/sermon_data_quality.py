@@ -1,4 +1,5 @@
 import sqlite3
+from datetime import datetime, timedelta
 
 DB_PATH = "data/gold/sermons.db"
 
@@ -6,7 +7,6 @@ DB_PATH = "data/gold/sermons.db"
 def total_rows(conn):
 
     cursor = conn.execute("SELECT COUNT(*) FROM sermons")
-
     return cursor.fetchone()[0]
 
 
@@ -37,72 +37,49 @@ def count_duplicates(conn):
     return cursor.fetchone()[0]
 
 
-def count_invalid_dates(conn):
+def get_dates(conn):
 
     cursor = conn.execute("""
-        SELECT COUNT(*)
+        SELECT preaching_date
         FROM sermons
-        WHERE preaching_date NOT LIKE '____-__-__'
+        WHERE preaching_date != ''
     """)
 
-    return cursor.fetchone()[0]
+    dates = [row[0] for row in cursor.fetchall()]
+
+    return sorted(dates)
 
 
-def count_old_dates(conn):
+def find_missing_sundays(dates):
 
-    cursor = conn.execute("""
-        SELECT COUNT(*)
-        FROM sermons
-        WHERE preaching_date < '1980-01-01'
-    """)
+    if not dates:
+        return []
 
-    return cursor.fetchone()[0]
+    start = datetime.fromisoformat(dates[0])
+    end = datetime.fromisoformat(dates[-1])
 
+    # encontrar o primeiro domingo
+    while start.weekday() != 6:
+        start += timedelta(days=1)
 
-def list_missing_preachers(conn):
+    sundays = []
 
-    cursor = conn.execute("""
-        SELECT preaching_date, text_reference
-        FROM sermons
-        WHERE preacher_name = ''
-    """)
+    current = start
 
-    return cursor.fetchall()
+    while current <= end:
 
+        sundays.append(current.date().isoformat())
+        current += timedelta(days=7)
 
-def list_missing_reference(conn):
+    existing = set(dates)
 
-    cursor = conn.execute("""
-        SELECT preaching_date, preacher_name
-        FROM sermons
-        WHERE text_reference = ''
-    """)
+    missing = []
 
-    return cursor.fetchall()
+    for sunday in sundays:
+        if sunday not in existing:
+            missing.append(sunday)
 
-
-def list_missing_series(conn):
-
-    cursor = conn.execute("""
-        SELECT preaching_date, preacher_name, text_reference
-        FROM sermons
-        WHERE serie = ''
-    """)
-
-    return cursor.fetchall()
-
-
-def detect_multiple_preachers_same_series(conn):
-
-    cursor = conn.execute("""
-        SELECT serie, preaching_date, COUNT(DISTINCT preacher_name)
-        FROM sermons
-        WHERE serie != ''
-        GROUP BY serie, preaching_date
-        HAVING COUNT(DISTINCT preacher_name) > 1
-    """)
-
-    return cursor.fetchall()
+    return missing
 
 
 def run():
@@ -118,10 +95,10 @@ def run():
     missing_series = count_missing(conn, "serie")
 
     duplicates = count_duplicates(conn)
-    invalid_dates = count_invalid_dates(conn)
-    old_dates = count_old_dates(conn)
 
-    multi_preachers_series = detect_multiple_preachers_same_series(conn)
+    dates = get_dates(conn)
+
+    missing_sundays = find_missing_sundays(dates)
 
     print("\n==============================")
     print(" SERMON DATA QUALITY REPORT")
@@ -139,42 +116,20 @@ def run():
 
     print("Integrity checks")
     print("----------------")
-    print(f"Duplicate preaching_date values: {duplicates}")
-    print(f"Invalid preaching_date format: {invalid_dates}")
-    print(f"Dates earlier than 1980: {old_dates}\n")
+    print(f"Duplicate preaching_date values: {duplicates}\n")
 
-    print("Series checks")
+    if dates:
+        print("Date range")
+        print("----------------")
+        print(f"First sermon: {dates[0]}")
+        print(f"Last sermon: {dates[-1]}\n")
+
+    print("Missing Sundays")
     print("----------------")
-    print(f"multiple preachers in same series/day: {len(multi_preachers_series)}\n")
+    print(f"Total missing Sundays: {len(missing_sundays)}\n")
 
-    print("Problematic rows")
-    print("----------------")
-
-    missing_preachers = list_missing_preachers(conn)
-
-    if missing_preachers:
-        print("\nRows missing preacher_name:")
-        for row in missing_preachers:
-            print(row)
-
-    missing_refs = list_missing_reference(conn)
-
-    if missing_refs:
-        print("\nRows missing text_reference:")
-        for row in missing_refs:
-            print(row)
-
-    missing_series_rows = list_missing_series(conn)
-
-    if missing_series_rows:
-        print("\nRows missing serie:")
-        for row in missing_series_rows:
-            print(row)
-
-    if multi_preachers_series:
-        print("\nMultiple preachers in same series/day:")
-        for row in multi_preachers_series:
-            print(row)
+    for d in missing_sundays:
+        print(d)
 
     conn.close()
 
