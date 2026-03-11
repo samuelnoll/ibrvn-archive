@@ -40,7 +40,7 @@ def extract_text(title, content):
     title = title.replace("\u00A0", " ").replace("–", "-")
 
     # dividir pelo hífen
-    parts = title.split("-")
+    parts = title.split(" - ")
 
     # pegar a segunda parte se houver
     if len(parts) < 2:
