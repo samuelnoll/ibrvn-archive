@@ -7,6 +7,8 @@ from datetime import datetime
 INPUT_XML = "data/bronze/ibrvn.WordPress.2026-03-09.xml"
 OUTPUT_CSV = "data/silver/wordpress_sermons.csv"
 
+MAX_DATE = "2021-12-31"
+
 ns = {
     "content": "http://purl.org/rss/1.0/modules/content/",
     "wp": "http://wordpress.org/export/1.2/",
@@ -25,6 +27,7 @@ def normalize_date(date_str):
     except:
         return ""
 
+
 def extract_preacher(content):
 
     m = re.search(r"por ([A-Za-zÀ-ÿ\s]+)", content or "")
@@ -34,58 +37,37 @@ def extract_preacher(content):
 def extract_text(title, content):
 
     if not title:
-        return "", "", "", ""
+        return ""
 
-    # normalizar espaços estranhos
-    title = title.replace("\u00A0", " ").replace("–", "-")
+    title = (
+        title.replace("\u00A0", " ")
+        .replace("–", "-")
+        .strip()
+    )
 
-    # dividir pelo hífen
     parts = title.split(" - ")
 
-    # pegar a segunda parte se houver
     if len(parts) < 2:
         reference = title.strip()
     else:
         reference = parts[1].strip()
 
-    # regex apenas para separar livro/capítulo/versos
-    m = re.search(r'(.+?)\s+(\d+):([\d\-]+)', reference)
+    return reference
 
-    if not m:
-        return reference, "", "", ""
-
-    book = m.group(1).strip()
-    chapter = m.group(2)
-    verses = m.group(3)
-
-    return reference, book, chapter, verses
 
 def extract_mp3(content):
 
     if not content:
         return ""
 
-    # pegar todas as URLs
     urls = re.findall(r'https?://[^\s"\']+', content)
 
-    # filtrar apenas arquivos de áudio
     audio_ext = (".mp3", ".m4a", ".wav", ".ogg")
 
     for url in urls:
-        if url.lower().endswith(audio_ext):
+        clean_url = url.lower().strip()
+        if clean_url.endswith(audio_ext):
             return url
-
-    return ""
-
-
-def extract_youtube(content):
-
-    if not content:
-        return ""
-
-    m = re.search(r'https?://(www\.)?(youtube\.com|youtu\.be)[^\s"]+', content)
-    if m:
-        return m.group(0)
 
     return ""
 
@@ -105,7 +87,6 @@ def extract_file_info(mp3_url):
         preacher = m.group(4)
         return date, preacher
 
-
     # PREGADOR_DD_MM_YY
     m = re.search(r'([A-Za-zÀ-ÿ]+)[_\-](\d{2})[_\-](\d{2})[_\-](\d{2})', filename)
 
@@ -113,7 +94,6 @@ def extract_file_info(mp3_url):
         preacher = m.group(1)
         date = f"20{m.group(4)}-{m.group(3)}-{m.group(2)}"
         return date, preacher
-
 
     # NOME DD.MM.YYYY
     m = re.search(r'([A-Za-zÀ-ÿ]+)[\s\-](\d{2})\.(\d{2})\.(\d{4})', filename)
@@ -123,7 +103,6 @@ def extract_file_info(mp3_url):
         date = f"{m.group(4)}-{m.group(3)}-{m.group(2)}"
         return date, preacher
 
-
     # NOME DD-MM-YYYY
     m = re.search(r'([A-Za-zÀ-ÿ]+)[\s\-](\d{2})\-(\d{2})\-(\d{4})', filename)
 
@@ -131,7 +110,6 @@ def extract_file_info(mp3_url):
         preacher = m.group(1)
         date = f"{m.group(4)}-{m.group(3)}-{m.group(2)}"
         return date, preacher
-
 
     return "", ""
 
@@ -162,14 +140,17 @@ def run():
             item.findtext("wp:post_date", "", ns)
         )
 
+        # ignorar posts após 2021
+        if post_date and post_date > MAX_DATE:
+            continue
+
         poster_name = item.findtext("dc:creator", "")
 
         preacher_name = extract_preacher(content)
 
-        text, book, chapter, verses = extract_text(title, content)
+        text = extract_text(title, content)
 
         file_path = extract_mp3(content)
-        youtube = extract_youtube(content)
 
         file_date, file_preacher = extract_file_info(file_path)
 
@@ -181,13 +162,19 @@ def run():
         for cat in item.findall("category"):
 
             domain = cat.attrib.get("domain")
-            name = cat.text or ""
+            name = (cat.text or "").strip()
 
             if domain == "post_tag":
                 tags.append(name)
 
             if domain == "category":
                 categories.append(name)
+
+        # aceitar apenas categoria "pregações"
+        categories_lower = [c.lower() for c in categories]
+
+        if "pregações" not in categories_lower:
+            continue
 
         rows.append({
 
@@ -198,13 +185,10 @@ def run():
             "poster_name": poster_name,
             "file_preacher_name": file_preacher,
             "text_reference": text,
-            "text_book": book,
-            "text_chapter": chapter,
-            "text_verses": verses,
             "file_path": file_path,
-            "youtube_link": youtube,
             "tags": ";".join(tags),
             "categories": ";".join(categories)
+
         })
 
     os.makedirs("data/silver", exist_ok=True)
@@ -221,11 +205,7 @@ def run():
                 "poster_name",
                 "file_preacher_name",
                 "text_reference",
-                "text_book",
-                "text_chapter",
-                "text_verses",
                 "file_path",
-                "youtube_link",
                 "tags",
                 "categories"
             ]
