@@ -34,141 +34,21 @@ def extract_preacher(content):
     return m.group(1).strip() if m else ""
 
 
-BIBLE_BOOK_ALIASES = {
-    "Gênesis": ["gen", "gn"],
-    "Êxodo": ["ex", "exo"],
-    "Levítico": ["lv"],
-    "Números": ["nm"],
-    "Deuteronômio": ["dt"],
-    "Josué": ["js"],
-    "Juízes": ["jz"],
-    "Rute": ["rt"],
-
-    "1 Samuel": [
-        "1sm", "1 samuel", "i samuel", "primeiro samuel", "primeira samuel"
-    ],
-
-    "2 Samuel": [
-        "2sm", "2 samuel", "ii samuel", "segundo samuel", "segunda samuel"
-    ],
-
-    "1 Reis": [
-        "1rs", "1 reis", "i reis", "primeiro reis", "primeira reis"
-    ],
-
-    "2 Reis": [
-        "2rs", "2 reis", "ii reis", "segundo reis", "segunda reis"
-    ],
-
-    "Salmos": ["sl", "salmo"],
-    "Provérbios": ["pv"],
-    "Eclesiastes": ["ec"],
-    "Cânticos": ["ct"],
-    "Isaías": ["is"],
-    "Jeremias": ["jr"],
-    "Ezequiel": ["ez"],
-    "Daniel": ["dn"],
-    "Oséias": ["os"],
-    "Joel": [],
-    "Amós": [],
-    "Jonas": [],
-    "Miqueias": ["mq"],
-    "Naum": [],
-    "Habacuque": ["hc"],
-    "Sofonias": [],
-    "Ageu": [],
-    "Zacarias": ["zc"],
-    "Malaquias": ["ml"],
-
-    "Mateus": ["mt"],
-    "Marcos": ["mc"],
-    "Lucas": ["lc"],
-    "João": ["jo"],
-
-    "Atos": ["at"],
-
-    "Romanos": ["rm"],
-
-    "1 Coríntios": [
-        "1co", "1 cor", "1 corintios",
-        "i corintios",
-        "primeiro corintios", "primeira corintios"
-    ],
-
-    "2 Coríntios": [
-        "2co", "2 cor", "2 corintios",
-        "ii corintios",
-        "segundo corintios", "segunda corintios"
-    ],
-
-    "Gálatas": ["gl"],
-    "Efésios": ["ef"],
-    "Filipenses": ["fp"],
-    "Colossenses": ["cl"],
-
-    "1 Tessalonicenses": [
-        "1ts", "1 tessalonicenses",
-        "i tessalonicenses",
-        "primeiro tessalonicenses", "primeira tessalonicenses"
-    ],
-
-    "2 Tessalonicenses": [
-        "2ts", "2 tessalonicenses",
-        "ii tessalonicenses",
-        "segundo tessalonicenses", "segunda tessalonicenses"
-    ],
-
-    "1 Timóteo": [
-        "1tm", "1 timoteo",
-        "i timoteo",
-        "primeiro timoteo", "primeira timoteo"
-    ],
-
-    "2 Timóteo": [
-        "2tm", "2 timoteo",
-        "ii timoteo",
-        "segundo timoteo", "segunda timoteo"
-    ],
-
-    "Tito": ["tt"],
-    "Filemon": ["fm"],
-
-    "Hebreus": ["hb"],
-    "Tiago": ["tg"],
-
-    "1 Pedro": [
-        "1pe", "1 pedro",
-        "i pedro",
-        "primeiro pedro", "primeira pedro"
-    ],
-
-    "2 Pedro": [
-        "2pe", "2 pedro",
-        "ii pedro",
-        "segundo pedro", "segunda pedro"
-    ],
-
-    "1 João": [
-        "1jo", "1 joao",
-        "i joao",
-        "primeiro joao", "primeira joao"
-    ],
-
-    "2 João": [
-        "2jo", "2 joao",
-        "ii joao",
-        "segundo joao", "segunda joao"
-    ],
-
-    "3 João": [
-        "3jo", "3 joao",
-        "iii joao",
-        "terceiro joao", "terceira joao"
-    ],
-
-    "Judas": ["jd"],
-    "Apocalipse": ["ap"]
-}
+BIBLE_BOOKS = [
+    "Gênesis","Êxodo","Levítico","Números","Deuteronômio",
+    "Josué","Juízes","Rute","1 Samuel","2 Samuel","1 Reis","2 Reis",
+    "1 Crônicas","2 Crônicas","Esdras","Neemias","Ester",
+    "Jó","Salmos","Provérbios","Eclesiastes","Cânticos",
+    "Isaías","Jeremias","Lamentações","Ezequiel","Daniel",
+    "Oséias","Joel","Amós","Obadias","Jonas","Miqueias",
+    "Naum","Habacuque","Sofonias","Ageu","Zacarias","Malaquias",
+    "Mateus","Marcos","Lucas","João","Atos",
+    "Romanos","1 Coríntios","2 Coríntios","Gálatas","Efésios",
+    "Filipenses","Colossenses","1 Tessalonicenses","2 Tessalonicenses",
+    "1 Timóteo","2 Timóteo","Tito","Filemon","Hebreus",
+    "Tiago","1 Pedro","2 Pedro","1 João","2 João","3 João",
+    "Judas","Apocalipse"
+]
 
 
 def extract_text(title, content):
@@ -182,37 +62,23 @@ def extract_text(title, content):
         .strip()
     )
 
-    title_lower = title.lower()
+    lower_title = title.lower()
 
-    for canonical, aliases in BIBLE_BOOK_ALIASES.items():
+    for book in BIBLE_BOOKS:
 
-        candidates = [canonical.lower()] + aliases
+        if book.lower() in lower_title:
 
-        for candidate in candidates:
+            start = lower_title.index(book.lower())
 
-            if candidate in title_lower:
+            reference = title[start:]
 
-                start = title_lower.index(candidate)
+            # remover coisas irrelevantes
+            reference = re.sub(r'Parte\s+\w+', '', reference, flags=re.IGNORECASE)
 
-                reference = title[start:]
+            # normalizar "a" para intervalo
+            reference = reference.replace(" a ", "-")
 
-                # normalizar nome do livro
-                reference = canonical + reference[len(candidate):]
-
-                # remover coisas irrelevantes
-                reference = re.sub(
-                    r'parte\s+\w+',
-                    '',
-                    reference,
-                    flags=re.IGNORECASE
-                )
-
-                # normalizar intervalos
-                reference = reference.replace(" a ", "-")
-
-                reference = reference.strip()
-
-                return reference
+            return reference.strip()
 
     return ""
 
