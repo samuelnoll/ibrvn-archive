@@ -2,6 +2,7 @@ import xml.etree.ElementTree as ET
 import csv
 import re
 import os
+import unicodedata
 from datetime import datetime
 
 INPUT_XML = "data/bronze/ibrvn.WordPress.2026-03-09.xml"
@@ -89,7 +90,7 @@ def extract_text(title, content):
 
             # normalizar "7a 13" ou "7 a 13"
             reference = re.sub(r'(\d)a\s*(\d)', r'\1-\2', reference)
-            
+
             # normalizar "7e 8" ou "7 e 8"
             reference = re.sub(r'(\d+)\s*e\s*(\d+)', r'\1-\2', reference)
 
