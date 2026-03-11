@@ -36,28 +36,26 @@ def extract_text(title, content):
     if not title:
         return "", "", "", ""
 
+    # normalizar espaços estranhos
+    title = title.replace("\u00A0", " ").replace("–", "-")
+
+    # dividir pelo hífen
     parts = title.split("-")
 
-    if len(parts) < 2:
-        reference = title.strip()
-    else:
-        reference = parts[-1].strip()
+    # pegar a última parte
+    reference = parts[-1].strip()
 
-    reference = reference.replace("–", "-").strip()
-
-    pattern = r"([1-3]?\s?[A-Za-zÀ-ÿ]+)\s+(\d+):([\d\-]+)"
-
-    m = re.search(pattern, reference)
+    # regex apenas para separar livro/capítulo/versos
+    m = re.search(r'(.+?)\s+(\d+):([\d\-]+)', reference)
 
     if not m:
         return reference, "", "", ""
 
     book = m.group(1).strip()
-    chapter = m.group(2).strip()
-    verses = m.group(3).strip()
+    chapter = m.group(2)
+    verses = m.group(3)
 
     return reference, book, chapter, verses
-
 
 def extract_mp3(content):
 
