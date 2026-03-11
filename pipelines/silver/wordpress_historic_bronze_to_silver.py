@@ -44,7 +44,7 @@ def extract_text(title, content):
 
     # pegar a segunda parte se houver
     if len(parts) < 2:
-        return parts[0].strip()
+        reference = title.strip()
     else:
         reference = parts[1].strip()
 
