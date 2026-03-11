@@ -81,7 +81,7 @@ def extract_text(title, content):
 
         if normalize_compare(book) in lower_title:
 
-            start = lower_title.index(book.lower())
+            start = lower_title.index(normalize_compare(book))
 
             reference = title[start:]
 
