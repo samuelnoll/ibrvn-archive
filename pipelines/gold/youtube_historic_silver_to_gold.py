@@ -151,3 +151,7 @@ def run():
     conn.close()
 
     print("YouTube sermons loaded into gold")
+
+
+if __name__ == "__main__":
+    run()
