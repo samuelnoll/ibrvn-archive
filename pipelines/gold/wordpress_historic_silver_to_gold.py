@@ -125,7 +125,7 @@ def upsert_rows(conn, df):
         INSERT INTO sermons (
             preaching_date,
             preacher_name,
-            title
+            title,
             text_reference,
             serie,
             youtube_link,
