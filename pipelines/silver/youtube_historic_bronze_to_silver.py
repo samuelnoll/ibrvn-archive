@@ -130,8 +130,8 @@ def choose_preaching_date(video, description):
         return date
 
     if video.get("is_live") and video.get("live_start_time"):
-        print(convert_utc_to_brt(video["live_start_time"]))
-        return convert_utc_to_brt(video["live_start_time"])
+        print(convert_utc_to_brt(video.get("live_start_time")))
+        return convert_utc_to_brt(video.get("live_start_time"))
 
 
     return ""
