@@ -153,8 +153,8 @@ def upsert_rows(conn, df):
             ),
 
             youtube_link = COALESCE(
-                excluded.youtube_link,
-                sermons.youtube_link
+                sermons.youtube_link,
+                excluded.youtube_link
             ),
 
             wordpress_link = COALESCE(

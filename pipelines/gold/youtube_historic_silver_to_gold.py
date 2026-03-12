@@ -139,13 +139,13 @@ def upsert_rows(conn, df):
             ),
 
             wordpress_link = COALESCE(
-                excluded.wordpress_link,
                 sermons.wordpress_link
+                excluded.wordpress_link
             ),
 
             media_link = COALESCE(
-                excluded.media_link,
-                sermons.media_link
+                sermons.media_link,
+                excluded.media_link
             );
         """, tuple(row))
 
