@@ -16,7 +16,7 @@ LOG_FILE = f"logs/{script_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
 
 
 PIPELINE = [
-    ("WordPress historic source → bronze", source_to_bronze),
+    #("WordPress historic source → bronze", source_to_bronze),
     ("WordPress historic bronze → silver", bronze_to_silver),
     ("WordPress historic silver → gold", silver_to_gold),
     ("Optimize gold tables", optimize_gold),

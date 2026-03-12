@@ -8,6 +8,24 @@ INPUT_JSON = "data/bronze/youtube_videos.json"
 OUTPUT_CSV = "data/silver/youtube_sermons.csv"
 
 
+def convert_utc_to_brt(date_str):
+
+    if not date_str:
+        return ""
+
+    try:
+        dt = datetime.fromisoformat(
+            date_str.replace("Z", "+00:00")
+        )
+
+        dt = dt - timedelta(hours=3)
+
+        return dt.date().isoformat()
+
+    except:
+        return ""
+
+
 def extract_date(description):
 
     m = re.search(r'(\d{1,2}/\d{1,2}/\d{4})', description)
@@ -104,6 +122,19 @@ def extract_publish_date(published_at):
         return ""
 
 
+def choose_preaching_date(video, description):
+
+    date = extract_date(description)
+
+    if date:
+        return date
+
+    if video.get("is_live") and video.get("live_start_time"):
+        return convert_utc_to_brt(video["live_start_time"])
+
+    return ""
+
+
 def is_sermon(title):
 
     if not title:
@@ -132,18 +163,13 @@ def run():
             v.get("playlists", [])
         )
 
-        date = extract_date(description)
-
-        if not date and v.get("is_live"):
-            date = extract_publish_date(v.get("published_at"))
-
         row = {
 
             "video_id": v["video_id"],
 
             "youtube_link": v["url"],
 
-            "preaching_date": date,
+            "preaching_date": choose_preaching_date(v, description),
 
             "title": extract_title_clean(title),
 

@@ -105,10 +105,13 @@ def fetch_playlist_items(playlist_id):
     return videos
 
 
-def enrich_live_info(video_ids):
+def enrich_video_details(video_ids):
 
     """
-    Consulta a API videos para descobrir se cada vídeo é uma live.
+    Consulta detalhes completos dos vídeos:
+    - liveStreamingDetails
+    - duration
+    - viewCount
     """
 
     url = "https://www.googleapis.com/youtube/v3/videos"
@@ -120,7 +123,7 @@ def enrich_live_info(video_ids):
         batch = video_ids[i:i+50]
 
         params = {
-            "part": "liveStreamingDetails",
+            "part": "liveStreamingDetails,contentDetails,statistics",
             "id": ",".join(batch),
             "key": API_KEY
         }
@@ -131,9 +134,14 @@ def enrich_live_info(video_ids):
 
             vid = item["id"]
 
-            is_live = "liveStreamingDetails" in item
+            live_details = item.get("liveStreamingDetails", {})
 
-            enriched[vid] = is_live
+            enriched[vid] = {
+                "is_live": bool(live_details),
+                "live_start_time": live_details.get("actualStartTime", ""),
+                "duration": item.get("contentDetails", {}).get("duration", ""),
+                "view_count": item.get("statistics", {}).get("viewCount", "")
+            }
 
     return enriched
 
@@ -153,14 +161,18 @@ def run():
     for v in video_map.values():
         v["playlists"] = []
 
-    print("Detecting live videos...")
+    print("Downloading video details...")
 
-    live_map = enrich_live_info(list(video_map.keys()))
+    details_map = enrich_video_details(list(video_map.keys()))
 
-    for vid, is_live in live_map.items():
+    for vid, details in details_map.items():
 
         if vid in video_map:
-            video_map[vid]["is_live"] = is_live
+
+            video_map[vid]["is_live"] = details["is_live"]
+            video_map[vid]["live_start_time"] = details["live_start_time"]
+            video_map[vid]["duration"] = details["duration"]
+            video_map[vid]["view_count"] = details["view_count"]
 
     print("Downloading playlists...")
 
