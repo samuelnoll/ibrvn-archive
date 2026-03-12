@@ -90,10 +90,26 @@ def extract_serie_and_preacher(playlists):
 
     return serie, preacher_playlist
 
+def extract_publish_date(published_at):
 
-def is_cult(description):
+    if not published_at:
+        return ""
 
-    return "culto" in description.lower()
+    try:
+        dt = datetime.fromisoformat(
+            published_at.replace("Z", "+00:00")
+        )
+        return dt.date().isoformat()
+    except:
+        return ""
+
+
+def is_sermon(title):
+
+    if not title:
+        return False
+
+    return title.count("|") >= 2
 
 
 def run():
@@ -105,16 +121,21 @@ def run():
 
     for v in data:
 
-        description = v.get("description", "")
+        title = v.get("title", "")
 
-        if not is_cult(description):
+        if not is_sermon(title):
             continue
 
-        title = v.get("title", "")
+        description = v.get("description", "")
 
         serie, preacher_playlist = extract_serie_and_preacher(
             v.get("playlists", [])
         )
+
+        date = extract_date(description)
+
+        if not date and v.get("is_live"):
+            date = extract_publish_date(v.get("published_at"))
 
         row = {
 
@@ -122,7 +143,7 @@ def run():
 
             "youtube_link": v["url"],
 
-            "preaching_date": extract_date(description),
+            "preaching_date": date,
 
             "title": extract_title_clean(title),
 

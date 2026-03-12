@@ -105,6 +105,39 @@ def fetch_playlist_items(playlist_id):
     return videos
 
 
+def enrich_live_info(video_ids):
+
+    """
+    Consulta a API videos para descobrir se cada vídeo é uma live.
+    """
+
+    url = "https://www.googleapis.com/youtube/v3/videos"
+
+    enriched = {}
+
+    for i in range(0, len(video_ids), 50):
+
+        batch = video_ids[i:i+50]
+
+        params = {
+            "part": "liveStreamingDetails",
+            "id": ",".join(batch),
+            "key": API_KEY
+        }
+
+        r = requests.get(url, params=params).json()
+
+        for item in r.get("items", []):
+
+            vid = item["id"]
+
+            is_live = "liveStreamingDetails" in item
+
+            enriched[vid] = is_live
+
+    return enriched
+
+
 def run():
 
     channel_id = load_channel()
@@ -119,6 +152,15 @@ def run():
 
     for v in video_map.values():
         v["playlists"] = []
+
+    print("Detecting live videos...")
+
+    live_map = enrich_live_info(list(video_map.keys()))
+
+    for vid, is_live in live_map.items():
+
+        if vid in video_map:
+            video_map[vid]["is_live"] = is_live
 
     print("Downloading playlists...")
 
