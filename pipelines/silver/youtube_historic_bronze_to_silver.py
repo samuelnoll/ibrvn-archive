@@ -14,6 +14,9 @@ def convert_utc_to_brt(date_str):
         return ""
 
     try:
+
+        print("RAW:", date_str)
+
         dt = datetime.fromisoformat(
             date_str.replace("Z", "+00:00")
         )
@@ -22,7 +25,10 @@ def convert_utc_to_brt(date_str):
 
         return dt.date().isoformat()
 
-    except:
+    except Exception as e:
+
+        print("ERROR:", date_str, e)
+
         return ""
 
 
@@ -108,19 +114,6 @@ def extract_serie_and_preacher(playlists):
 
     return serie, preacher_playlist
 
-def extract_date(date_at):
-
-    if not date_at:
-        return ""
-
-    try:
-        dt = datetime.fromisoformat(
-            date_at.replace("Z", "+00:00")
-        )
-        return dt.date().isoformat()
-    except:
-        return ""
-
 
 def choose_preaching_date(video, description):
 
@@ -129,12 +122,12 @@ def choose_preaching_date(video, description):
     if date:
         return date
 
-    if video.get("is_live") and video.get("live_start_time"):
-        print(convert_utc_to_brt(video.get("live_start_time")))
-        return convert_utc_to_brt(video.get("live_start_time"))
+    live_start = video.get("live_start_time")
 
+    if live_start:
+        return convert_utc_to_brt(live_start)
 
-    return ""
+    return convert_utc_to_brt(video.get("published_at"))
 
 
 def is_sermon(title):
