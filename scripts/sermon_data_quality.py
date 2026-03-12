@@ -94,6 +94,24 @@ def find_missing_sundays(dates):
     return missing
 
 
+def find_non_sundays(dates):
+
+    non_sundays = []
+
+    for d in dates:
+
+        try:
+            dt = datetime.fromisoformat(d)
+
+            if dt.weekday() != 6:   # 6 = domingo
+                non_sundays.append(d)
+
+        except:
+            pass
+
+    return non_sundays
+
+
 def run():
 
     conn = sqlite3.connect(DB_PATH)
@@ -113,6 +131,8 @@ def run():
     dates = get_dates(conn)
 
     missing_sundays = find_missing_sundays(dates)
+
+    non_sundays = find_non_sundays(dates)
 
     print("\n==============================")
     print(" SERMON DATA QUALITY REPORT")
@@ -144,6 +164,13 @@ def run():
     print(f"Total missing Sundays: {len(missing_sundays)}\n")
 
     for d in missing_sundays:
+        print(d)
+
+    print("\nNon-Sunday Sermons")
+    print("----------------")
+    print(f"Total non-Sundays: {len(non_sundays)}\n")
+
+    for d in non_sundays:
         print(d)
 
     conn.close()
