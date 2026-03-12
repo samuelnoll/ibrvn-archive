@@ -203,6 +203,24 @@ def extract_body_date(title):
     return f"{m.group(3)}-{m.group(2)}-{m.group(1)}"
 
 
+def extract_title(title):
+
+    if not title:
+        return ""
+
+    title = title.replace("\u00A0", " ").replace("–", "-").strip()
+
+    if " - " not in title:
+        return ""
+
+    first = title.split(" - ")[0].strip()
+
+    if first.lower().startswith("pregação"):
+        return ""
+
+    return first
+
+
 def run():
 
     tree = ET.parse(INPUT_XML)
@@ -229,6 +247,8 @@ def run():
         preacher_name = extract_preacher(content)
 
         text = extract_text(title, content)
+
+        clean_title = extract_title(title)
 
         media_link = extract_mp3(content)
 
@@ -263,6 +283,7 @@ def run():
             "preacher_name": preacher_name,
             "poster_name": poster_name,
             "file_preacher_name": file_preacher,
+            "title": clean_title,
             "text_reference": text,
             "source_link": source_link,
             "media_link": media_link,
@@ -284,6 +305,7 @@ def run():
                 "preacher_name",
                 "poster_name",
                 "file_preacher_name",
+                "title",
                 "text_reference",
                 "source_link",
                 "media_link",

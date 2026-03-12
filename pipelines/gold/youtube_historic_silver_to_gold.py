@@ -70,6 +70,7 @@ def transform_dataframe(df):
     df_gold = df[[
         "preaching_date",
         "preacher_name",
+        "title",
         "text_reference",
         "serie",
         "youtube_link",
@@ -87,6 +88,7 @@ def create_table(conn):
 
         preaching_date TEXT PRIMARY KEY,
         preacher_name TEXT,
+        title TEXT,
         text_reference TEXT,
         serie TEXT,
         youtube_link TEXT,
@@ -104,6 +106,7 @@ def upsert_rows(conn, df):
         INSERT INTO sermons (
             preaching_date,
             preacher_name,
+            title,
             text_reference,
             serie,
             youtube_link,
@@ -114,6 +117,11 @@ def upsert_rows(conn, df):
 
         ON CONFLICT(preaching_date) DO UPDATE SET
             preacher_name = excluded.preacher_name,
+
+            title = COALESCE(
+                excluded.title,
+                sermons.title
+            ),
 
             text_reference = COALESCE(
                 sermons.text_reference,
