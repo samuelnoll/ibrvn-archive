@@ -213,13 +213,12 @@ def extract_title(title):
     if " - " not in title:
         return ""
 
-    first = title.split(" - ")[0].strip()
+    first = title.rsplit(" - ", 1)[0].strip()
 
     if first.lower().startswith("pregação"):
         return ""
 
     return first
-
 
 def run():
 
