@@ -108,14 +108,14 @@ def extract_serie_and_preacher(playlists):
 
     return serie, preacher_playlist
 
-def extract_publish_date(published_at):
+def extract_date(date_at):
 
-    if not published_at:
+    if not date_at:
         return ""
 
     try:
         dt = datetime.fromisoformat(
-            published_at.replace("Z", "+00:00")
+            date_at.replace("Z", "+00:00")
         )
         return dt.date().isoformat()
     except:
@@ -130,7 +130,7 @@ def choose_preaching_date(video, description):
         return date
 
     if video.get("is_live") and video.get("live_start_time"):
-        return convert_utc_to_brt(video["live_start_time"])
+        return extract_date(convert_utc_to_brt(video["live_start_time"]))
 
     return ""
 
