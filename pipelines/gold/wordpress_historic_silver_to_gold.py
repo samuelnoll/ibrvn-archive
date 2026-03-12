@@ -132,7 +132,7 @@ def upsert_rows(conn, df):
             wordpress_link,
             media_link
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 
         ON CONFLICT(preaching_date) DO UPDATE SET
             preacher_name = excluded.preacher_name,
