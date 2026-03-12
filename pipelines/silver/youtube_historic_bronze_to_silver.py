@@ -2,7 +2,7 @@ import json
 import csv
 import os
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 
 INPUT_JSON = "data/bronze/youtube_videos.json"
 OUTPUT_CSV = "data/silver/youtube_sermons.csv"
@@ -14,9 +14,6 @@ def convert_utc_to_brt(date_str):
         return ""
 
     try:
-
-        print("RAW:", date_str)
-
         dt = datetime.fromisoformat(
             date_str.replace("Z", "+00:00")
         )
@@ -25,10 +22,7 @@ def convert_utc_to_brt(date_str):
 
         return dt.date().isoformat()
 
-    except Exception as e:
-
-        print("ERROR:", date_str, e)
-
+    except:
         return ""
 
 
