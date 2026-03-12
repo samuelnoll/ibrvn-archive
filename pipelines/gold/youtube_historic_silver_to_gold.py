@@ -139,7 +139,7 @@ def upsert_rows(conn, df):
             ),
 
             wordpress_link = COALESCE(
-                sermons.wordpress_link
+                sermons.wordpress_link,
                 excluded.wordpress_link
             ),
 
