@@ -2,11 +2,15 @@ import os
 import json
 import yaml
 import requests
+import argparse
+from datetime import datetime, timedelta
 
 API_KEY = os.environ["YOUTUBE_API_KEY"]
 
 CONFIG_PATH = "config/youtube.yaml"
-OUTPUT_PATH = "data/bronze/youtube_videos.json"
+
+HISTORIC_OUTPUT = "data/bronze/youtube_videos.json"
+WEEKLY_OUTPUT = "data/bronze/youtube_weekly_videos.json"
 
 
 def load_channel():
@@ -107,13 +111,6 @@ def fetch_playlist_items(playlist_id):
 
 def enrich_video_details(video_ids):
 
-    """
-    Consulta detalhes completos dos vídeos:
-    - liveStreamingDetails
-    - duration
-    - viewCount
-    """
-
     url = "https://www.googleapis.com/youtube/v3/videos"
 
     enriched = {}
@@ -146,7 +143,30 @@ def enrich_video_details(video_ids):
     return enriched
 
 
-def run():
+def filter_recent_videos(videos, days=30):
+
+    cutoff = datetime.utcnow() - timedelta(days=days)
+
+    filtered = []
+
+    for v in videos:
+
+        try:
+
+            published = datetime.fromisoformat(
+                v["published_at"].replace("Z", "+00:00")
+            )
+
+            if published.replace(tzinfo=None) >= cutoff:
+                filtered.append(v)
+
+        except:
+            pass
+
+    return filtered
+
+
+def run(mode):
 
     channel_id = load_channel()
 
@@ -155,6 +175,12 @@ def run():
     print("Downloading uploads playlist...")
 
     videos = fetch_playlist_items(uploads_playlist)
+
+    if mode == "weekly":
+
+        print("Filtering last 30 days videos...")
+
+        videos = filter_recent_videos(videos)
 
     video_map = {v["video_id"]: v for v in videos}
 
@@ -196,7 +222,9 @@ def run():
 
     os.makedirs("data/bronze", exist_ok=True)
 
-    with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
+    output_path = HISTORIC_OUTPUT if mode == "historic" else WEEKLY_OUTPUT
+
+    with open(output_path, "w", encoding="utf-8") as f:
 
         json.dump(
             list(video_map.values()),
@@ -209,4 +237,15 @@ def run():
 
 
 if __name__ == "__main__":
-    run()
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        "--mode",
+        choices=["historic", "weekly"],
+        default="historic"
+    )
+
+    args = parser.parse_args()
+
+    run(args.mode)

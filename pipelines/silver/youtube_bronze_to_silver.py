@@ -2,10 +2,14 @@ import json
 import csv
 import os
 import re
+import argparse
 from datetime import datetime, timedelta
 
-INPUT_JSON = "data/bronze/youtube_videos.json"
-OUTPUT_CSV = "data/silver/youtube_sermons.csv"
+HISTORIC_INPUT = "data/bronze/youtube_videos.json"
+WEEKLY_INPUT = "data/bronze/youtube_weekly_videos.json"
+
+HISTORIC_OUTPUT = "data/silver/youtube_sermons.csv"
+WEEKLY_OUTPUT = "data/silver/youtube_weekly_sermons.csv"
 
 
 def convert_utc_to_brt(date_str):
@@ -94,13 +98,11 @@ def extract_serie_and_preacher(playlists):
 
         if p.lower().startswith("série"):
 
-            # extrair pregador dentro de []
             m = re.search(r'\[(.*?)\]', p)
 
             if m:
                 preacher_playlist = m.group(1).strip()
 
-            # remover "Série" e o conteúdo []
             s = re.sub(r'\[.*?\]', '', p)
             s = s.replace("Série", "").strip()
 
@@ -132,9 +134,12 @@ def is_sermon(title):
     return title.count("|") >= 2
 
 
-def run():
+def run(mode):
 
-    with open(INPUT_JSON, encoding="utf-8") as f:
+    input_path = HISTORIC_INPUT if mode == "historic" else WEEKLY_INPUT
+    output_path = HISTORIC_OUTPUT if mode == "historic" else WEEKLY_OUTPUT
+
+    with open(input_path, encoding="utf-8") as f:
         data = json.load(f)
 
     rows = []
@@ -177,7 +182,7 @@ def run():
 
     os.makedirs("data/silver", exist_ok=True)
 
-    with open(OUTPUT_CSV, "w", newline="", encoding="utf-8") as f:
+    with open(output_path, "w", newline="", encoding="utf-8") as f:
 
         writer = csv.DictWriter(
             f,
@@ -201,4 +206,15 @@ def run():
 
 
 if __name__ == "__main__":
-    run()
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        "--mode",
+        choices=["historic", "weekly"],
+        default="historic"
+    )
+
+    args = parser.parse_args()
+
+    run(args.mode)

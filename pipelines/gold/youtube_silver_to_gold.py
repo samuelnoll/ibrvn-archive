@@ -2,8 +2,11 @@ import sqlite3
 import pandas as pd
 import unicodedata
 import yaml
+import argparse
 
-CSV_PATH = "data/silver/youtube_sermons.csv"
+HISTORIC_CSV = "data/silver/youtube_sermons.csv"
+WEEKLY_CSV = "data/silver/youtube_weekly_sermons.csv"
+
 DB_PATH = "data/gold/sermons.db"
 
 
@@ -150,9 +153,11 @@ def upsert_rows(conn, df):
         """, tuple(row))
 
 
-def run():
+def run(mode):
 
-    df = pd.read_csv(CSV_PATH).fillna("")
+    csv_path = HISTORIC_CSV if mode == "historic" else WEEKLY_CSV
+
+    df = pd.read_csv(csv_path).fillna("")
 
     df_gold = transform_dataframe(df)
 
@@ -170,4 +175,15 @@ def run():
 
 
 if __name__ == "__main__":
-    run()
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        "--mode",
+        choices=["historic", "weekly"],
+        default="historic"
+    )
+
+    args = parser.parse_args()
+
+    run(args.mode)
