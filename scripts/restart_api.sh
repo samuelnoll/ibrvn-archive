@@ -11,7 +11,7 @@ echo "API restart started $(date)"
 echo "--------------------------------------"
 
 # atualizar código
-git pull
+git pull origin main
 
 # parar API se estiver rodando
 if [ -f "$PID_FILE" ]; then
