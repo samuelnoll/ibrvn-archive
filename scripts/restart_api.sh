@@ -2,7 +2,7 @@
 
 PROJECT_DIR="/opt/sermon-platform"
 PID_FILE="$PROJECT_DIR/api.pid"
-LOG_FILE="$PROJECT_DIR/logs/api.log"
+LOG_FILE="$PROJECT_DIR/logs/api/api.log"
 
 cd $PROJECT_DIR
 
@@ -28,7 +28,7 @@ fi
 
 # iniciar API
 echo "Starting API..."
-
+mkdir -p logs/api
 cd $PROJECT_DIR
 source venv/bin/activate
 nohup uvicorn api.main:app --host 0.0.0.0 --port 8000 \
