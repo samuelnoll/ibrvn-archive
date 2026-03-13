@@ -1,105 +1,165 @@
-from fastapi import FastAPI
-import sqlite3
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, Request
+from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
+
+from .queries import *
 
 app = FastAPI()
 
-DB_PATH = "data/gold/sermons.db"
+templates = Jinja2Templates(directory="api/templates")
+
+app.mount("/static", StaticFiles(directory="api/static"), name="static")
 
 
-def get_conn():
-    return sqlite3.connect(DB_PATH)
+@app.get("/")
+def home(request: Request):
 
+    sermons = get_recent_sermons()
 
-@app.get("/sermons")
-
-def list_sermons(limit: int = 50):
-
-    conn = get_conn()
-
-    rows = conn.execute("""
-        SELECT body_date, preacher_name, text_reference, file_path, youtube_link
-        FROM sermons
-        ORDER BY body_date DESC
-        LIMIT ?
-    """, (limit,)).fetchall()
-
-    conn.close()
-
-    return rows
+    return templates.TemplateResponse(
+        "home.html",
+        {
+            "request": request,
+            "sermons": sermons,
+            "last_update": get_last_update()
+        }
+    )
 
 
 @app.get("/search")
+def search(request: Request, q: str):
 
-def search(q: str):
+    sermons = search_sermons(q)
 
-    conn = get_conn()
+    return templates.TemplateResponse(
+        "sermons.html",
+        {
+            "request": request,
+            "sermons": sermons,
+            "title": f"Search: {q}",
+            "last_update": get_last_update()
+        }
+    )
 
-    rows = conn.execute("""
-        SELECT
-            s.body_date,
-            s.preacher_name,
-            s.text_reference,
-            s.file_path,
-            s.youtube_link
 
-        FROM sermons_search f
-        JOIN sermons s
-        ON f.body_date = s.body_date
+@app.get("/books")
+def books(request: Request):
 
-        WHERE sermons_search MATCH ?
+    rows = get_books()
 
-        ORDER BY s.body_date DESC
-        LIMIT 50
-    """, (q,)).fetchall()
+    return templates.TemplateResponse(
+        "books.html",
+        {
+            "request": request,
+            "books": rows,
+            "last_update": get_last_update()
+        }
+    )
 
-    conn.close()
 
-    return rows
+@app.get("/books/{book}")
+def book(request: Request, book: str):
 
-@app.get("/search_html", response_class=HTMLResponse)
-def search_html(q: str = ""):
+    sermons = sermons_by_book(book)
 
-    conn = get_conn()
+    return templates.TemplateResponse(
+        "sermons.html",
+        {
+            "request": request,
+            "sermons": sermons,
+            "title": book,
+            "last_update": get_last_update()
+        }
+    )
 
-    rows = conn.execute("""
-        SELECT
-            s.body_date,
-            s.preacher_name,
-            s.text_reference,
-            s.file_path,
-            s.youtube_link
 
-        FROM sermons_search f
-        JOIN sermons s
-        ON f.body_date = s.body_date
+@app.get("/series")
+def series(request: Request):
 
-        WHERE sermons_search MATCH ?
+    rows = get_series()
 
-        ORDER BY bm25(sermons_search)
+    return templates.TemplateResponse(
+        "series.html",
+        {
+            "request": request,
+            "series": rows,
+            "last_update": get_last_update()
+        }
+    )
 
-    """, (q,)).fetchall()
 
-    conn.close()
+@app.get("/series/{serie}")
+def serie(request: Request, serie: str):
 
-    html = ""
+    sermons = sermons_by_series(serie)
 
-    for r in rows:
+    return templates.TemplateResponse(
+        "sermons.html",
+        {
+            "request": request,
+            "sermons": sermons,
+            "title": serie,
+            "last_update": get_last_update()
+        }
+    )
 
-        date, preacher, text, mp3, youtube = r
 
-        link = mp3 if mp3 else youtube
+@app.get("/preachers")
+def preachers(request: Request):
 
-        html += f"""
-        <div class="sermon">
-            <div class="date">{date}</div>
-            <b>{preacher}</b><br>
-            {text}<br>
-            <a href="{link}" target="_blank">▶ ouvir</a>
-        </div>
-        """
+    rows = get_preachers()
 
-    return html
+    return templates.TemplateResponse(
+        "preachers.html",
+        {
+            "request": request,
+            "preachers": rows,
+            "last_update": get_last_update()
+        }
+    )
 
-app.mount("/", StaticFiles(directory="web", html=True), name="web")
+
+@app.get("/preachers/{preacher}")
+def preacher(request: Request, preacher: str):
+
+    sermons = sermons_by_preacher(preacher)
+
+    return templates.TemplateResponse(
+        "sermons.html",
+        {
+            "request": request,
+            "sermons": sermons,
+            "title": preacher,
+            "last_update": get_last_update()
+        }
+    )
+
+
+@app.get("/stats")
+def stats(request: Request):
+
+    s = get_stats()
+
+    return templates.TemplateResponse(
+        "stats.html",
+        {
+            "request": request,
+            "stats": s,
+            "last_update": get_last_update()
+        }
+    )
+
+
+@app.get("/timeline")
+def tl(request: Request):
+
+    rows = timeline()
+
+    return templates.TemplateResponse(
+        "timeline.html",
+        {
+            "request": request,
+            "timeline": rows,
+            "last_update": get_last_update()
+        }
+    )
