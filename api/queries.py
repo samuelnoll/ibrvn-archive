@@ -191,3 +191,22 @@ def timeline():
     conn.close()
 
     return rows
+
+def get_home_stats():
+
+    conn = get_db()
+
+    row = conn.execute("""
+
+    SELECT
+        COUNT(*) as sermons,
+        COUNT(DISTINCT preacher_name) as preachers,
+        COUNT(DISTINCT serie) as series
+
+    FROM sermons
+
+    """).fetchone()
+
+    conn.close()
+
+    return row

@@ -2,51 +2,63 @@
 
 {% block content %}
 
-<form action="/search">
+<div class="home-stats">
 
-<input name="q" placeholder="Buscar pregações">
+{{ stats.sermons }} pregações •
+{{ stats.preachers }} pregadores •
+{{ stats.series }} séries
 
-</form>
+</div>
+
+<input
+id="search"
+placeholder="Buscar pregações..."
+autocomplete="off">
+
+<div id="results"></div>
 
 {% for s in sermons %}
 
 <div class="sermon">
 
-<div class="date">{{ s.preaching_date }}</div>
+<div class="date">
+{{ s.preaching_date }}
+</div>
 
-<div class="title">{{ s.title }}</div>
+<div class="title">
+{{ s.title }}
+</div>
 
+{% if s.text_reference %}
 <div class="text">
 
-<span class="bible">
+<a class="bible-link"
+href="/books/{{ s.text_reference.split(' ')[0] }}">
 
-<a href="/books/{{ s.text_reference.split(' ')[0] }}">
-📖
+📖 {{ s.text_reference }}
+
 </a>
 
-{{ s.text_reference }}
-
-</span>
-
 </div>
+{% endif %}
 
 <div class="meta">
 
 <a class="meta-link"
 href="/preachers/{{ s.preacher_name }}">
 
-{{ s.preacher_name }}
+👤 {{ s.preacher_name }}
 
 </a>
 
 {% if s.serie %}
 
-• 
+<br>
 
 <a class="meta-link"
 href="/series/{{ s.serie }}">
 
-{{ s.serie }}
+📚 Série {{ s.serie }}
 
 </a>
 
@@ -57,15 +69,15 @@ href="/series/{{ s.serie }}">
 <div class="links">
 
 {% if s.media_link %}
-<a href="{{ s.media_link }}">Áudio</a>
+<a href="{{ s.media_link }}">🎧 Áudio</a>
 {% endif %}
 
 {% if s.youtube_link %}
-<a href="{{ s.youtube_link }}">YouTube</a>
+<a href="{{ s.youtube_link }}">▶ YouTube</a>
 {% endif %}
 
 {% if s.wordpress_link %}
-<a href="{{ s.wordpress_link }}">Site</a>
+<a href="{{ s.wordpress_link }}">🔗 Página</a>
 {% endif %}
 
 </div>
@@ -75,3 +87,53 @@ href="/series/{{ s.serie }}">
 {% endfor %}
 
 {% endblock %}
+
+<script>
+
+const input = document.getElementById("search")
+const results = document.getElementById("results")
+
+input.addEventListener("input", async () => {
+
+const q = input.value
+
+if(q.length < 2){
+
+results.innerHTML = ""
+return
+
+}
+
+const r = await fetch(`/api/search?q=${q}`)
+const data = await r.json()
+
+results.innerHTML = ""
+
+data.forEach(s => {
+
+const div = document.createElement("div")
+
+div.className = "sermon"
+
+div.innerHTML = `
+
+<div class="date">${s.preaching_date}</div>
+
+<div class="title">${s.title}</div>
+
+<div class="text">📖 ${s.text_reference}</div>
+
+<div class="meta">
+👤 ${s.preacher_name}
+${s.serie ? " • 📚 " + s.serie : ""}
+</div>
+
+`
+
+results.appendChild(div)
+
+})
+
+})
+
+</script>

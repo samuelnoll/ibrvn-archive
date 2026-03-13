@@ -8,41 +8,44 @@
 
 <div class="sermon">
 
-<div class="date">{{ s.preaching_date }}</div>
+<div class="date">
+{{ s.preaching_date }}
+</div>
 
-<div class="title">{{ s.title }}</div>
+<div class="title">
+{{ s.title }}
+</div>
 
+{% if s.text_reference %}
 <div class="text">
 
-<span class="bible">
+<a class="bible-link"
+href="/books/{{ s.text_reference.split(' ')[0] }}">
 
-<a href="/books/{{ s.text_reference.split(' ')[0] }}">
-📖
+📖 {{ s.text_reference }}
+
 </a>
 
-{{ s.text_reference }}
-
-</span>
-
 </div>
+{% endif %}
 
 <div class="meta">
 
 <a class="meta-link"
 href="/preachers/{{ s.preacher_name }}">
 
-{{ s.preacher_name }}
+👤 {{ s.preacher_name }}
 
 </a>
 
 {% if s.serie %}
 
-• 
+<br>
 
 <a class="meta-link"
 href="/series/{{ s.serie }}">
 
-{{ s.serie }}
+📚 Série {{ s.serie }}
 
 </a>
 
@@ -53,15 +56,15 @@ href="/series/{{ s.serie }}">
 <div class="links">
 
 {% if s.media_link %}
-<a href="{{ s.media_link }}">Áudio</a>
+<a href="{{ s.media_link }}">🎧 Áudio</a>
 {% endif %}
 
 {% if s.youtube_link %}
-<a href="{{ s.youtube_link }}">YouTube</a>
+<a href="{{ s.youtube_link }}">▶ YouTube</a>
 {% endif %}
 
 {% if s.wordpress_link %}
-<a href="{{ s.wordpress_link }}">Site</a>
+<a href="{{ s.wordpress_link }}">🔗 Página</a>
 {% endif %}
 
 </div>

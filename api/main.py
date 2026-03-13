@@ -15,12 +15,14 @@ app.mount("/static", StaticFiles(directory="api/static"), name="static")
 def home(request: Request):
 
     sermons = get_recent_sermons()
+    stats = get_home_stats()
 
     return templates.TemplateResponse(
         "home.html",
         {
             "request": request,
             "sermons": sermons,
+            "stats": stats,
             "last_update": get_last_update()
         }
     )
