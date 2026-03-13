@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<link rel="stylesheet" href="/static/style.css">
+
+<title>IBRVN Archive</title>
+
+</head>
+
+<body>
+
+<header>
+
+<h1>IBRVN Archive</h1>
+
+<nav>
+
+<a href="/">Home</a>
+<a href="/books">Books</a>
+<a href="/series">Series</a>
+<a href="/preachers">Preachers</a>
+<a href="/timeline">Timeline</a>
+<a href="/stats">Statistics</a>
+
+</nav>
+
+<div class="update">
+
+Last update: {{ last_update }}
+
+</div>
+
+</header>
+
+<main>
+
+{% block content %}{% endblock %}
+
+</main>
+
+</body>
+
+</html>

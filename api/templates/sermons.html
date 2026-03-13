@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>{{ title }}</h2>
+
+{% for s in sermons %}
+
+<div class="sermon">
+
+<div class="date">{{ s.preaching_date }}</div>
+
+<div class="title">{{ s.title }}</div>
+
+<div class="text">{{ s.text_reference }}</div>
+
+<div class="meta">
+
+{{ s.preacher_name }}
+
+{% if s.serie %}
+• {{ s.serie }}
+{% endif %}
+
+</div>
+
+<div class="links">
+
+{% if s.media_link %}
+<audio controls src="{{ s.media_link }}"></audio>
+{% endif %}
+
+{% if s.youtube_link %}
+<a href="{{ s.youtube_link }}">YouTube</a>
+{% endif %}
+
+{% if s.wordpress_link %}
+<a href="{{ s.wordpress_link }}">Post</a>
+{% endif %}
+
+</div>
+
+</div>
+
+{% endfor %}
+
+{% endblock %}

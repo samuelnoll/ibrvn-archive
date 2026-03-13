@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>Series</h2>
+
+<ul>
+
+{% for s in series %}
+
+<li>
+
+<a href="/series/{{ s.serie }}">
+
+{{ s.serie }} ({{ s.n }})
+
+</a>
+
+</li>
+
+{% endfor %}
+
+</ul>
+
+{% endblock %}

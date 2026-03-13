@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>Preachers</h2>
+
+<ul>
+
+{% for p in preachers %}
+
+<li>
+
+<a href="/preachers/{{ p.preacher_name }}">
+
+{{ p.preacher_name }} ({{ p.n }})
+
+</a>
+
+</li>
+
+{% endfor %}
+
+</ul>
+
+{% endblock %}
