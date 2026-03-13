@@ -90,6 +90,7 @@ href="/series/{{ s.serie }}">
 
 const input = document.getElementById("search")
 const results = document.getElementById("results")
+const initial = document.getElementById("initial-sermons")
 
 input.addEventListener("input", async () => {
 
@@ -98,6 +99,7 @@ const q = input.value
 if(q.length < 2){
 
 results.innerHTML = ""
+if(initial) initial.style.display = "block"
 return
 
 }
@@ -107,23 +109,56 @@ const data = await r.json()
 
 results.innerHTML = ""
 
+if(initial) initial.style.display = "none"
+
 data.forEach(s => {
 
 const div = document.createElement("div")
-
 div.className = "sermon"
 
 div.innerHTML = `
 
 <div class="date">${s.preaching_date}</div>
 
-<div class="title">${s.title}</div>
+<div class="title">${s.title ?? ""}</div>
 
-<div class="text">📖 ${s.text_reference}</div>
+${s.text_reference ? `
+<div class="text">
+<a class="bible-link" href="/books/${encodeURIComponent(s.text_reference.split(" ")[0])}">
+📖 ${s.text_reference}
+</a>
+</div>
+` : ""}
 
 <div class="meta">
+
+<a class="meta-link"
+href="/preachers/${encodeURIComponent(s.preacher_name)}">
+
 👤 ${s.preacher_name}
-${s.serie ? " • 📚 " + s.serie : ""}
+
+</a>
+
+${s.serie ? `
+ • 
+<a class="meta-link"
+href="/series/${encodeURIComponent(s.serie)}">
+
+📚 Série ${s.serie}
+
+</a>
+` : ""}
+
+</div>
+
+<div class="links">
+
+${s.media_link ? `<a href="${s.media_link}">🎧 Áudio</a>` : ""}
+
+${s.youtube_link ? `<a href="${s.youtube_link}">▶ YouTube</a>` : ""}
+
+${s.wordpress_link ? `<a href="${s.wordpress_link}">🔗 Página</a>` : ""}
+
 </div>
 
 `

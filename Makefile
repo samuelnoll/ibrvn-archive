@@ -1,4 +1,4 @@
-.PHONY: install pipeline api clean dev export quality youtube-weekly youtube-historic wordpress-historic
+.PHONY: install pipeline api clean dev export quality job-youtube-weekly job-youtube-historic job-wordpress-historic job-historic
 
 install:
 	pip install -r requirements.txt
@@ -18,11 +18,15 @@ export:
 quality:
 	python scripts/sermon_data_quality.py
 
-youtube-weekly:
+job-youtube-weekly:
 	python -m jobs.youtube_job --mode weekly
 
-youtube-historic:
+job-youtube-historic:
 	python -m jobs.youtube_job --mode historic
 
-wordpress-historic:
+job-wordpress-historic:
+	python -m jobs.wordpress_job
+
+job-historic:
+	python -m jobs.youtube_job --mode historic
 	python -m jobs.wordpress_job
