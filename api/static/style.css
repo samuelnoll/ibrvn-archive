@@ -134,12 +134,3 @@ border-radius: 4px;
 margin-top: 10px;
 
 }
-
-.preacher,
-.serie {
-  display: inline;
-}
-
-.preacher::after {
-  content: " • ";
-}
