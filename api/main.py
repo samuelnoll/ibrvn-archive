@@ -165,3 +165,13 @@ def tl(request: Request):
             "last_update": get_last_update()
         }
     )
+
+@app.get("/api/search")
+def api_search(q: str):
+
+    sermons = search_sermons(q)
+
+    return [
+        dict(s)
+        for s in sermons[:20]
+    ]
