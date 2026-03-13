@@ -1,10 +1,7 @@
-.PHONY: install pipeline api clean dev
+.PHONY: install pipeline api clean dev export quality youtube-weekly youtube-historic wordpress-historic
 
 install:
 	pip install -r requirements.txt
-
-pipeline:
-	python -m pipelines.wordpress_historic_pipeline
 
 api:
 	uvicorn api.main:app --host 0.0.0.0 --port 8000
@@ -20,3 +17,12 @@ export:
 
 quality:
 	python scripts/sermon_data_quality.py
+
+youtube-weekly:
+	python -m jobs.youtube_job --mode weekly
+
+youtube-historic:
+	python -m jobs.youtube_job --mode historic
+
+wordpress-historic:
+	python -m jobs.wordpress_job
