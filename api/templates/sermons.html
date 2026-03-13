@@ -12,14 +12,40 @@
 
 <div class="title">{{ s.title }}</div>
 
-<div class="text">{{ s.text_reference }}</div>
+<div class="text">
+
+<span class="bible">
+
+<a href="/books/{{ s.text_reference.split(' ')[0] }}">
+📖
+</a>
+
+{{ s.text_reference }}
+
+</span>
+
+</div>
 
 <div class="meta">
 
+<a class="meta-link"
+href="/preachers/{{ s.preacher_name }}">
+
 {{ s.preacher_name }}
 
+</a>
+
 {% if s.serie %}
-• {{ s.serie }}
+
+• 
+
+<a class="meta-link"
+href="/series/{{ s.serie }}">
+
+{{ s.serie }}
+
+</a>
+
 {% endif %}
 
 </div>
@@ -27,7 +53,7 @@
 <div class="links">
 
 {% if s.media_link %}
-<audio controls src="{{ s.media_link }}"></audio>
+<a href="{{ s.media_link }}">Áudio</a>
 {% endif %}
 
 {% if s.youtube_link %}
@@ -35,7 +61,7 @@
 {% endif %}
 
 {% if s.wordpress_link %}
-<a href="{{ s.wordpress_link }}">Post</a>
+<a href="{{ s.wordpress_link }}">Site</a>
 {% endif %}
 
 </div>

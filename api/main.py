@@ -36,7 +36,7 @@ def search(request: Request, q: str):
         {
             "request": request,
             "sermons": sermons,
-            "title": f"Search: {q}",
+            "title": f"Busca: {q}",
             "last_update": get_last_update()
         }
     )

@@ -51,3 +51,46 @@ font-size: 12px;
 color: #666;
 
 }
+
+.bible a {
+
+text-decoration: none;
+margin-right: 6px;
+
+}
+
+.meta-link {
+
+text-decoration: none;
+color: #444;
+
+}
+
+.meta-link:hover {
+
+text-decoration: underline;
+
+}
+
+.links a {
+
+margin-right: 12px;
+font-size: 14px;
+color: #444;
+text-decoration: none;
+
+}
+
+.links a:hover {
+
+text-decoration: underline;
+
+}
+
+.text {
+
+margin-top: 4px;
+margin-bottom: 6px;
+font-weight: 500;
+
+}
