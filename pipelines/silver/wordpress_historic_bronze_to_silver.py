@@ -3,10 +3,17 @@ import csv
 import re
 import os
 import unicodedata
+import glob
 from datetime import datetime
 from difflib import SequenceMatcher
 
-INPUT_XML = "data/bronze/ibrvn.WordPress.2026-03-09.xml"
+
+files = glob.glob("data/bronze/ibrvn.WordPress.*.xml")
+
+if not files:
+    raise FileNotFoundError("Nenhum XML encontrado em data/bronze")
+
+INPUT_XML = sorted(files)[-1]
 OUTPUT_CSV = "data/silver/wordpress_sermons.csv"
 
 MAX_DATE = "2021-12-31"
