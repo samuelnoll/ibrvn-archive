@@ -137,34 +137,6 @@ def preacher(request: Request, preacher: str):
     )
 
 
-@app.get("/stats")
-def stats(request: Request):
-
-    s = get_stats()
-
-    return templates.TemplateResponse(
-        "stats.html",
-        {
-            "request": request,
-            "stats": s,
-            "last_update": get_last_update()
-        }
-    )
-
-
-@app.get("/timeline")
-def tl(request: Request):
-
-    rows = timeline()
-
-    return templates.TemplateResponse(
-        "timeline.html",
-        {
-            "request": request,
-            "timeline": rows,
-            "last_update": get_last_update()
-        }
-    )
 
 @app.get("/api/search")
 def api_search(q: str):

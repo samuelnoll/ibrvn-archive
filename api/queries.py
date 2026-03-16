@@ -164,48 +164,6 @@ def sermons_by_preacher(preacher):
     return rows
 
 
-def get_stats():
-
-    conn = get_db()
-
-    total = conn.execute(
-        "SELECT COUNT(*) FROM sermons"
-    ).fetchone()[0]
-
-    preachers = conn.execute(
-        "SELECT COUNT(DISTINCT preacher_name) FROM sermons"
-    ).fetchone()[0]
-
-    series = conn.execute(
-        "SELECT COUNT(DISTINCT serie) FROM sermons WHERE serie != ''"
-    ).fetchone()[0]
-
-    conn.close()
-
-    return {
-        "total": total,
-        "preachers": preachers,
-        "series": series
-    }
-
-
-def timeline():
-
-    conn = get_db()
-
-    rows = conn.execute("""
-        SELECT
-        strftime('%Y', preaching_date) as year,
-        COUNT(*) as n
-        FROM sermons
-        GROUP BY year
-        ORDER BY year
-    """).fetchall()
-
-    conn.close()
-
-    return rows
-
 def get_home_stats():
 
     conn = get_db()
