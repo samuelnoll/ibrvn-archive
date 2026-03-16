@@ -1,6 +1,6 @@
 import sqlite3
 
-DB_PATH = "data/gold/sermons.db"
+DB_PATH = "data/gold/archive.db"
 
 
 def create_indexes(conn):

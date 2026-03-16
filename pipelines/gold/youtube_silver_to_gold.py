@@ -7,7 +7,7 @@ import argparse
 HISTORIC_CSV = "data/silver/youtube_sermons.csv"
 WEEKLY_CSV = "data/silver/youtube_weekly_sermons.csv"
 
-DB_PATH = "data/gold/sermons.db"
+DB_PATH = "data/gold/archive.db"
 
 
 def load_preacher_map():

@@ -1,7 +1,7 @@
 import sqlite3
 from datetime import datetime, timedelta
 
-DB_PATH = "data/gold/sermons.db"
+DB_PATH = "data/gold/archive.db"
 
 
 def total_rows(conn):

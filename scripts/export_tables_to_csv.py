@@ -2,7 +2,7 @@ import sqlite3
 import csv
 import os
 
-DB_PATH = "data/gold/sermons.db"
+DB_PATH = "data/gold/archive.db"
 OUTPUT_DIR = "data/exports"
 
 

@@ -6,4 +6,4 @@ paths:
 
 database:
 
-  gold_db: data/gold/sermons.db
+  gold_db: data/gold/archive.db
