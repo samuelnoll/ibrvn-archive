@@ -56,7 +56,20 @@ def get_books():
 
     rows = conn.execute("""
         SELECT
-        SUBSTR(text_reference,1,INSTR(text_reference,' ')-1) as book,
+        TRIM(
+            CASE
+                WHEN SUBSTR(text_reference,1,INSTR(text_reference,' ')-1) IN ('1','2','3')
+                THEN
+                    SUBSTR(
+                        text_reference,
+                        1,
+                        INSTR(text_reference,' ') +
+                        INSTR(SUBSTR(text_reference, INSTR(text_reference,' ')+1),' ')
+                    )
+                ELSE
+                    SUBSTR(text_reference,1,INSTR(text_reference,' ')-1)
+            END
+        ) AS book,
         COUNT(*) as n
         FROM sermons
         WHERE text_reference != ''
