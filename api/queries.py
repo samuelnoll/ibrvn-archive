@@ -73,6 +73,7 @@ def get_books():
         COUNT(*) as n
         FROM sermons
         WHERE text_reference != ''
+        AND book NOT IN ('','1','2','3')
         GROUP BY book
         ORDER BY book
     """).fetchall()
