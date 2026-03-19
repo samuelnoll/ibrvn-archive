@@ -16,7 +16,7 @@ Lakehouse architectures**.
 Since it is developed to run in a **Raspberry Pi 3 B+ (1GB RAM)**, all Data Lake and API components 
 have to be **high performance**.
 
-The Web Interface is running for testing here (HTTP only): [raspi.servehttp.com](http://raspi.servehttp.com)
+The Web Interface is running for testing here (HTTP only): [raspi.servehttp.com:8000](http://raspi.servehttp.com:8000)
 
 ------------------------------------------------------------------------
 
