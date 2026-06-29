@@ -183,6 +183,25 @@ def get_preachers():
     return rows
 
 
+def get_years():
+
+    conn = get_db()
+
+    rows = conn.execute("""
+        SELECT
+        SUBSTR(preaching_date, 1, 4) as year,
+        COUNT(*) as n
+        FROM sermons
+        WHERE preaching_date != ''
+        GROUP BY year
+        ORDER BY year DESC
+    """).fetchall()
+
+    conn.close()
+
+    return rows
+
+
 def sermons_by_preacher(preacher):
 
     conn = get_db()
@@ -193,6 +212,22 @@ def sermons_by_preacher(preacher):
         WHERE preacher_name = ?
         ORDER BY preaching_date DESC
     """, (preacher,)).fetchall()
+
+    conn.close()
+
+    return serialize_sermons(rows)
+
+
+def sermons_by_year(year):
+
+    conn = get_db()
+
+    rows = conn.execute("""
+        SELECT *
+        FROM sermons
+        WHERE SUBSTR(preaching_date, 1, 4) = ?
+        ORDER BY preaching_date DESC
+    """, (year,)).fetchall()
 
     conn.close()
 
