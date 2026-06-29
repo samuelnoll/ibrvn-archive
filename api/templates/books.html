@@ -3,26 +3,18 @@
 {% block content %}
 
 <section class="list-page">
-
-<div class="list-page-header">
 <h2>Livros da Biblia</h2>
-<p>Explore as pregacoes organizadas por livro e veja quantas mensagens temos em cada um.</p>
-</div>
 
-<div class="entity-list">
-
+<ul class="simple-card-list">
 {% for b in books %}
-
-<a class="entity-card" href="/books/{{ b.book }}">
-<div class="entity-card-kicker">Livro</div>
-<div class="entity-card-title">{{ b.book }}</div>
-<div class="entity-card-meta">{{ b.n }} pregacoes</div>
+<li class="simple-card-item">
+<a class="simple-card-link" href="/books/{{ b.book | urlencode }}">
+<span class="simple-card-title">{{ b.book }}</span>
+<span class="simple-card-count">{{ b.n }} pregacoes</span>
 </a>
-
+</li>
 {% endfor %}
-
-</div>
-
+</ul>
 </section>
 
 {% endblock %}
