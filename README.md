@@ -60,7 +60,7 @@ server**.
 
 The platform ingests sermon data from two independent sources:
 
--   WordPress (historical archive with MP3 files)
+-   WordPress (static historical archive with MP3 files)
 -   YouTube (modern livestream sermons)
 
 These sources are processed through a **multi-layer data pipeline** using **Medallion Data Architecture** and
@@ -156,6 +156,11 @@ D --> E[(optimize_gold)]
 ## WordPress
 
 Historical sermons were originally published on the church website until 2021.
+
+This source is treated in this project as a **static historical archive**.
+It is not expected to receive ongoing updates, so the WordPress pipeline is
+kept mainly for occasional historical reprocessing rather than continuous
+ingestion.
 
 Almost all posts contain:
 
@@ -284,6 +289,10 @@ Jobs execute pipeline stages sequentially.
 # Scheduling
 
 Jobs are scheduled using **cron**.
+
+In practice, continuous scheduled ingestion is focused on the YouTube
+pipeline. The WordPress source is historical and can be reprocessed on demand
+when needed.
 
 Example schedule:
 
