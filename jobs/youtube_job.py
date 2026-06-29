@@ -5,6 +5,11 @@ import sys
 import argparse
 from datetime import datetime
 
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
 from pipelines.bronze.youtube_source_to_bronze import run as source_to_bronze
 from pipelines.silver.youtube_bronze_to_silver import run as bronze_to_silver
 from pipelines.gold.youtube_silver_to_gold import run as silver_to_gold
@@ -16,9 +21,13 @@ script_name = os.path.splitext(os.path.basename(__file__))[0]
 
 def setup_logger(mode):
 
-    os.makedirs("logs/jobs", exist_ok=True)
+    log_dir = os.path.join(PROJECT_ROOT, "logs", "jobs")
+    os.makedirs(log_dir, exist_ok=True)
 
-    log_file = f"logs/jobs/{script_name}_{mode}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+    log_file = os.path.join(
+        log_dir,
+        f"{script_name}_{mode}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+    )
 
     logging.basicConfig(
         level=logging.INFO,
