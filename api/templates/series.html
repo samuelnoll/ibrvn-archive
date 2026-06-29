@@ -2,24 +2,27 @@
 
 {% block content %}
 
-<h2>Séries</h2>
+<section class="list-page">
 
-<ul>
+<div class="list-page-header">
+<h2>Series</h2>
+<p>Navegue pelas series completas e encontre rapidamente todas as mensagens relacionadas.</p>
+</div>
+
+<div class="entity-list">
 
 {% for s in series %}
 
-<li>
-
-<a href="/series/{{ s.serie }}">
-
-{{ s.serie }} ({{ s.n }})
-
+<a class="entity-card" href="/series/{{ s.serie }}">
+<div class="entity-card-kicker">Serie</div>
+<div class="entity-card-title">{{ s.serie }}</div>
+<div class="entity-card-meta">{{ s.n }} pregacoes</div>
 </a>
-
-</li>
 
 {% endfor %}
 
-</ul>
+</div>
+
+</section>
 
 {% endblock %}

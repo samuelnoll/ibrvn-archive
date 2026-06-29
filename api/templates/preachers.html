@@ -2,24 +2,27 @@
 
 {% block content %}
 
-<h2>Pregadores</h2>
+<section class="list-page">
 
-<ul>
+<div class="list-page-header">
+<h2>Pregadores</h2>
+<p>Veja os pregadores cadastrados e acesse todas as mensagens de cada um em um clique.</p>
+</div>
+
+<div class="entity-list">
 
 {% for p in preachers %}
 
-<li>
-
-<a href="/preachers/{{ p.preacher_name }}">
-
-{{ p.preacher_name }} ({{ p.n }})
-
+<a class="entity-card" href="/preachers/{{ p.preacher_name }}">
+<div class="entity-card-kicker">Pregador</div>
+<div class="entity-card-title">{{ p.preacher_name }}</div>
+<div class="entity-card-meta">{{ p.n }} pregacoes</div>
 </a>
-
-</li>
 
 {% endfor %}
 
-</ul>
+</div>
+
+</section>
 
 {% endblock %}
