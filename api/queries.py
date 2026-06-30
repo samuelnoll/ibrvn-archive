@@ -1,6 +1,41 @@
 from .db import get_db
 
 
+def format_brazilian_date(date_str):
+
+    if not date_str:
+        return ""
+
+    parts = date_str.split("-")
+
+    if len(parts) != 3:
+        return date_str
+
+    year, month, day = parts
+
+    if len(year) != 4 or len(month) != 2 or len(day) != 2:
+        return date_str
+
+    return f"{day}/{month}/{year}"
+
+
+def serialize_sermon(row):
+
+    sermon = dict(row)
+    sermon["preaching_date"] = format_brazilian_date(
+        sermon.get("preaching_date")
+    )
+    return sermon
+
+
+def serialize_sermons(rows):
+
+    return [
+        serialize_sermon(row)
+        for row in rows
+    ]
+
+
 def get_last_update():
 
     conn = get_db()
@@ -11,7 +46,7 @@ def get_last_update():
 
     conn.close()
 
-    return row["d"]
+    return format_brazilian_date(row["d"])
 
 
 def get_recent_sermons(limit=20):
@@ -27,7 +62,7 @@ def get_recent_sermons(limit=20):
 
     conn.close()
 
-    return rows
+    return serialize_sermons(rows)
 
 
 def search_sermons(q):
@@ -47,7 +82,7 @@ def search_sermons(q):
 
     conn.close()
 
-    return rows
+    return serialize_sermons(rows)
 
 
 def get_books():
@@ -96,7 +131,7 @@ def sermons_by_book(book):
 
     conn.close()
 
-    return rows
+    return serialize_sermons(rows)
 
 
 def get_series():
@@ -129,7 +164,7 @@ def sermons_by_series(serie):
 
     conn.close()
 
-    return rows
+    return serialize_sermons(rows)
 
 
 def get_preachers():
@@ -141,6 +176,25 @@ def get_preachers():
         FROM sermons
         GROUP BY preacher_name
         ORDER BY preacher_name
+    """).fetchall()
+
+    conn.close()
+
+    return rows
+
+
+def get_years():
+
+    conn = get_db()
+
+    rows = conn.execute("""
+        SELECT
+        SUBSTR(preaching_date, 1, 4) as year,
+        COUNT(*) as n
+        FROM sermons
+        WHERE preaching_date != ''
+        GROUP BY year
+        ORDER BY year DESC
     """).fetchall()
 
     conn.close()
@@ -161,7 +215,23 @@ def sermons_by_preacher(preacher):
 
     conn.close()
 
-    return rows
+    return serialize_sermons(rows)
+
+
+def sermons_by_year(year):
+
+    conn = get_db()
+
+    rows = conn.execute("""
+        SELECT *
+        FROM sermons
+        WHERE SUBSTR(preaching_date, 1, 4) = ?
+        ORDER BY preaching_date DESC
+    """, (year,)).fetchall()
+
+    conn.close()
+
+    return serialize_sermons(rows)
 
 
 def get_home_stats():

@@ -2,24 +2,19 @@
 
 {% block content %}
 
+<section class="list-page">
 <h2>Pregadores</h2>
 
-<ul>
-
+<ul class="simple-card-list">
 {% for p in preachers %}
-
-<li>
-
-<a href="/preachers/{{ p.preacher_name }}">
-
-{{ p.preacher_name }} ({{ p.n }})
-
+<li class="simple-card-item">
+<a class="simple-card-link" href="/preachers/{{ p.preacher_name | urlencode }}">
+<span class="simple-card-title">{{ p.preacher_name }}</span>
+<span class="simple-card-count">{{ p.n }} pregacoes</span>
 </a>
-
 </li>
-
 {% endfor %}
-
 </ul>
+</section>
 
 {% endblock %}

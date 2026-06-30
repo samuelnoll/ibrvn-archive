@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<section class="list-page">
+<h2>Anos</h2>
+
+<ul class="simple-card-list">
+{% for y in years %}
+<li class="simple-card-item">
+<a class="simple-card-link" href="/years/{{ y.year }}">
+<span class="simple-card-title">{{ y.year }}</span>
+<span class="simple-card-count">{{ y.n }} pregacoes</span>
+</a>
+</li>
+{% endfor %}
+</ul>
+</section>
+
+{% endblock %}

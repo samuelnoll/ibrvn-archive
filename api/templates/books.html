@@ -2,24 +2,19 @@
 
 {% block content %}
 
-<h2>Livros da Bíblia</h2>
+<section class="list-page">
+<h2>Livros da Biblia</h2>
 
-<ul>
-
+<ul class="simple-card-list">
 {% for b in books %}
-
-<li>
-
-<a href="/books/{{ b.book }}">
-
-{{ b.book }} ({{ b.n }})
-
+<li class="simple-card-item">
+<a class="simple-card-link" href="/books/{{ b.book | urlencode }}">
+<span class="simple-card-title">{{ b.book }}</span>
+<span class="simple-card-count">{{ b.n }} pregacoes</span>
 </a>
-
 </li>
-
 {% endfor %}
-
 </ul>
+</section>
 
 {% endblock %}

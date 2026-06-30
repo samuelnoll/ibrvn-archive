@@ -2,24 +2,19 @@
 
 {% block content %}
 
-<h2>Séries</h2>
+<section class="list-page">
+<h2>Series</h2>
 
-<ul>
-
+<ul class="simple-card-list">
 {% for s in series %}
-
-<li>
-
-<a href="/series/{{ s.serie }}">
-
-{{ s.serie }} ({{ s.n }})
-
+<li class="simple-card-item">
+<a class="simple-card-link" href="/series/{{ s.serie | urlencode }}">
+<span class="simple-card-title">{{ s.serie }}</span>
+<span class="simple-card-count">{{ s.n }} pregacoes</span>
 </a>
-
 </li>
-
 {% endfor %}
-
 </ul>
+</section>
 
 {% endblock %}

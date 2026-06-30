@@ -121,6 +121,21 @@ def preachers(request: Request):
     )
 
 
+@app.get("/years")
+def years(request: Request):
+
+    rows = get_years()
+
+    return templates.TemplateResponse(
+        "years.html",
+        {
+            "request": request,
+            "years": rows,
+            "last_update": get_last_update()
+        }
+    )
+
+
 @app.get("/preachers/{preacher}")
 def preacher(request: Request, preacher: str):
 
@@ -132,6 +147,22 @@ def preacher(request: Request, preacher: str):
             "request": request,
             "sermons": sermons,
             "title": preacher,
+            "last_update": get_last_update()
+        }
+    )
+
+
+@app.get("/years/{year}")
+def year(request: Request, year: str):
+
+    sermons = sermons_by_year(year)
+
+    return templates.TemplateResponse(
+        "sermons.html",
+        {
+            "request": request,
+            "sermons": sermons,
+            "title": year,
             "last_update": get_last_update()
         }
     )
