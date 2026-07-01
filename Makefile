@@ -4,7 +4,7 @@ install:
 	pip install -r requirements.txt
 
 api:
-	uvicorn api.main:app --host 0.0.0.0 --port 8000
+	uvicorn api.main:app --host $${ARCHIVE_API_HOST:-0.0.0.0} --port $${ARCHIVE_API_PORT:-8000}
 
 clean:
 	rm -rf __pycache__

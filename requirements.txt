@@ -3,3 +3,5 @@ lxml
 fastapi
 uvicorn
 pyyaml
+jinja2
+requests

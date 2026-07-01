@@ -1,11 +1,22 @@
+import os
+import sys
 import sqlite3
 import pandas as pd
 import re
 import unicodedata
 import yaml
 
+PROJECT_ROOT = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
+
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+from archive_settings import GOLD_DB_PATH
+
 CSV_PATH = "data/silver/wordpress_sermons.csv"
-DB_PATH = "data/gold/archive.db"
+DB_PATH = str(GOLD_DB_PATH)
 
 
 def load_preacher_map():

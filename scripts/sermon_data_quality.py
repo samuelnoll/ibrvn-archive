@@ -1,7 +1,16 @@
 import sqlite3
+import os
+import sys
 from datetime import datetime, timedelta
 
-DB_PATH = "data/gold/archive.db"
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+from archive_settings import GOLD_DB_PATH
+
+DB_PATH = str(GOLD_DB_PATH)
 
 
 def total_rows(conn):

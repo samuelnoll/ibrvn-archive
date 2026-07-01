@@ -1,6 +1,7 @@
 import sqlite3
+from archive_settings import GOLD_DB_PATH
 
-DB_PATH = "data/gold/archive.db"
+DB_PATH = str(GOLD_DB_PATH)
 
 
 def get_db():

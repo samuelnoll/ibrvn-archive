@@ -1,0 +1,26 @@
+services:
+  archive-api:
+    build:
+      context: .
+    container_name: ibrvn-archive-api
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      TZ: ${TZ}
+      ARCHIVE_API_HOST: ${ARCHIVE_API_HOST}
+      ARCHIVE_API_PORT: ${ARCHIVE_API_PORT}
+      ARCHIVE_GOLD_DB_PATH: ${ARCHIVE_GOLD_DB_PATH}
+      ARCHIVE_EXPORT_DIR: ${ARCHIVE_EXPORT_DIR}
+    ports:
+      - "${ARCHIVE_API_PORT}:${ARCHIVE_API_PORT}"
+    volumes:
+      - ${ARCHIVE_DATA_HOST_PATH}:/app/data
+      - ${ARCHIVE_LOGS_HOST_PATH}:/app/logs
+    networks:
+      - homelab
+
+networks:
+  homelab:
+    name: ${HOMELAB_NETWORK}
+    external: true

@@ -385,3 +385,15 @@ Potential future extensions include:
 
 Samuel Noll\
 Data Engineer \| Software Developer
+
+------------------------------------------------------------------------
+
+# Homelab Migration
+
+For the move from the Raspberry-style setup to the Ubuntu mini PC, use the
+Docker-based intermediate step documented here:
+
+- `docs/homelab-migration.md`
+
+This stage keeps the current SQLite flow but removes the old `venv` + `nohup`
+deployment pattern and prepares the repo for the later PostgreSQL migration.
