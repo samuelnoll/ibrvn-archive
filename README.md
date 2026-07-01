@@ -66,7 +66,7 @@ Current sources:
 Current orchestration shape in `homelab-airflow`:
 
 - `ibrvn_youtube_bronze_historic`
-- `ibrvn_youtube_bronze_daily`
+- `ibrvn_youtube_bronze_weekly`
 - `ibrvn_wordpress_historic`
 - `ibrvn_metadata_silver`
 - `ibrvn_audio_enrichment`
