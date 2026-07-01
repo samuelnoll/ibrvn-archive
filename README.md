@@ -8,6 +8,11 @@ application**.
 The system powers the **IBRVN Archive**, a minimal and searchable sermon
 repository for the Igreja Batista Reformada Vida Nova.
 
+In the current homelab architecture, the runtime is split into:
+
+- a dedicated API container that reads gold data
+- a dedicated pipeline container that owns ingestion and enrichment jobs
+
 This project demonstrates how a **small-scale data platform can be
 implemented locally**, using modern data engineering patterns typically
 seen in cloud environments such as **Databricks, Azure Data Lake and
@@ -212,6 +217,10 @@ This table merges information from both sources.
 This model allows a sermon to contain **multiple source references
 simultaneously**.
 
+`preaching_date` is the canonical business key for a sermon in this project.
+If a technical `sermon_id` is introduced later, it should remain in a 1:1
+relationship with `preaching_date`, not replace it as the business identifier.
+
 ------------------------------------------------------------------------
 
 # API Architecture
@@ -287,6 +296,9 @@ Pipeline execution is handled through **job scripts**.
     └─ wordpress_job.py
 
 Jobs execute pipeline stages sequentially.
+
+In the homelab deployment, those jobs run in a dedicated pipeline container so
+the web API stays isolated from ingestion credentials and heavier dependencies.
 
 ------------------------------------------------------------------------
 
@@ -365,6 +377,10 @@ Start the API:
 
     make api
 
+Or start the homelab stack with dedicated API and pipeline containers:
+
+    docker compose up -d --build
+
 Run pipelines manually:
 
     make job-youtube-weekly
@@ -402,6 +418,7 @@ For the move from the Raspberry-style setup to the Ubuntu mini PC, use the
 Docker-based intermediate step documented here:
 
 - `docs/homelab-migration.md`
+- `docs/api-pipelines-split-plan.md`
 
 The homelab version now supports PostgreSQL as the gold storage backend while
 keeping the legacy SQLite file available for one-time backfill and fast
