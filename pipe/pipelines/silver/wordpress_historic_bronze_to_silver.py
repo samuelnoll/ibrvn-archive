@@ -191,9 +191,6 @@ def load_preacher_map():
     }
 
 
-PREACHER_MAP = load_preacher_map()
-
-
 def normalize_text(text_value):
 
     if not text_value:
@@ -221,6 +218,9 @@ def clean_title_text(text_value):
         .replace("Ã¢â‚¬â€œ", "-")
         .strip()
     )
+
+
+PREACHER_MAP = load_preacher_map()
 
 
 def is_similar_book(left, right):
