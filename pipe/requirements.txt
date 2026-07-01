@@ -1,0 +1,6 @@
+lxml
+pandas
+pyyaml
+requests
+sqlalchemy
+psycopg[binary]
