@@ -192,7 +192,7 @@ def run():
             upserts.append({
                 "canonical_sermon_id": row["canonical_sermon_id"],
                 "asset_type": "audio",
-                "source_url": audio_source_url or youtube_source_url,
+                "source_url": audio_source_url,
                 "local_path": str(target_path),
                 "duration_seconds": None,
                 "mime_type": "audio/mpeg",

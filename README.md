@@ -103,6 +103,7 @@ Current core fields:
 - `youtube_link`
 - `wordpress_link`
 - `media_link`
+- `download_link`
 
 ## Running
 

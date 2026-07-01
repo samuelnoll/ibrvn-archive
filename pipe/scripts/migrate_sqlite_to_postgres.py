@@ -31,7 +31,9 @@ INSERT INTO gold_sermons (
     serie,
     youtube_link,
     wordpress_link,
-    media_link
+    media_link,
+    download_link,
+    last_aggregated_at
 )
 VALUES (
     :canonical_sermon_id,
@@ -42,7 +44,9 @@ VALUES (
     :serie,
     :youtube_link,
     :wordpress_link,
-    :media_link
+    :media_link,
+    :download_link,
+    :last_aggregated_at
 )
 ON CONFLICT(canonical_sermon_id) DO UPDATE SET
     preaching_date = EXCLUDED.preaching_date,
@@ -73,6 +77,10 @@ ON CONFLICT(canonical_sermon_id) DO UPDATE SET
     media_link = COALESCE(
         NULLIF(EXCLUDED.media_link, ''),
         gold_sermons.media_link
+    ),
+    download_link = COALESCE(
+        NULLIF(EXCLUDED.download_link, ''),
+        gold_sermons.download_link
     ),
     last_aggregated_at = EXCLUDED.last_aggregated_at
 """
@@ -124,6 +132,7 @@ def run():
 
     for record in records:
         record["canonical_sermon_id"] = record["preaching_date"]
+        record["download_link"] = ""
         record["last_aggregated_at"] = now
 
     with get_engine().begin() as conn:

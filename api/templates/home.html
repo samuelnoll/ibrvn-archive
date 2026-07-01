@@ -4,15 +4,15 @@
 
 <div class="home-stats">
 
-{{ stats.sermons }} pregações •
+{{ stats.sermons }} pregacoes •
 {{ stats.preachers }} pregadores •
-{{ stats.series }} séries
+{{ stats.series }} series
 
 </div>
 
 <input
 id="search"
-placeholder="Buscar pregações..."
+placeholder="Buscar pregacoes..."
 autocomplete="off">
 
 <div id="results"></div>
@@ -35,7 +35,7 @@ autocomplete="off">
 <a class="bible-link"
 href="/books/{{ s.text_reference.split(' ')[0] }}">
 
-📖 {{ s.text_reference }}
+{{ s.text_reference }}
 
 </a>
 
@@ -47,7 +47,7 @@ href="/books/{{ s.text_reference.split(' ')[0] }}">
 <a class="meta-link"
 href="/preachers/{{ s.preacher_name }}">
 
-👤 {{ s.preacher_name }}
+{{ s.preacher_name }}
 
 </a>
 
@@ -58,7 +58,7 @@ href="/preachers/{{ s.preacher_name }}">
 <a class="meta-link"
 href="/series/{{ s.serie }}">
 
-📚 Série {{ s.serie }}
+Serie {{ s.serie }}
 
 </a>
 
@@ -69,15 +69,19 @@ href="/series/{{ s.serie }}">
 <div class="links">
 
 {% if s.media_link %}
-<a href="{{ s.media_link }}">🎧 Áudio</a>
+<a href="{{ s.media_link }}">Audio</a>
+{% endif %}
+
+{% if s.download_link %}
+<a href="{{ s.download_link }}">Arquivo</a>
 {% endif %}
 
 {% if s.youtube_link %}
-<a href="{{ s.youtube_link }}">▶ YouTube</a>
+<a href="{{ s.youtube_link }}">YouTube</a>
 {% endif %}
 
 {% if s.wordpress_link %}
-<a href="{{ s.wordpress_link }}">🔗 Página</a>
+<a href="{{ s.wordpress_link }}">Pagina</a>
 {% endif %}
 
 </div>
@@ -125,7 +129,7 @@ div.innerHTML = `
 ${s.text_reference ? `
 <div class="text">
 <a class="bible-link" href="/books/${encodeURIComponent(s.text_reference.split(" ")[0])}">
-📖 ${s.text_reference}
+${s.text_reference}
 </a>
 </div>
 ` : ""}
@@ -135,7 +139,7 @@ ${s.text_reference ? `
 <a class="meta-link"
 href="/preachers/${encodeURIComponent(s.preacher_name)}">
 
-👤 ${s.preacher_name}
+${s.preacher_name}
 
 </a>
 
@@ -144,7 +148,7 @@ ${s.serie ? `
 <a class="meta-link"
 href="/series/${encodeURIComponent(s.serie)}">
 
-📚 Série ${s.serie}
+Serie ${s.serie}
 
 </a>
 ` : ""}
@@ -153,11 +157,13 @@ href="/series/${encodeURIComponent(s.serie)}">
 
 <div class="links">
 
-${s.media_link ? `<a href="${s.media_link}">🎧 Áudio</a>` : ""}
+${s.media_link ? `<a href="${s.media_link}">Audio</a>` : ""}
 
-${s.youtube_link ? `<a href="${s.youtube_link}">▶ YouTube</a>` : ""}
+${s.download_link ? `<a href="${s.download_link}">Arquivo</a>` : ""}
 
-${s.wordpress_link ? `<a href="${s.wordpress_link}">🔗 Página</a>` : ""}
+${s.youtube_link ? `<a href="${s.youtube_link}">YouTube</a>` : ""}
+
+${s.wordpress_link ? `<a href="${s.wordpress_link}">Pagina</a>` : ""}
 
 </div>
 

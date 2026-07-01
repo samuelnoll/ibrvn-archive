@@ -104,6 +104,7 @@ CREATE TABLE IF NOT EXISTS gold_sermons (
     youtube_link TEXT,
     wordpress_link TEXT,
     media_link TEXT,
+    download_link TEXT,
     duration_seconds REAL,
     summary_short TEXT,
     transcript_available INTEGER DEFAULT 0,
@@ -175,6 +176,17 @@ def ensure_schema(conn):
     conn.execute(text(CREATE_SILVER_SUMMARIES_TABLE_SQL))
     conn.execute(text(CREATE_SILVER_PROCESSING_RUNS_TABLE_SQL))
     conn.execute(text(CREATE_GOLD_SERMONS_TABLE_SQL))
+
+    gold_columns = {
+        column["name"]
+        for column in inspect(conn).get_columns("gold_sermons")
+    }
+
+    if "download_link" not in gold_columns:
+        conn.execute(text("""
+            ALTER TABLE gold_sermons
+            ADD COLUMN download_link TEXT
+        """))
 
 
 def create_indexes(conn):
