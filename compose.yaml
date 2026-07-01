@@ -11,6 +11,8 @@ x-archive-common-environment: &archive-common-environment
   ARCHIVE_LEGACY_SQLITE_PATH: ${ARCHIVE_LEGACY_SQLITE_PATH}
   ARCHIVE_EXPORT_DIR: ${ARCHIVE_EXPORT_DIR}
   ARCHIVE_AUDIO_RAW_DIR: ${ARCHIVE_AUDIO_RAW_DIR}
+  ARCHIVE_AI_BASE_URL: ${ARCHIVE_AI_BASE_URL}
+  ARCHIVE_AI_TIMEOUT_SECONDS: ${ARCHIVE_AI_TIMEOUT_SECONDS}
 
 services:
   archive-api:
@@ -40,9 +42,6 @@ services:
     environment:
       <<: *archive-common-environment
       YOUTUBE_API_KEY: ${YOUTUBE_API_KEY}
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
-      OPENAI_TRANSCRIPTION_MODEL: ${OPENAI_TRANSCRIPTION_MODEL}
-      OPENAI_SUMMARY_MODEL: ${OPENAI_SUMMARY_MODEL}
     command: ["sleep", "infinity"]
     volumes:
       - ${ARCHIVE_DATA_HOST_PATH}:/app/data

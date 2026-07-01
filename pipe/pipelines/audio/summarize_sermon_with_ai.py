@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from openai import OpenAI
+import requests
 from sqlalchemy import text
 
 from shared.db import (
@@ -12,7 +12,18 @@ from shared.db import (
     get_engine,
     utc_now_iso,
 )
-from shared.settings import OPENAI_API_KEY, OPENAI_SUMMARY_MODEL
+from shared.settings import AI_BASE_URL, AI_TIMEOUT_SECONDS
+
+
+SERMON_SUMMARY_SYSTEM_PROMPT = (
+    "You are a careful assistant that summarizes spoken Christian sermons in "
+    "Brazilian Portuguese."
+)
+
+SERMON_SUMMARY_PROMPT = (
+    "Resuma a pregacao em portugues do Brasil em 1 a 3 paragrafos, "
+    "destacando tema principal, texto biblico e aplicacoes praticas."
+)
 
 
 def next_summary_version(canonical_sermon_id: str) -> int:
@@ -26,10 +37,22 @@ def next_summary_version(canonical_sermon_id: str) -> int:
     return int(row["version"]) + 1 if row else 1
 
 
-def run():
+def request_summary(transcript_text: str):
 
-    if not OPENAI_API_KEY:
-        raise RuntimeError("Set OPENAI_API_KEY before running sermon summarization.")
+    response = requests.post(
+        f"{AI_BASE_URL}/v1/summaries",
+        json={
+            "text": transcript_text,
+            "system_prompt": SERMON_SUMMARY_SYSTEM_PROMPT,
+            "prompt": SERMON_SUMMARY_PROMPT,
+        },
+        timeout=AI_TIMEOUT_SECONDS,
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+def run():
 
     run_id = begin_processing_run(
         "summarize_sermon_with_ai",
@@ -37,7 +60,6 @@ def run():
     )
 
     try:
-        client = OpenAI()
         rows = fetch_all("""
             SELECT
                 canonical_sermon_id,
@@ -58,20 +80,17 @@ def run():
         records = []
 
         for row in rows:
-            response = client.responses.create(
-                model=OPENAI_SUMMARY_MODEL,
-                input=(
-                    "Resuma a pregacao em portugues do Brasil em 1 a 3 paragrafos, "
-                    "destacando tema principal, texto biblico e aplicacoes praticas.\n\n"
-                    f"Transcricao:\n{row['transcript_text']}"
-                ),
-            )
+            result = request_summary(row["transcript_text"])
+            summary_text = (result.get("summary_text", "") or "").strip()
+
+            if not summary_text:
+                continue
 
             records.append({
                 "canonical_sermon_id": row["canonical_sermon_id"],
                 "summary_version": next_summary_version(row["canonical_sermon_id"]),
-                "summary_text": response.output_text,
-                "model_name": OPENAI_SUMMARY_MODEL,
+                "summary_text": summary_text,
+                "model_name": result.get("model_name", "homelab-ai"),
                 "created_at": utc_now_iso(),
             })
 

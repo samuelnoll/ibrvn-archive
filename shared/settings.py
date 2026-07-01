@@ -35,12 +35,10 @@ AUDIO_RAW_DIR = Path(
     os.getenv("ARCHIVE_AUDIO_RAW_DIR", str(DEFAULT_AUDIO_RAW_DIR))
 )
 
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-OPENAI_TRANSCRIPTION_MODEL = os.getenv(
-    "OPENAI_TRANSCRIPTION_MODEL",
-    "gpt-4o-mini-transcribe",
-)
-OPENAI_SUMMARY_MODEL = os.getenv(
-    "OPENAI_SUMMARY_MODEL",
-    "gpt-4.1-mini",
+AI_BASE_URL = os.getenv(
+    "ARCHIVE_AI_BASE_URL",
+    "http://homelab-ai-api:8100",
+).rstrip("/")
+AI_TIMEOUT_SECONDS = int(
+    os.getenv("ARCHIVE_AI_TIMEOUT_SECONDS", "7200")
 )

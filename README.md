@@ -88,6 +88,11 @@ is centered on:
 - `silver_summaries`
 - `silver_processing_runs`
 
+Audio enrichment now calls the separate `homelab-ai` runtime for:
+
+- local transcription with `faster-whisper`
+- local summarization with Ollama
+
 Current core fields:
 
 - `preaching_date`
@@ -106,6 +111,9 @@ Start the homelab stack:
 ```bash
 docker compose up -d --build
 ```
+
+For local transcription and summary, start `homelab-ai` separately before
+running the audio enrichment pipeline.
 
 Run the API locally:
 
@@ -144,6 +152,7 @@ execution.
 - Bronze stays on disk for source snapshots and raw files.
 - Silver and gold are stored in PostgreSQL in the homelab deployment.
 - Audio enrichment writes duration, transcript, and summary outputs into silver tables.
+- Local AI inference is expected to run in the separate `homelab-ai` stack.
 
 ## Docs
 

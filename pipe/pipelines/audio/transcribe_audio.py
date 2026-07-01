@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from openai import OpenAI
+from pathlib import Path
+
+import requests
 from sqlalchemy import text
 
 from shared.db import (
@@ -12,7 +14,7 @@ from shared.db import (
     get_engine,
     utc_now_iso,
 )
-from shared.settings import OPENAI_API_KEY, OPENAI_TRANSCRIPTION_MODEL
+from shared.settings import AI_BASE_URL, AI_TIMEOUT_SECONDS
 
 
 def next_transcript_version(canonical_sermon_id: str) -> int:
@@ -26,10 +28,32 @@ def next_transcript_version(canonical_sermon_id: str) -> int:
     return int(row["version"]) + 1 if row else 1
 
 
-def run():
+def request_transcription(local_path: str):
 
-    if not OPENAI_API_KEY:
-        raise RuntimeError("Set OPENAI_API_KEY before running audio transcription.")
+    file_path = Path(local_path)
+
+    with open(file_path, "rb") as audio_file:
+        response = requests.post(
+            f"{AI_BASE_URL}/v1/transcriptions",
+            files={
+                "file": (
+                    file_path.name,
+                    audio_file,
+                    "audio/mpeg",
+                ),
+            },
+            data={
+                "language": "pt",
+                "vad_filter": "true",
+            },
+            timeout=AI_TIMEOUT_SECONDS,
+        )
+
+    response.raise_for_status()
+    return response.json()
+
+
+def run():
 
     run_id = begin_processing_run(
         "transcribe_audio",
@@ -37,7 +61,6 @@ def run():
     )
 
     try:
-        client = OpenAI()
         rows = fetch_all("""
             SELECT
                 canonical_sermon_id,
@@ -55,25 +78,18 @@ def run():
         records = []
 
         for row in rows:
-            with open(row["local_path"], "rb") as audio_file:
-                transcription = client.audio.transcriptions.create(
-                    model=OPENAI_TRANSCRIPTION_MODEL,
-                    file=audio_file,
-                    response_format="text",
-                )
+            result = request_transcription(row["local_path"])
+            transcript_text = (result.get("transcript_text", "") or "").strip()
 
-            transcript_text = (
-                transcription.text
-                if hasattr(transcription, "text")
-                else str(transcription)
-            )
+            if not transcript_text:
+                continue
 
             records.append({
                 "canonical_sermon_id": row["canonical_sermon_id"],
                 "transcript_version": next_transcript_version(row["canonical_sermon_id"]),
-                "language": "pt",
+                "language": result.get("language", "pt"),
                 "transcript_text": transcript_text,
-                "model_name": OPENAI_TRANSCRIPTION_MODEL,
+                "model_name": result.get("model_name", "homelab-ai"),
                 "created_at": utc_now_iso(),
             })
 
