@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from pathlib import PurePath
 
 from sqlalchemy import text
 
@@ -80,6 +81,17 @@ def choose_first_non_empty(rows, field_name):
             return value
 
     return ""
+
+
+def build_media_link(audio_media):
+
+    local_path = audio_media.get("local_path") or ""
+
+    if local_path:
+        filename = PurePath(str(local_path).replace("\\", "/")).name
+        return f"/media/{filename}"
+
+    return audio_media.get("source_url") or ""
 
 
 def aggregate_gold_records():
@@ -176,11 +188,7 @@ def aggregate_gold_records():
                 wordpress_rows[0]["source_item_id"]
                 if wordpress_rows else ""
             ),
-            "media_link": (
-                audio_media.get("source_url")
-                or audio_media.get("local_path")
-                or ""
-            ),
+            "media_link": build_media_link(audio_media),
             "duration_seconds": audio_media.get("duration_seconds"),
             "summary_short": latest_summary.get("summary_text", ""),
             "transcript_available": 1 if transcripts_by_sermon[canonical_sermon_id] else 0,

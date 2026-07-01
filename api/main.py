@@ -4,12 +4,16 @@ from fastapi.staticfiles import StaticFiles
 
 from .db import initialize_database
 from .queries import *
+from shared.settings import AUDIO_RAW_DIR
 
 app = FastAPI()
 
 templates = Jinja2Templates(directory="api/templates")
 
+AUDIO_RAW_DIR.mkdir(parents=True, exist_ok=True)
+
 app.mount("/static", StaticFiles(directory="api/static"), name="static")
+app.mount("/media", StaticFiles(directory=str(AUDIO_RAW_DIR)), name="media")
 
 
 @app.on_event("startup")
