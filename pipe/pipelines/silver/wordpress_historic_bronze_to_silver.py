@@ -104,48 +104,131 @@ ON CONFLICT(canonical_sermon_id, asset_type) DO UPDATE SET
     mime_type = EXCLUDED.mime_type
 """
 
-ns = {
+NS = {
     "content": "http://purl.org/rss/1.0/modules/content/",
     "wp": "http://wordpress.org/export/1.2/",
-    "dc": "http://purl.org/dc/elements/1.1/"
+    "dc": "http://purl.org/dc/elements/1.1/",
 }
 
 BIBLE_BOOKS = [
-    "GÃªnesis", "ÃŠxodo", "LevÃ­tico", "NÃºmeros", "DeuteronÃ´mio",
-    "JosuÃ©", "JuÃ­zes", "Rute", "1 Samuel", "2 Samuel", "1 Reis", "2 Reis",
-    "1 CrÃ´nicas", "2 CrÃ´nicas", "Esdras", "Neemias", "Ester",
-    "JÃ³", "Salmos", "ProvÃ©rbios", "Eclesiastes", "CÃ¢nticos",
-    "IsaÃ­as", "Jeremias", "LamentaÃ§Ãµes", "Ezequiel", "Daniel",
-    "OsÃ©ias", "Joel", "AmÃ³s", "Obadias", "Jonas", "Miqueias",
-    "Naum", "Habacuque", "Sofonias", "Ageu", "Zacarias", "Malaquias",
-    "Mateus", "Marcos", "Lucas", "JoÃ£o", "Atos",
-    "Romanos", "1 CorÃ­ntios", "2 CorÃ­ntios", "GÃ¡latas", "EfÃ©sios",
-    "Filipenses", "Colossenses", "1 Tessalonicenses", "2 Tessalonicenses",
-    "1 TimÃ³teo", "2 TimÃ³teo", "Tito", "Filemon", "Hebreus",
-    "Tiago", "1 Pedro", "2 Pedro", "1 JoÃ£o", "2 JoÃ£o", "3 JoÃ£o",
-    "Judas", "Apocalipse"
+    ("Genesis", "Gênesis"),
+    ("Exodo", "Êxodo"),
+    ("Levitico", "Levítico"),
+    ("Numeros", "Números"),
+    ("Deuteronomio", "Deuteronômio"),
+    ("Josue", "Josué"),
+    ("Juizes", "Juízes"),
+    ("Rute", "Rute"),
+    ("1 Samuel", "1 Samuel"),
+    ("2 Samuel", "2 Samuel"),
+    ("1 Reis", "1 Reis"),
+    ("2 Reis", "2 Reis"),
+    ("1 Cronicas", "1 Crônicas"),
+    ("2 Cronicas", "2 Crônicas"),
+    ("Esdras", "Esdras"),
+    ("Neemias", "Neemias"),
+    ("Ester", "Ester"),
+    ("Jo", "Jó"),
+    ("Salmos", "Salmos"),
+    ("Proverbios", "Provérbios"),
+    ("Eclesiastes", "Eclesiastes"),
+    ("Canticos", "Cânticos"),
+    ("Isaias", "Isaías"),
+    ("Jeremias", "Jeremias"),
+    ("Lamentacoes", "Lamentações"),
+    ("Ezequiel", "Ezequiel"),
+    ("Daniel", "Daniel"),
+    ("Oseias", "Oséias"),
+    ("Joel", "Joel"),
+    ("Amos", "Amós"),
+    ("Obadias", "Obadias"),
+    ("Jonas", "Jonas"),
+    ("Miqueias", "Miquéias"),
+    ("Naum", "Naum"),
+    ("Habacuque", "Habacuque"),
+    ("Sofonias", "Sofonias"),
+    ("Ageu", "Ageu"),
+    ("Zacarias", "Zacarias"),
+    ("Malaquias", "Malaquias"),
+    ("Mateus", "Mateus"),
+    ("Marcos", "Marcos"),
+    ("Lucas", "Lucas"),
+    ("Joao", "João"),
+    ("Atos", "Atos"),
+    ("Romanos", "Romanos"),
+    ("1 Corintios", "1 Coríntios"),
+    ("2 Corintios", "2 Coríntios"),
+    ("Galatas", "Gálatas"),
+    ("Efesios", "Efésios"),
+    ("Filipenses", "Filipenses"),
+    ("Colossenses", "Colossenses"),
+    ("1 Tessalonicenses", "1 Tessalonicenses"),
+    ("2 Tessalonicenses", "2 Tessalonicenses"),
+    ("1 Timoteo", "1 Timóteo"),
+    ("2 Timoteo", "2 Timóteo"),
+    ("Tito", "Tito"),
+    ("Filemon", "Filemom"),
+    ("Hebreus", "Hebreus"),
+    ("Tiago", "Tiago"),
+    ("1 Pedro", "1 Pedro"),
+    ("2 Pedro", "2 Pedro"),
+    ("1 Joao", "1 João"),
+    ("2 Joao", "2 João"),
+    ("3 Joao", "3 João"),
+    ("Judas", "Judas"),
+    ("Apocalipse", "Apocalipse"),
 ]
 
 
 def load_preacher_map():
 
-    with open("pipe/config/preachers.yaml", "r", encoding="utf-8") as f:
-        data = yaml.safe_load(f)
+    with open("pipe/config/preachers.yaml", "r", encoding="utf-8") as file_handle:
+        data = yaml.safe_load(file_handle)
 
-    return {k.lower(): v for k, v in data.items()}
+    return {
+        normalize_text(key): value
+        for key, value in data.items()
+    }
 
 
 PREACHER_MAP = load_preacher_map()
 
 
-def is_similar_book(a, b):
+def normalize_text(text_value):
 
-    if any(c.isdigit() for c in a + b):
+    if not text_value:
+        return ""
+
+    normalized = unicodedata.normalize("NFKD", str(text_value))
+    normalized = "".join(
+        char
+        for char in normalized
+        if not unicodedata.combining(char)
+    )
+
+    return normalized.lower().strip()
+
+
+def clean_title_text(text_value):
+
+    if not text_value:
+        return ""
+
+    return (
+        str(text_value)
+        .replace("\u00A0", " ")
+        .replace("â€“", "-")
+        .replace("Ã¢â‚¬â€œ", "-")
+        .strip()
+    )
+
+
+def is_similar_book(left, right):
+
+    if any(char.isdigit() for char in left + right):
         return False
 
-    ratio = SequenceMatcher(None, a, b).ratio()
-
-    return ratio >= 0.9
+    return SequenceMatcher(None, left, right).ratio() >= 0.9
 
 
 def normalize_date(date_str):
@@ -160,79 +243,55 @@ def normalize_date(date_str):
         return ""
 
 
-def normalize_compare(text):
-
-    text = unicodedata.normalize("NFKD", text)
-    text = "".join(c for c in text if not unicodedata.combining(c))
-
-    return text.lower()
-
-
-def normalize_text(text_value):
-
-    if not text_value:
-        return ""
-
-    normalized = unicodedata.normalize("NFKD", str(text_value))
-    normalized = "".join(
-        char for char in normalized
-        if not unicodedata.combining(char)
-    )
-
-    return normalized.lower().strip()
-
-
 def extract_text(title, content):
+
+    del content
 
     if not title:
         return ""
 
-    title = (
-        title.replace("\u00A0", " ")
-        .replace("â€“", "-")
-        .strip()
-    )
-
+    title = clean_title_text(title)
     title = re.sub(r"\bI\s+", "1 ", title)
     title = re.sub(r"\bII\s+", "2 ", title)
     title = re.sub(r"\bIII\s+", "3 ", title)
     title = re.sub(r"(\d+)\s*a\s*(\d+)", r"\1-\2", title)
     title = re.sub(r"(\d+)\s*e\s*(\d+)", r"\1-\2", title)
 
-    title_norm = normalize_compare(title)
+    title_norm = normalize_text(title)
     words = title_norm.split()
 
-    for book in BIBLE_BOOKS:
-        book_norm = normalize_compare(book)
+    for book_ascii, book_display in BIBLE_BOOKS:
+        book_norm = normalize_text(book_ascii)
         pattern = r"\b" + re.escape(book_norm) + r"\b"
         match_book = re.search(pattern, title_norm)
 
         if not match_book:
-
             for word in words:
                 if is_similar_book(word, book_norm):
                     match_book = True
                     break
 
-        if match_book:
-            start = title_norm.find(book_norm)
+        if not match_book:
+            continue
 
-            if start == -1:
-                start = title_norm.find(word)
+        start = title_norm.find(book_norm)
 
-            fragment = title[start + len(book):].strip()
-            match_ref = re.search(r"(\d+)(?::\s*(\d+(?:-\d+)?))?", fragment)
+        if start == -1:
+            continue
 
-            if match_ref:
-                chapter = match_ref.group(1)
-                verse = match_ref.group(2)
+        fragment = title_norm[start + len(book_norm):].strip()
+        match_ref = re.search(r"(\d+)(?::\s*(\d+(?:-\d+)?))?", fragment)
 
-                if verse:
-                    return f"{book} {chapter}:{verse}"
+        if not match_ref:
+            return book_display
 
-                return f"{book} {chapter}"
+        chapter = match_ref.group(1)
+        verse = match_ref.group(2)
 
-            return book
+        if verse:
+            return f"{book_display} {chapter}:{verse}"
+
+        return f"{book_display} {chapter}"
 
     return ""
 
@@ -246,9 +305,7 @@ def extract_mp3(content):
     audio_ext = (".mp3", ".m4a", ".wav", ".ogg")
 
     for url in urls:
-        clean_url = url.lower().strip()
-
-        if clean_url.endswith(audio_ext):
+        if url.lower().strip().endswith(audio_ext):
             return url.strip()
 
     return ""
@@ -256,8 +313,17 @@ def extract_mp3(content):
 
 def extract_preacher(content):
 
-    m = re.search(r"por ([A-Za-zÃ€-Ã¿\s]+)", content or "")
-    return m.group(1).strip() if m else ""
+    if not content:
+        return ""
+
+    match = re.search(r"por\s+([^<\n\r]+)", content, flags=re.IGNORECASE)
+
+    if not match:
+        return ""
+
+    preacher = match.group(1).strip()
+    preacher = re.split(r"[|,.:-]\s*", preacher)[0].strip()
+    return preacher
 
 
 def extract_file_info(mp3_url):
@@ -267,37 +333,37 @@ def extract_file_info(mp3_url):
 
     filename = os.path.basename(mp3_url)
     patterns = [
-        r"(20\d{2})[_\-](\d{2})[_\-](\d{2})[_\-]([A-Za-zÃ€-Ã¿]+)",
-        r"([A-Za-zÃ€-Ã¿]+)[_\-](\d{2})[_\-](\d{2})[_\-](\d{2})",
-        r"([A-Za-zÃ€-Ã¿]+)[\s\-](\d{2})\.(\d{2})\.(\d{4})",
-        r"([A-Za-zÃ€-Ã¿]+)[\s\-](\d{2})\-(\d{2})\-(\d{4})",
+        r"(20\d{2})[_\-](\d{2})[_\-](\d{2})[_\-]([^\W\d_]+)",
+        r"([^\W\d_]+)[_\-](\d{2})[_\-](\d{2})[_\-](\d{2})",
+        r"([^\W\d_]+)[\s\-](\d{2})\.(\d{2})\.(\d{4})",
+        r"([^\W\d_]+)[\s\-](\d{2})\-(\d{2})\-(\d{4})",
     ]
 
     for index, pattern in enumerate(patterns):
-        m = re.search(pattern, filename)
+        match = re.search(pattern, filename)
 
-        if not m:
+        if not match:
             continue
 
         if index == 0:
-            return f"{m.group(1)}-{m.group(2)}-{m.group(3)}", m.group(4)
+            return f"{match.group(1)}-{match.group(2)}-{match.group(3)}", match.group(4)
 
         if index == 1:
-            return f"20{m.group(4)}-{m.group(3)}-{m.group(2)}", m.group(1)
+            return f"20{match.group(4)}-{match.group(3)}-{match.group(2)}", match.group(1)
 
-        return f"{m.group(4)}-{m.group(3)}-{m.group(2)}", m.group(1)
+        return f"{match.group(4)}-{match.group(3)}-{match.group(2)}", match.group(1)
 
     return "", ""
 
 
 def extract_body_date(title):
 
-    m = re.search(r"(\d{2})/(\d{2})/(\d{4})", title or "")
+    match = re.search(r"(\d{2})/(\d{2})/(\d{4})", title or "")
 
-    if not m:
+    if not match:
         return ""
 
-    return f"{m.group(3)}-{m.group(2)}-{m.group(1)}"
+    return f"{match.group(3)}-{match.group(2)}-{match.group(1)}"
 
 
 def extract_title(title):
@@ -305,14 +371,14 @@ def extract_title(title):
     if not title:
         return ""
 
-    title = title.replace("\u00A0", " ").replace("â€“", "-").strip()
+    title = clean_title_text(title)
 
     if " - " not in title:
         return ""
 
     first = title.rsplit(" - ", 1)[0].strip()
 
-    if first.lower().startswith("pregaÃ§Ã£o"):
+    if normalize_text(first).startswith("pregacao"):
         return ""
 
     return first
@@ -346,11 +412,9 @@ def choose_preacher(file_preacher_name, preacher_name):
 
 def extract_serie(tags, categories):
 
-    combined = (tags or "") + ";" + (categories or "")
-    match = re.search(r"S[ÃƒÂ©e]rie:\s*([^;]+)", combined)
-
-    if match:
-        return match.group(1).strip()
+    for value in list(tags or []) + list(categories or []):
+        if normalize_text(value).startswith("serie:"):
+            return value.split(":", 1)[1].strip()
 
     return ""
 
@@ -399,9 +463,9 @@ def run():
 
         for item in root.findall("./channel/item"):
             title = item.findtext("title", "")
-            content = item.findtext("content:encoded", "", ns)
+            content = item.findtext("content:encoded", "", NS)
             post_date = normalize_date(
-                item.findtext("wp:post_date", "", ns)
+                item.findtext("wp:post_date", "", NS)
             )
 
             if post_date and post_date > MAX_DATE:
@@ -409,7 +473,6 @@ def run():
 
             source_link = item.findtext("link", "") or ""
             source_item_id = source_link or title or post_date
-            poster_name = item.findtext("dc:creator", "")
             preacher_name = extract_preacher(content)
             text_reference = extract_text(title, content)
             clean_title = extract_title(title)
@@ -420,9 +483,9 @@ def run():
             tags = []
             categories = []
 
-            for cat in item.findall("category"):
-                domain = cat.attrib.get("domain")
-                name = (cat.text or "").strip()
+            for category in item.findall("category"):
+                domain = category.attrib.get("domain")
+                name = (category.text or "").strip()
 
                 if domain == "post_tag":
                     tags.append(name)
@@ -430,9 +493,12 @@ def run():
                 if domain == "category":
                     categories.append(name)
 
-            categories_lower = [category.lower() for category in categories]
+            normalized_categories = [
+                normalize_text(category)
+                for category in categories
+            ]
 
-            if "pregaÃ§Ãµes" not in categories_lower:
+            if "pregacoes" not in normalized_categories:
                 continue
 
             source_records.append({
@@ -461,7 +527,7 @@ def run():
                 "title": clean_title,
                 "preacher_name": choose_preacher(file_preacher, preacher_name),
                 "text_reference": text_reference,
-                "serie": extract_serie(";".join(tags), ";".join(categories)),
+                "serie": extract_serie(tags, categories),
                 "confidence": 1.0,
                 "processed_at": processed_at,
             })
