@@ -69,19 +69,19 @@ Serie {{ s.serie }}
 <div class="links">
 
 {% if s.media_link %}
-<a href="{{ s.media_link }}">Audio</a>
+<a href="{{ s.media_link }}">🎧 Audio</a>
 {% endif %}
 
 {% if s.download_link %}
-<a href="{{ s.download_link }}">Arquivo</a>
+<a href="{{ s.download_link }}">💾 Arquivo</a>
 {% endif %}
 
 {% if s.youtube_link %}
-<a href="{{ s.youtube_link }}">YouTube</a>
+<a href="{{ s.youtube_link }}">▶ YouTube</a>
 {% endif %}
 
 {% if s.wordpress_link %}
-<a href="{{ s.wordpress_link }}">Pagina</a>
+<a href="{{ s.wordpress_link }}">🔗 Pagina</a>
 {% endif %}
 
 </div>
@@ -157,13 +157,13 @@ Serie ${s.serie}
 
 <div class="links">
 
-${s.media_link ? `<a href="${s.media_link}">Audio</a>` : ""}
+${s.media_link ? `<a href="${s.media_link}">🎧 Audio</a>` : ""}
 
-${s.download_link ? `<a href="${s.download_link}">Arquivo</a>` : ""}
+${s.download_link ? `<a href="${s.download_link}">💾 Arquivo</a>` : ""}
 
-${s.youtube_link ? `<a href="${s.youtube_link}">YouTube</a>` : ""}
+${s.youtube_link ? `<a href="${s.youtube_link}">▶ YouTube</a>` : ""}
 
-${s.wordpress_link ? `<a href="${s.wordpress_link}">Pagina</a>` : ""}
+${s.wordpress_link ? `<a href="${s.wordpress_link}">🔗 Pagina</a>` : ""}
 
 </div>
 
