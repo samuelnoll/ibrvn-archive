@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 
+from .db import initialize_database
 from .queries import *
 
 app = FastAPI()
@@ -9,6 +10,12 @@ app = FastAPI()
 templates = Jinja2Templates(directory="api/templates")
 
 app.mount("/static", StaticFiles(directory="api/static"), name="static")
+
+
+@app.on_event("startup")
+def startup():
+
+    initialize_database()
 
 
 def render_template(request: Request, template_name: str, context: dict):

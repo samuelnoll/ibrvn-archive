@@ -6,4 +6,9 @@ paths:
 
 database:
 
-  gold_db: data/gold/archive.db
+  backend: postgres
+  host: postgres
+  port: 5432
+  name: app
+  user: app
+  legacy_gold_db: data/gold/archive.db

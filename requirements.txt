@@ -5,3 +5,5 @@ uvicorn
 pyyaml
 jinja2
 requests
+sqlalchemy
+psycopg[binary]

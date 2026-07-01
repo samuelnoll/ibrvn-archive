@@ -1,4 +1,4 @@
-.PHONY: install pipeline api clean dev export quality job-youtube-weekly job-youtube-historic job-wordpress-historic job-historic
+.PHONY: install pipeline api clean dev export quality optimize migrate-gold-postgres job-youtube-weekly job-youtube-historic job-wordpress-historic job-historic
 
 install:
 	pip install -r requirements.txt
@@ -17,6 +17,12 @@ export:
 
 quality:
 	python scripts/sermon_data_quality.py
+
+optimize:
+	python -m pipelines.gold.optimize_gold
+
+migrate-gold-postgres:
+	python scripts/migrate_sqlite_to_postgres.py
 
 job-youtube-weekly:
 	python -m jobs.youtube_job --mode weekly

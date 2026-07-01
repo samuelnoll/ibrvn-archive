@@ -1,10 +1,11 @@
+import argparse
 import os
 import sys
-import sqlite3
-import pandas as pd
 import unicodedata
+
+import pandas as pd
 import yaml
-import argparse
+from sqlalchemy import text
 
 PROJECT_ROOT = os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -13,17 +14,71 @@ PROJECT_ROOT = os.path.dirname(
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from archive_settings import GOLD_DB_PATH
+from archive_database import ensure_schema, get_engine
 
 HISTORIC_CSV = "data/silver/youtube_sermons.csv"
 WEEKLY_CSV = "data/silver/youtube_weekly_sermons.csv"
 
-DB_PATH = str(GOLD_DB_PATH)
+UPSERT_SQL = """
+INSERT INTO sermons (
+    preaching_date,
+    preacher_name,
+    title,
+    text_reference,
+    serie,
+    youtube_link,
+    wordpress_link,
+    media_link
+)
+VALUES (
+    :preaching_date,
+    :preacher_name,
+    :title,
+    :text_reference,
+    :serie,
+    :youtube_link,
+    :wordpress_link,
+    :media_link
+)
+ON CONFLICT(preaching_date) DO UPDATE SET
+    preacher_name = COALESCE(
+        NULLIF(EXCLUDED.preacher_name, ''),
+        sermons.preacher_name
+    ),
+    title = COALESCE(
+        NULLIF(EXCLUDED.title, ''),
+        sermons.title
+    ),
+    text_reference = COALESCE(
+        NULLIF(sermons.text_reference, ''),
+        NULLIF(EXCLUDED.text_reference, ''),
+        sermons.text_reference
+    ),
+    serie = COALESCE(
+        NULLIF(sermons.serie, ''),
+        NULLIF(EXCLUDED.serie, ''),
+        sermons.serie
+    ),
+    youtube_link = COALESCE(
+        NULLIF(EXCLUDED.youtube_link, ''),
+        sermons.youtube_link
+    ),
+    wordpress_link = COALESCE(
+        NULLIF(sermons.wordpress_link, ''),
+        NULLIF(EXCLUDED.wordpress_link, ''),
+        sermons.wordpress_link
+    ),
+    media_link = COALESCE(
+        NULLIF(sermons.media_link, ''),
+        NULLIF(EXCLUDED.media_link, ''),
+        sermons.media_link
+    )
+"""
 
 
 def load_preacher_map():
 
-    with open("config/preachers.yaml", "r") as f:
+    with open("config/preachers.yaml", "r", encoding="utf-8") as f:
         data = yaml.safe_load(f)
 
     return {k.lower(): v for k, v in data.items()}
@@ -32,21 +87,19 @@ def load_preacher_map():
 PREACHER_MAP = load_preacher_map()
 
 
-def normalize_text(text):
+def normalize_text(text_value):
 
-    if pd.isna(text):
+    if pd.isna(text_value):
         return ""
 
-    text = str(text)
-
-    text = unicodedata.normalize("NFKD", text)
-
-    text = "".join(
-        c for c in text
-        if not unicodedata.combining(c)
+    normalized = str(text_value)
+    normalized = unicodedata.normalize("NFKD", normalized)
+    normalized = "".join(
+        char for char in normalized
+        if not unicodedata.combining(char)
     )
 
-    return text.lower().strip()
+    return normalized.lower().strip()
 
 
 def choose_preacher(row):
@@ -76,12 +129,10 @@ def transform_dataframe(df):
     )
 
     df["youtube_link"] = df["youtube_link"]
+    df["wordpress_link"] = ""
+    df["media_link"] = ""
 
-    df["wordpress_link"] = None
-
-    df["media_link"] = None
-
-    df_gold = df[[
+    return df[[
         "preaching_date",
         "preacher_name",
         "title",
@@ -89,98 +140,26 @@ def transform_dataframe(df):
         "serie",
         "youtube_link",
         "wordpress_link",
-        "media_link"
+        "media_link",
     ]]
 
-    return df_gold
 
+def to_records(df):
 
-def create_table(conn):
-
-    conn.execute("""
-    CREATE TABLE IF NOT EXISTS sermons (
-
-        preaching_date TEXT PRIMARY KEY,
-        preacher_name TEXT,
-        title TEXT,
-        text_reference TEXT,
-        serie TEXT,
-        youtube_link TEXT,
-        wordpress_link TEXT,
-        media_link TEXT
-    )
-    """)
-
-
-def upsert_rows(conn, df):
-
-    for _, row in df.iterrows():
-
-        conn.execute("""
-        INSERT INTO sermons (
-            preaching_date,
-            preacher_name,
-            title,
-            text_reference,
-            serie,
-            youtube_link,
-            wordpress_link,
-            media_link
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-
-        ON CONFLICT(preaching_date) DO UPDATE SET
-            preacher_name = excluded.preacher_name,
-
-            title = COALESCE(
-                excluded.title,
-                sermons.title
-            ),
-
-            text_reference = COALESCE(
-                sermons.text_reference,
-                excluded.text_reference
-            ),
-
-            serie = COALESCE(
-                sermons.serie,
-                excluded.serie
-            ),
-
-            youtube_link = COALESCE(
-                excluded.youtube_link,
-                sermons.youtube_link
-            ),
-
-            wordpress_link = COALESCE(
-                sermons.wordpress_link,
-                excluded.wordpress_link
-            ),
-
-            media_link = COALESCE(
-                sermons.media_link,
-                excluded.media_link
-            );
-        """, tuple(row))
+    return df.fillna("").to_dict(orient="records")
 
 
 def run(mode):
 
     csv_path = HISTORIC_CSV if mode == "historic" else WEEKLY_CSV
-
     df = pd.read_csv(csv_path).fillna("")
+    records = to_records(transform_dataframe(df))
 
-    df_gold = transform_dataframe(df)
+    with get_engine().begin() as conn:
+        ensure_schema(conn)
 
-    conn = sqlite3.connect(DB_PATH)
-
-    create_table(conn)
-
-    upsert_rows(conn, df_gold)
-
-    conn.commit()
-
-    conn.close()
+        if records:
+            conn.execute(text(UPSERT_SQL), records)
 
     print("YouTube sermons loaded into gold")
 

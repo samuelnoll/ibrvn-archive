@@ -1,11 +1,21 @@
-from .db import get_db
+from collections import Counter
+from datetime import date, datetime
+
+from .db import fetch_all, fetch_one
 
 
-def format_brazilian_date(date_str):
+def format_brazilian_date(value):
 
-    if not date_str:
+    if not value:
         return ""
 
+    if isinstance(value, datetime):
+        return value.strftime("%d/%m/%Y")
+
+    if isinstance(value, date):
+        return value.strftime("%d/%m/%Y")
+
+    date_str = str(value)
     parts = date_str.split("-")
 
     if len(parts) != 3:
@@ -17,6 +27,25 @@ def format_brazilian_date(date_str):
         return date_str
 
     return f"{day}/{month}/{year}"
+
+
+def extract_book_name(text_reference):
+
+    if not text_reference:
+        return ""
+
+    parts = str(text_reference).strip().split()
+
+    if not parts:
+        return ""
+
+    if parts[0] in {"1", "2", "3"} and len(parts) >= 2:
+        return f"{parts[0]} {parts[1]}".strip()
+
+    if parts[0] in {"1", "2", "3"}:
+        return ""
+
+    return parts[0].strip()
 
 
 def serialize_sermon(row):
@@ -38,217 +67,180 @@ def serialize_sermons(rows):
 
 def get_last_update():
 
-    conn = get_db()
+    row = fetch_one("""
+        SELECT MAX(preaching_date) AS d
+        FROM sermons
+    """)
 
-    row = conn.execute(
-        "SELECT MAX(preaching_date) as d FROM sermons"
-    ).fetchone()
-
-    conn.close()
-
-    return format_brazilian_date(row["d"])
+    return format_brazilian_date(row["d"]) if row else ""
 
 
 def get_recent_sermons(limit=20):
 
-    conn = get_db()
-
-    rows = conn.execute("""
+    rows = fetch_all("""
         SELECT *
         FROM sermons
         ORDER BY preaching_date DESC
-        LIMIT ?
-    """, (limit,)).fetchall()
-
-    conn.close()
+        LIMIT :limit
+    """, {"limit": limit})
 
     return serialize_sermons(rows)
 
 
 def search_sermons(q):
 
-    conn = get_db()
+    pattern = f"%{q.lower()}%"
 
-    rows = conn.execute("""
+    rows = fetch_all("""
         SELECT *
         FROM sermons
         WHERE
-        title LIKE ?
-        OR preacher_name LIKE ?
-        OR serie LIKE ?
-        OR text_reference LIKE ?
+            LOWER(COALESCE(title, '')) LIKE :pattern
+            OR LOWER(COALESCE(preacher_name, '')) LIKE :pattern
+            OR LOWER(COALESCE(serie, '')) LIKE :pattern
+            OR LOWER(COALESCE(text_reference, '')) LIKE :pattern
         ORDER BY preaching_date DESC
-    """, [f"%{q}%"]*4).fetchall()
-
-    conn.close()
+    """, {"pattern": pattern})
 
     return serialize_sermons(rows)
 
 
 def get_books():
 
-    conn = get_db()
-
-    rows = conn.execute("""
-        SELECT
-        TRIM(
-            CASE
-                WHEN SUBSTR(text_reference,1,INSTR(text_reference,' ')-1) IN ('1','2','3')
-                THEN
-                    SUBSTR(
-                        text_reference,
-                        1,
-                        INSTR(text_reference,' ') +
-                        INSTR(SUBSTR(text_reference, INSTR(text_reference,' ')+1),' ')
-                    )
-                ELSE
-                    SUBSTR(text_reference,1,INSTR(text_reference,' ')-1)
-            END
-        ) AS book,
-        COUNT(*) as n
+    rows = fetch_all("""
+        SELECT text_reference
         FROM sermons
-        WHERE text_reference != ''
-        AND book NOT IN ('','1','2','3')
-        GROUP BY book
-        ORDER BY book
-    """).fetchall()
+        WHERE text_reference IS NOT NULL
+        AND text_reference != ''
+    """)
 
-    conn.close()
+    counts = Counter()
 
-    return rows
+    for row in rows:
+        book = extract_book_name(row["text_reference"])
+
+        if book and book not in {"1", "2", "3"}:
+            counts[book] += 1
+
+    return [
+        {
+            "book": book,
+            "n": counts[book],
+        }
+        for book in sorted(counts)
+    ]
 
 
 def sermons_by_book(book):
 
-    conn = get_db()
-
-    rows = conn.execute("""
+    rows = fetch_all("""
         SELECT *
         FROM sermons
-        WHERE text_reference LIKE ?
+        WHERE LOWER(COALESCE(text_reference, '')) LIKE :prefix
         ORDER BY preaching_date DESC
-    """, (f"{book}%",)).fetchall()
-
-    conn.close()
+    """, {"prefix": f"{book.lower()}%"})
 
     return serialize_sermons(rows)
 
 
 def get_series():
 
-    conn = get_db()
-
-    rows = conn.execute("""
-        SELECT serie, COUNT(*) as n
+    return fetch_all("""
+        SELECT serie, COUNT(*) AS n
         FROM sermons
-        WHERE serie != ''
+        WHERE serie IS NOT NULL
+        AND serie != ''
         GROUP BY serie
         ORDER BY serie
-    """).fetchall()
-
-    conn.close()
-
-    return rows
+    """)
 
 
 def sermons_by_series(serie):
 
-    conn = get_db()
-
-    rows = conn.execute("""
+    rows = fetch_all("""
         SELECT *
         FROM sermons
-        WHERE serie = ?
+        WHERE serie = :serie
         ORDER BY preaching_date DESC
-    """, (serie,)).fetchall()
-
-    conn.close()
+    """, {"serie": serie})
 
     return serialize_sermons(rows)
 
 
 def get_preachers():
 
-    conn = get_db()
-
-    rows = conn.execute("""
-        SELECT preacher_name, COUNT(*) as n
+    return fetch_all("""
+        SELECT preacher_name, COUNT(*) AS n
         FROM sermons
+        WHERE preacher_name IS NOT NULL
+        AND preacher_name != ''
         GROUP BY preacher_name
         ORDER BY preacher_name
-    """).fetchall()
-
-    conn.close()
-
-    return rows
+    """)
 
 
 def get_years():
 
-    conn = get_db()
-
-    rows = conn.execute("""
-        SELECT
-        SUBSTR(preaching_date, 1, 4) as year,
-        COUNT(*) as n
+    rows = fetch_all("""
+        SELECT preaching_date
         FROM sermons
-        WHERE preaching_date != ''
-        GROUP BY year
-        ORDER BY year DESC
-    """).fetchall()
+        WHERE preaching_date IS NOT NULL
+        AND preaching_date != ''
+    """)
 
-    conn.close()
+    counts = Counter()
 
-    return rows
+    for row in rows:
+        year = str(row["preaching_date"])[:4]
+
+        if len(year) == 4 and year.isdigit():
+            counts[year] += 1
+
+    return [
+        {
+            "year": year,
+            "n": counts[year],
+        }
+        for year in sorted(counts, reverse=True)
+    ]
 
 
 def sermons_by_preacher(preacher):
 
-    conn = get_db()
-
-    rows = conn.execute("""
+    rows = fetch_all("""
         SELECT *
         FROM sermons
-        WHERE preacher_name = ?
+        WHERE preacher_name = :preacher
         ORDER BY preaching_date DESC
-    """, (preacher,)).fetchall()
-
-    conn.close()
+    """, {"preacher": preacher})
 
     return serialize_sermons(rows)
 
 
 def sermons_by_year(year):
 
-    conn = get_db()
-
-    rows = conn.execute("""
+    rows = fetch_all("""
         SELECT *
         FROM sermons
-        WHERE SUBSTR(preaching_date, 1, 4) = ?
+        WHERE preaching_date LIKE :year_prefix
         ORDER BY preaching_date DESC
-    """, (year,)).fetchall()
-
-    conn.close()
+    """, {"year_prefix": f"{year}%"})
 
     return serialize_sermons(rows)
 
 
 def get_home_stats():
 
-    conn = get_db()
+    row = fetch_one("""
+        SELECT
+            COUNT(*) AS sermons,
+            COUNT(DISTINCT NULLIF(preacher_name, '')) AS preachers,
+            COUNT(DISTINCT NULLIF(serie, '')) AS series
+        FROM sermons
+    """)
 
-    row = conn.execute("""
-
-    SELECT
-        COUNT(*) as sermons,
-        COUNT(DISTINCT preacher_name) as preachers,
-        COUNT(DISTINCT serie) as series
-
-    FROM sermons
-
-    """).fetchone()
-
-    conn.close()
-
-    return row
+    return row or {
+        "sermons": 0,
+        "preachers": 0,
+        "series": 0,
+    }

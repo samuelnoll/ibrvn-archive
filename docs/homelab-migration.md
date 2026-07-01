@@ -1,74 +1,84 @@
 # IBRVN Archive Homelab Migration
 
-This repository can move to the mini PC in two safer phases.
+This repository moved through two phases:
 
-## Phase 1: Move the current app as-is
+1. run the existing app in Docker with the legacy SQLite gold file
+2. switch the gold layer to PostgreSQL while keeping bronze and silver files on disk
 
-Goal:
+## Current state
 
-- keep the current SQLite-based architecture
-- stop depending on `/opt/sermon-platform`, `venv`, `nohup`, and PID files
-- run the FastAPI app in Docker on the shared `homelab` network
+The repository is now ready for PostgreSQL-backed gold storage.
 
-Deliverables already in this repo:
+Implemented in code:
 
-- `Dockerfile`
-- `compose.yaml`
-- `.env.example`
-- `scripts/up-api.sh`
+- API reads from a configurable database backend
+- gold loaders write through PostgreSQL-compatible upserts
+- schema and indexes are created automatically on startup
+- a one-time backfill script copies rows from the legacy `archive.db`
+- the old SQLite file can stay mounted for rollback safety
 
-Recommended host directories:
+## Required environment
 
-```text
-/srv/homelab/volumes/ibrvn-archive/
-  data/
-    bronze/
-    silver/
-    gold/
-  logs/
+Review `.env` on the mini PC and make sure these values are set:
+
+```dotenv
+ARCHIVE_DATABASE_BACKEND=postgres
+ARCHIVE_DATABASE_HOST=postgres
+ARCHIVE_DATABASE_PORT=5432
+ARCHIVE_DATABASE_NAME=app
+ARCHIVE_DATABASE_USER=app
+ARCHIVE_DATABASE_PASSWORD=<same password used in homelab-infra>
+
+ARCHIVE_GOLD_DB_PATH=/app/data/gold/archive.db
+ARCHIVE_LEGACY_SQLITE_PATH=/app/data/gold/archive.db
 ```
 
-Bring-up flow on Ubuntu:
+The `postgres` hostname works because both stacks join the shared Docker network
+`homelab`.
+
+## Phase 2 rollout on the mini PC
+
+Inside `~/src/ibrvn-archive`:
 
 ```bash
-cd ~/src/ibrvn-archive
-cp .env.example .env
-mkdir -p /srv/homelab/volumes/ibrvn-archive/data
-mkdir -p /srv/homelab/volumes/ibrvn-archive/logs
-chmod +x scripts/up-api.sh
-./scripts/up-api.sh
+git pull
+docker compose down
+docker compose up -d --build
+docker exec ibrvn-archive-api python scripts/migrate_sqlite_to_postgres.py
+docker exec ibrvn-archive-api python scripts/sermon_data_quality.py
 ```
 
-The app will expose the current archive on port `8000` and will keep using
-the SQLite file mounted at `/srv/homelab/volumes/ibrvn-archive/data/gold/archive.db`.
+The API container now starts with PostgreSQL as the active gold database. The
+legacy SQLite file is only used by the migration script.
 
-## Phase 2: Switch gold storage to PostgreSQL
+## Optional reprocessing after the switch
 
-Do this only after the API is already stable on the mini PC.
+If you want to rebuild gold from silver after the migration:
 
-Recommended sequence:
+```bash
+docker exec ibrvn-archive-api python -m jobs.wordpress_job
+docker exec ibrvn-archive-api python -m jobs.youtube_job --mode historic
+docker exec ibrvn-archive-api python -m jobs.youtube_job --mode weekly
+```
 
-1. Keep bronze and silver files on disk.
-2. Create a new `sermons` table in PostgreSQL with the same business fields.
-3. Replace direct `sqlite3` access with a database abstraction compatible with PostgreSQL.
-4. Migrate gold loaders (`pipelines/gold/*`) to write to PostgreSQL.
-5. Migrate API queries from SQLite syntax to PostgreSQL-compatible SQL.
-6. Add a one-time backfill from the existing `archive.db`.
-7. Validate counts, date range, missing links, and sample search results before switching the API over.
+Those jobs now write to PostgreSQL instead of SQLite.
 
-## Data to copy from the Raspberry or old host
+## Validation checklist
 
-This repo does not include your runtime data. Before starting the container on
-the mini PC, copy at least:
+After the rollout, verify:
 
-- the `data/` directory, especially `data/gold/archive.db`
-- the latest WordPress XML under `data/bronze/`
-- any logs you want to preserve
-- the secret used for `YOUTUBE_API_KEY`
+1. `docker logs ibrvn-archive-api --tail 100` has no startup errors.
+2. `http://<mini-pc-ip>:8000` loads normally.
+3. search, preachers, series and years pages return expected data.
+4. `docker exec ibrvn-archive-api python scripts/sermon_data_quality.py` reports the expected row counts and date range.
 
-## What changes already happened for this phase
+## Rollback
 
-- gold database path is now configurable through `ARCHIVE_GOLD_DB_PATH`
-- export path is configurable through `ARCHIVE_EXPORT_DIR`
-- `make api` now respects `ARCHIVE_API_HOST` and `ARCHIVE_API_PORT`
-- missing runtime dependencies needed by a clean container were added to `requirements.txt`
+If you need to go back temporarily:
+
+1. set `ARCHIVE_DATABASE_BACKEND=sqlite` in `.env`
+2. rebuild the API container
+3. keep using `/app/data/gold/archive.db` as before
+
+Because the old file stays mounted, rollback is fast and does not require a new
+copy from the Raspberry or previous host.

@@ -74,7 +74,7 @@ C[YouTube Data API] --> B(Bronze - JSON)
 
 B --> D(Silver - CSV)
 
-E --> W[(Gold - SQLite Database)]
+E --> W[(Gold - PostgreSQL Database)]
 
 W --> F[FastAPI Backend]
 
@@ -111,6 +111,10 @@ Separating raw, cleaned, and curated data makes pipelines:
 
 The raw source data is preserved in the Bronze layer so the pipeline can
 be replayed if needed.
+
+In the homelab deployment, the curated Gold layer now lives in PostgreSQL.
+The legacy `archive.db` file may still be kept on disk for backfill and
+rollback safety.
 
 ------------------------------------------------------------------------
 
@@ -246,9 +250,9 @@ User --> Browser
 
 Browser --> FastAPI
 
-FastAPI --> SQLite
+FastAPI --> PostgreSQL
 
-SQLite --> FastAPI
+PostgreSQL --> FastAPI
 
 FastAPI --> HTML Templates
 
@@ -321,16 +325,16 @@ Chosen due to its strong ecosystem for:
 -   scripting
 -   API integration
 
-## SQLite
+## PostgreSQL in Homelab
 
-SQLite powers the Gold layer.
+In the homelab deployment, PostgreSQL powers the Gold layer.
 
 Reasons for this choice:
 
--   lightweight
--   zero infrastructure
--   excellent read performance
--   perfect for small datasets
+-   central shared database for multiple services
+-   better fit for containerized infrastructure
+-   easier future integration with Airflow and other apps
+-   safer growth path than keeping the production gold layer in a local file
 
 ## FastAPI
 
@@ -367,6 +371,10 @@ Run pipelines manually:
     make job-youtube-historic
     make job-wordpress-historic
 
+Backfill the legacy SQLite gold into PostgreSQL:
+
+    make migrate-gold-postgres
+
 ------------------------------------------------------------------------
 
 # Future Improvements
@@ -395,5 +403,6 @@ Docker-based intermediate step documented here:
 
 - `docs/homelab-migration.md`
 
-This stage keeps the current SQLite flow but removes the old `venv` + `nohup`
-deployment pattern and prepares the repo for the later PostgreSQL migration.
+The homelab version now supports PostgreSQL as the gold storage backend while
+keeping the legacy SQLite file available for one-time backfill and fast
+rollback.

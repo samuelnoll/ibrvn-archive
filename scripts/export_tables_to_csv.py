@@ -1,4 +1,3 @@
-import sqlite3
 import csv
 import os
 import sys
@@ -8,19 +7,18 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from archive_settings import EXPORT_DIR, GOLD_DB_PATH
+from archive_database import fetch_all, list_tables
+from archive_settings import EXPORT_DIR
 
-DB_PATH = str(GOLD_DB_PATH)
 OUTPUT_DIR = str(EXPORT_DIR)
 
 
-def export_table(conn, table):
+def export_table(table):
 
-    cursor = conn.execute(f"SELECT * FROM {table}")
-
-    columns = [description[0] for description in cursor.description]
-
-    rows = cursor.fetchall()
+    rows = fetch_all(f"""
+        SELECT *
+        FROM {table}
+    """)
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
@@ -28,38 +26,22 @@ def export_table(conn, table):
 
     with open(file_path, "w", newline="", encoding="utf-8") as f:
 
-        writer = csv.writer(f)
+        if rows:
+            columns = list(rows[0].keys())
+            writer = csv.DictWriter(f, fieldnames=columns)
+            writer.writeheader()
+            writer.writerows(rows)
+        else:
+            writer = csv.writer(f)
+            writer.writerow([])
 
-        writer.writerow(columns)
-
-        writer.writerows(rows)
-
-    print(f"Exported {table} → {file_path}")
-
-
-def list_tables(conn):
-
-    cursor = conn.execute("""
-        SELECT name
-        FROM sqlite_master
-        WHERE type='table'
-        AND name NOT LIKE 'sqlite_%'
-    """)
-
-    return [row[0] for row in cursor.fetchall()]
+    print(f"Exported {table} -> {file_path}")
 
 
 def run():
 
-    conn = sqlite3.connect(DB_PATH)
-
-    tables = list_tables(conn)
-
-    for table in tables:
-
-        export_table(conn, table)
-
-    conn.close()
+    for table in list_tables():
+        export_table(table)
 
 
 if __name__ == "__main__":
