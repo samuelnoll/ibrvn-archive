@@ -11,13 +11,23 @@ templates = Jinja2Templates(directory="api/templates")
 app.mount("/static", StaticFiles(directory="api/static"), name="static")
 
 
+def render_template(request: Request, template_name: str, context: dict):
+
+    return templates.TemplateResponse(
+        request=request,
+        name=template_name,
+        context=context
+    )
+
+
 @app.get("/")
 def home(request: Request):
 
     sermons = get_recent_sermons()
     stats = get_home_stats()
 
-    return templates.TemplateResponse(
+    return render_template(
+        request,
         "home.html",
         {
             "request": request,
@@ -33,7 +43,8 @@ def search(request: Request, q: str):
 
     sermons = search_sermons(q)
 
-    return templates.TemplateResponse(
+    return render_template(
+        request,
         "sermons.html",
         {
             "request": request,
@@ -49,7 +60,8 @@ def books(request: Request):
 
     rows = get_books()
 
-    return templates.TemplateResponse(
+    return render_template(
+        request,
         "books.html",
         {
             "request": request,
@@ -64,7 +76,8 @@ def book(request: Request, book: str):
 
     sermons = sermons_by_book(book)
 
-    return templates.TemplateResponse(
+    return render_template(
+        request,
         "sermons.html",
         {
             "request": request,
@@ -80,7 +93,8 @@ def series(request: Request):
 
     rows = get_series()
 
-    return templates.TemplateResponse(
+    return render_template(
+        request,
         "series.html",
         {
             "request": request,
@@ -95,7 +109,8 @@ def serie(request: Request, serie: str):
 
     sermons = sermons_by_series(serie)
 
-    return templates.TemplateResponse(
+    return render_template(
+        request,
         "sermons.html",
         {
             "request": request,
@@ -111,7 +126,8 @@ def preachers(request: Request):
 
     rows = get_preachers()
 
-    return templates.TemplateResponse(
+    return render_template(
+        request,
         "preachers.html",
         {
             "request": request,
@@ -126,7 +142,8 @@ def years(request: Request):
 
     rows = get_years()
 
-    return templates.TemplateResponse(
+    return render_template(
+        request,
         "years.html",
         {
             "request": request,
@@ -141,7 +158,8 @@ def preacher(request: Request, preacher: str):
 
     sermons = sermons_by_preacher(preacher)
 
-    return templates.TemplateResponse(
+    return render_template(
+        request,
         "sermons.html",
         {
             "request": request,
@@ -157,7 +175,8 @@ def year(request: Request, year: str):
 
     sermons = sermons_by_year(year)
 
-    return templates.TemplateResponse(
+    return render_template(
+        request,
         "sermons.html",
         {
             "request": request,
