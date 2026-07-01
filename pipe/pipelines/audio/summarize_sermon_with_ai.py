@@ -21,8 +21,8 @@ SERMON_SUMMARY_SYSTEM_PROMPT = (
 )
 
 SERMON_SUMMARY_PROMPT = (
-    "Resuma a pregacao em portugues do Brasil em 1 a 3 paragrafos, "
-    "destacando tema principal, texto biblico e aplicacoes praticas."
+    "Resuma a pregacao em portugues do Brasil em no máximo 50 palavras, "
+    "destacando principalmente o tema principal e enfoques do pregador"
 )
 
 
