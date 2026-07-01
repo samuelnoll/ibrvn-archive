@@ -1,9 +1,0 @@
-paths:
-
-  bronze: data/bronze
-  silver: data/silver
-  gold: data/gold
-
-database:
-
-  gold_db: data/gold/archive.db

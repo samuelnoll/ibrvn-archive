@@ -1,11 +1,8 @@
-import sqlite3
-
-DB_PATH = "data/gold/archive.db"
+from shared.db import fetch_all, fetch_one, initialize_database
 
 
-def get_db():
-
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-
-    return conn
+__all__ = [
+    "fetch_all",
+    "fetch_one",
+    "initialize_database",
+]

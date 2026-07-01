@@ -1,0 +1,56 @@
+x-archive-common-environment: &archive-common-environment
+  TZ: ${TZ}
+  ARCHIVE_DATABASE_BACKEND: ${ARCHIVE_DATABASE_BACKEND}
+  ARCHIVE_DATABASE_HOST: ${ARCHIVE_DATABASE_HOST}
+  ARCHIVE_DATABASE_PORT: ${ARCHIVE_DATABASE_PORT}
+  ARCHIVE_DATABASE_NAME: ${ARCHIVE_DATABASE_NAME}
+  ARCHIVE_DATABASE_USER: ${ARCHIVE_DATABASE_USER}
+  ARCHIVE_DATABASE_PASSWORD: ${ARCHIVE_DATABASE_PASSWORD}
+  ARCHIVE_DATABASE_URL: ${ARCHIVE_DATABASE_URL}
+  ARCHIVE_GOLD_DB_PATH: ${ARCHIVE_GOLD_DB_PATH}
+  ARCHIVE_LEGACY_SQLITE_PATH: ${ARCHIVE_LEGACY_SQLITE_PATH}
+  ARCHIVE_EXPORT_DIR: ${ARCHIVE_EXPORT_DIR}
+  ARCHIVE_AUDIO_RAW_DIR: ${ARCHIVE_AUDIO_RAW_DIR}
+
+services:
+  archive-api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    container_name: ibrvn-archive-api
+    restart: unless-stopped
+    environment:
+      <<: *archive-common-environment
+      ARCHIVE_API_HOST: ${ARCHIVE_API_HOST}
+      ARCHIVE_API_PORT: ${ARCHIVE_API_PORT}
+    ports:
+      - "${ARCHIVE_API_PORT}:${ARCHIVE_API_PORT}"
+    volumes:
+      - ${ARCHIVE_DATA_HOST_PATH}:/app/data
+      - ${ARCHIVE_LOGS_HOST_PATH}:/app/logs
+    networks:
+      - homelab
+
+  archive-pipelines:
+    build:
+      context: .
+      dockerfile: pipe/Dockerfile
+    container_name: ibrvn-archive-pipelines
+    restart: unless-stopped
+    environment:
+      <<: *archive-common-environment
+      YOUTUBE_API_KEY: ${YOUTUBE_API_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_TRANSCRIPTION_MODEL: ${OPENAI_TRANSCRIPTION_MODEL}
+      OPENAI_SUMMARY_MODEL: ${OPENAI_SUMMARY_MODEL}
+    command: ["sleep", "infinity"]
+    volumes:
+      - ${ARCHIVE_DATA_HOST_PATH}:/app/data
+      - ${ARCHIVE_LOGS_HOST_PATH}:/app/logs
+    networks:
+      - homelab
+
+networks:
+  homelab:
+    name: ${HOMELAB_NETWORK}
+    external: true

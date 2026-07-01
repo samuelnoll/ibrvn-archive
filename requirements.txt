@@ -1,5 +1,2 @@
-pandas
-lxml
-fastapi
-uvicorn
-pyyaml
+-r api/requirements.txt
+-r pipe/requirements.txt

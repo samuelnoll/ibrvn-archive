@@ -1,0 +1,9 @@
+lxml
+mutagen
+openai
+pandas
+pyyaml
+requests
+sqlalchemy
+psycopg[binary]
+yt-dlp
