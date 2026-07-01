@@ -1,7 +1,7 @@
 import logging
-import time
 import os
 import sys
+import time
 from datetime import datetime
 
 PROJECT_ROOT = os.path.dirname(
@@ -11,9 +11,9 @@ PROJECT_ROOT = os.path.dirname(
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from pipe.pipelines.silver.wordpress_historic_bronze_to_silver import run as bronze_to_silver
-from pipe.pipelines.gold.wordpress_historic_silver_to_gold import run as silver_to_gold
 from pipe.pipelines.gold.optimize_gold import run as optimize_gold
+from pipe.pipelines.gold.silver_to_gold_refresh import run as silver_to_gold
+from pipe.pipelines.silver.wordpress_historic_bronze_to_silver import run as bronze_to_silver
 
 
 script_name = os.path.splitext(os.path.basename(__file__))[0]
@@ -44,9 +44,7 @@ def run_step(name, func):
     logging.info(f"Starting step: {name}")
 
     start = time.time()
-
     func()
-
     elapsed = time.time() - start
 
     logging.info(f"Finished step: {name} ({elapsed:.2f}s)")
@@ -57,8 +55,8 @@ def run_job():
     logging.info("WordPress job started")
 
     pipeline = [
-        ("WordPress historic bronze → silver", bronze_to_silver),
-        ("WordPress historic silver → gold", silver_to_gold),
+        ("WordPress historic bronze to silver", bronze_to_silver),
+        ("WordPress historic silver to gold", silver_to_gold),
         ("Optimize gold tables", optimize_gold),
     ]
 

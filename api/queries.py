@@ -3,6 +3,8 @@ from datetime import date, datetime
 
 from .db import fetch_all, fetch_one
 
+GOLD_TABLE = "gold_sermons"
+
 
 def format_brazilian_date(value):
 
@@ -69,8 +71,8 @@ def get_last_update():
 
     row = fetch_one("""
         SELECT MAX(preaching_date) AS d
-        FROM sermons
-    """)
+        FROM {table}
+    """.format(table=GOLD_TABLE))
 
     return format_brazilian_date(row["d"]) if row else ""
 
@@ -79,10 +81,10 @@ def get_recent_sermons(limit=20):
 
     rows = fetch_all("""
         SELECT *
-        FROM sermons
+        FROM {table}
         ORDER BY preaching_date DESC
         LIMIT :limit
-    """, {"limit": limit})
+    """.format(table=GOLD_TABLE), {"limit": limit})
 
     return serialize_sermons(rows)
 
@@ -93,14 +95,14 @@ def search_sermons(q):
 
     rows = fetch_all("""
         SELECT *
-        FROM sermons
+        FROM {table}
         WHERE
             LOWER(COALESCE(title, '')) LIKE :pattern
             OR LOWER(COALESCE(preacher_name, '')) LIKE :pattern
             OR LOWER(COALESCE(serie, '')) LIKE :pattern
             OR LOWER(COALESCE(text_reference, '')) LIKE :pattern
         ORDER BY preaching_date DESC
-    """, {"pattern": pattern})
+    """.format(table=GOLD_TABLE), {"pattern": pattern})
 
     return serialize_sermons(rows)
 
@@ -109,10 +111,10 @@ def get_books():
 
     rows = fetch_all("""
         SELECT text_reference
-        FROM sermons
+        FROM {table}
         WHERE text_reference IS NOT NULL
         AND text_reference != ''
-    """)
+    """.format(table=GOLD_TABLE))
 
     counts = Counter()
 
@@ -135,10 +137,10 @@ def sermons_by_book(book):
 
     rows = fetch_all("""
         SELECT *
-        FROM sermons
+        FROM {table}
         WHERE LOWER(COALESCE(text_reference, '')) LIKE :prefix
         ORDER BY preaching_date DESC
-    """, {"prefix": f"{book.lower()}%"})
+    """.format(table=GOLD_TABLE), {"prefix": f"{book.lower()}%"})
 
     return serialize_sermons(rows)
 
@@ -147,22 +149,22 @@ def get_series():
 
     return fetch_all("""
         SELECT serie, COUNT(*) AS n
-        FROM sermons
+        FROM {table}
         WHERE serie IS NOT NULL
         AND serie != ''
         GROUP BY serie
         ORDER BY serie
-    """)
+    """.format(table=GOLD_TABLE))
 
 
 def sermons_by_series(serie):
 
     rows = fetch_all("""
         SELECT *
-        FROM sermons
+        FROM {table}
         WHERE serie = :serie
         ORDER BY preaching_date DESC
-    """, {"serie": serie})
+    """.format(table=GOLD_TABLE), {"serie": serie})
 
     return serialize_sermons(rows)
 
@@ -171,22 +173,22 @@ def get_preachers():
 
     return fetch_all("""
         SELECT preacher_name, COUNT(*) AS n
-        FROM sermons
+        FROM {table}
         WHERE preacher_name IS NOT NULL
         AND preacher_name != ''
         GROUP BY preacher_name
         ORDER BY preacher_name
-    """)
+    """.format(table=GOLD_TABLE))
 
 
 def get_years():
 
     rows = fetch_all("""
         SELECT preaching_date
-        FROM sermons
+        FROM {table}
         WHERE preaching_date IS NOT NULL
         AND preaching_date != ''
-    """)
+    """.format(table=GOLD_TABLE))
 
     counts = Counter()
 
@@ -209,10 +211,10 @@ def sermons_by_preacher(preacher):
 
     rows = fetch_all("""
         SELECT *
-        FROM sermons
+        FROM {table}
         WHERE preacher_name = :preacher
         ORDER BY preaching_date DESC
-    """, {"preacher": preacher})
+    """.format(table=GOLD_TABLE), {"preacher": preacher})
 
     return serialize_sermons(rows)
 
@@ -221,10 +223,10 @@ def sermons_by_year(year):
 
     rows = fetch_all("""
         SELECT *
-        FROM sermons
+        FROM {table}
         WHERE preaching_date LIKE :year_prefix
         ORDER BY preaching_date DESC
-    """, {"year_prefix": f"{year}%"})
+    """.format(table=GOLD_TABLE), {"year_prefix": f"{year}%"})
 
     return serialize_sermons(rows)
 
@@ -236,8 +238,8 @@ def get_home_stats():
             COUNT(*) AS sermons,
             COUNT(DISTINCT NULLIF(preacher_name, '')) AS preachers,
             COUNT(DISTINCT NULLIF(serie, '')) AS series
-        FROM sermons
-    """)
+        FROM {table}
+    """.format(table=GOLD_TABLE))
 
     return row or {
         "sermons": 0,

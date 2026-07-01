@@ -16,7 +16,7 @@ def total_rows():
 
     row = fetch_one("""
         SELECT COUNT(*) AS total
-        FROM sermons
+        FROM gold_sermons
     """)
 
     return row["total"]
@@ -26,7 +26,7 @@ def count_missing(column):
 
     row = fetch_one(f"""
         SELECT COUNT(*) AS total
-        FROM sermons
+        FROM gold_sermons
         WHERE {column} IS NULL
         OR {column} = ''
     """)
@@ -38,7 +38,7 @@ def count_missing_links():
 
     row = fetch_one("""
         SELECT COUNT(*) AS total
-        FROM sermons
+        FROM gold_sermons
         WHERE (youtube_link IS NULL OR youtube_link = '')
         AND (wordpress_link IS NULL OR wordpress_link = '')
     """)
@@ -52,7 +52,7 @@ def count_duplicates():
         SELECT COUNT(*) AS total
         FROM (
             SELECT preaching_date
-            FROM sermons
+            FROM gold_sermons
             GROUP BY preaching_date
             HAVING COUNT(*) > 1
         ) duplicates
@@ -65,7 +65,7 @@ def get_dates():
 
     rows = fetch_all("""
         SELECT preaching_date
-        FROM sermons
+        FROM gold_sermons
         WHERE preaching_date IS NOT NULL
         AND preaching_date != ''
     """)

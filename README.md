@@ -63,11 +63,30 @@ Current sources:
 - WordPress XML export for the historical archive
 - YouTube Data API v3 for ongoing sermon ingestion
 
+Current orchestration shape in `homelab-airflow`:
+
+- `ibrvn_youtube_bronze_historic`
+- `ibrvn_youtube_bronze_daily`
+- `ibrvn_wordpress_historic`
+- `ibrvn_metadata_silver`
+- `ibrvn_audio_enrichment`
+- `ibrvn_gold_refresh`
+
 ## Data Model
 
 The curated gold layer contains one unified sermon row per `preaching_date`.
 That row can merge multiple source references at the same time, such as
 YouTube, WordPress, and audio links.
+
+Silver is stored in PostgreSQL tables, not CSV files. The current silver model
+is centered on:
+
+- `silver_source_items`
+- `silver_sermon_metadata`
+- `silver_media_assets`
+- `silver_transcripts`
+- `silver_summaries`
+- `silver_processing_runs`
 
 Current core fields:
 
@@ -122,8 +141,9 @@ execution.
 
 - The API container does not need `YOUTUBE_API_KEY`.
 - The pipeline container owns ingestion credentials and heavier dependencies.
-- Bronze and silver artifacts stay on disk.
-- Gold is stored in PostgreSQL in the homelab deployment.
+- Bronze stays on disk for source snapshots and raw files.
+- Silver and gold are stored in PostgreSQL in the homelab deployment.
+- Audio enrichment writes duration, transcript, and summary outputs into silver tables.
 
 ## Docs
 

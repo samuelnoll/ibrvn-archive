@@ -1,7 +1,7 @@
 paths:
 
+  audio_raw: data/audio/raw
   bronze: data/bronze
-  silver: data/silver
   gold: data/gold
 
 database:

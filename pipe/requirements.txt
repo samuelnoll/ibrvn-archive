@@ -1,4 +1,6 @@
 lxml
+mutagen
+openai
 pandas
 pyyaml
 requests

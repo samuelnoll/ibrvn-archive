@@ -1,8 +1,8 @@
+import argparse
 import logging
-import time
 import os
 import sys
-import argparse
+import time
 from datetime import datetime
 
 PROJECT_ROOT = os.path.dirname(
@@ -13,9 +13,9 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 from pipe.pipelines.bronze.youtube_source_to_bronze import run as source_to_bronze
-from pipe.pipelines.silver.youtube_bronze_to_silver import run as bronze_to_silver
-from pipe.pipelines.gold.youtube_silver_to_gold import run as silver_to_gold
 from pipe.pipelines.gold.optimize_gold import run as optimize_gold
+from pipe.pipelines.gold.silver_to_gold_refresh import run as silver_to_gold
+from pipe.pipelines.silver.youtube_bronze_to_silver import run as bronze_to_silver
 
 
 script_name = os.path.splitext(os.path.basename(__file__))[0]
@@ -62,9 +62,9 @@ def run_job(mode):
     logging.info(f"YouTube job started (mode={mode})")
 
     pipeline = [
-        (f"YouTube {mode} source → bronze", source_to_bronze, mode),
-        (f"YouTube {mode} bronze → silver", bronze_to_silver, mode),
-        (f"YouTube {mode} silver → gold", silver_to_gold, mode),
+        (f"YouTube {mode} source to bronze", source_to_bronze, mode),
+        (f"YouTube {mode} bronze to silver", bronze_to_silver, mode),
+        (f"YouTube {mode} silver to gold", silver_to_gold, None),
         ("Optimize gold tables", optimize_gold, None),
     ]
 
