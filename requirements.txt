@@ -1,9 +1,2 @@
-pandas
-lxml
-fastapi
-uvicorn
-pyyaml
-jinja2
-requests
-sqlalchemy
-psycopg[binary]
+-r api/requirements.txt
+-r pipe/requirements.txt

@@ -48,8 +48,8 @@ Inside `~/src/ibrvn-archive`:
 git pull
 docker compose down
 docker compose up -d --build
-docker exec ibrvn-archive-pipelines python scripts/migrate_sqlite_to_postgres.py
-docker exec ibrvn-archive-pipelines python scripts/sermon_data_quality.py
+docker exec ibrvn-archive-pipelines python pipe/scripts/migrate_sqlite_to_postgres.py
+docker exec ibrvn-archive-pipelines python pipe/scripts/sermon_data_quality.py
 ```
 
 The API container now starts with PostgreSQL as the active gold database. The
@@ -61,9 +61,9 @@ SQLite file is only used by the migration script.
 If you want to rebuild gold from silver after the migration:
 
 ```bash
-docker exec ibrvn-archive-pipelines python -m jobs.wordpress_job
-docker exec ibrvn-archive-pipelines python -m jobs.youtube_job --mode historic
-docker exec ibrvn-archive-pipelines python -m jobs.youtube_job --mode weekly
+docker exec ibrvn-archive-pipelines python -m pipe.jobs.wordpress_job
+docker exec ibrvn-archive-pipelines python -m pipe.jobs.youtube_job --mode historic
+docker exec ibrvn-archive-pipelines python -m pipe.jobs.youtube_job --mode weekly
 ```
 
 Those jobs now write to PostgreSQL instead of SQLite.
@@ -75,7 +75,7 @@ After the rollout, verify:
 1. `docker logs ibrvn-archive-api --tail 100` has no startup errors.
 2. `http://<mini-pc-ip>:8000` loads normally.
 3. search, preachers, series and years pages return expected data.
-4. `docker exec ibrvn-archive-pipelines python scripts/sermon_data_quality.py` reports the expected row counts and date range.
+4. `docker exec ibrvn-archive-pipelines python pipe/scripts/sermon_data_quality.py` reports the expected row counts and date range.
 
 ## Rollback
 

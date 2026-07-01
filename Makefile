@@ -13,26 +13,26 @@ dev:
 	source venv/bin/activate
 
 export:
-	python scripts/export_tables_to_csv.py
+	python pipe/scripts/export_tables_to_csv.py
 
 quality:
-	python scripts/sermon_data_quality.py
+	python pipe/scripts/sermon_data_quality.py
 
 optimize:
-	python -m pipelines.gold.optimize_gold
+	python -m pipe.pipelines.gold.optimize_gold
 
 migrate-gold-postgres:
-	python scripts/migrate_sqlite_to_postgres.py
+	python pipe/scripts/migrate_sqlite_to_postgres.py
 
 job-youtube-weekly:
-	python -m jobs.youtube_job --mode weekly
+	python -m pipe.jobs.youtube_job --mode weekly
 
 job-youtube-historic:
-	python -m jobs.youtube_job --mode historic
+	python -m pipe.jobs.youtube_job --mode historic
 
 job-wordpress-historic:
-	python -m jobs.wordpress_job
+	python -m pipe.jobs.wordpress_job
 
 job-historic:
-	python -m jobs.youtube_job --mode historic
-	python -m jobs.wordpress_job
+	python -m pipe.jobs.youtube_job --mode historic
+	python -m pipe.jobs.wordpress_job

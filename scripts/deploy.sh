@@ -1,9 +1,11 @@
 #!/bin/bash
 
-cd /opt/sermon-platform
+set -euo pipefail
 
-git pull origin main
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-source venv/bin/activate
-
-make pipeline
+docker compose \
+  --env-file "${REPO_ROOT}/.env" \
+  -f "${REPO_ROOT}/compose.yaml" \
+  up -d --build

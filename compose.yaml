@@ -15,7 +15,7 @@ services:
   archive-api:
     build:
       context: .
-      dockerfile: Dockerfile.api
+      dockerfile: api/Dockerfile
     container_name: ibrvn-archive-api
     restart: unless-stopped
     environment:
@@ -33,7 +33,7 @@ services:
   archive-pipelines:
     build:
       context: .
-      dockerfile: Dockerfile.pipelines
+      dockerfile: pipe/Dockerfile
     container_name: ibrvn-archive-pipelines
     restart: unless-stopped
     environment:

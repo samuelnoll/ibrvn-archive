@@ -31,14 +31,9 @@ Phase 1 does not introduce `sermon_id`.
 ```text
 ibrvn-archive/
   api/
-  jobs/
-  pipelines/
-  config/
+  pipe/
+  shared/
   docs/
-  Dockerfile.api
-  Dockerfile.pipelines
-  requirements-api.txt
-  requirements-pipelines.txt
 ```
 
 Runtime responsibilities:
@@ -126,8 +121,8 @@ If needed, introduce a surrogate `sermon_id` with a strict 1:1 mapping to
 
 This first migration step should include:
 
-- separate Dockerfiles for API and pipelines
-- separate dependency files for API and pipelines
+- separate Dockerfiles inside `api/` and `pipe/`
+- separate dependency files inside `api/` and `pipe/`
 - compose changes to run both containers
 - Airflow environment and helper changes to target pipelines
 - documentation updates
