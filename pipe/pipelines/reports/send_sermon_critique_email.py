@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import argparse
+import json
+import re
 import smtplib
 from email.message import EmailMessage
 
@@ -23,29 +25,26 @@ from shared.settings import (
 SERMON_CRITIQUE_SYSTEM_PROMPT = (
     "You are a careful reformed baptist Christian assistant writing a thoughtful sermon review "
     "in Brazilian Portuguese. Be specific and useful. Always answer in Brazilian Portuguese. "
-    "You must follow the requested structure exactly and fill every requested section. "
-    "Do not write a single running summary. You must respond with exactly 8 sections, "
-    "using exactly these titles and in this order: "
-    "## 1. Breve resumo da mensagem "
-    "## 2. Tema central da pregacao "
-    "## 3. Estrutura da pregacao "
-    "## 4. Teses centrais enfatizadas pelo pregador "
-    "## 5. Principais argumentos para os pontos centrais "
-    "## 6. Pontos que o pregador nao embasou suficientemente "
-    "## 7. Pontos polemicos ou fora do consenso teologico batista reformado "
-    "## 8. Aplicacoes utilizadas. "
-    "You must fill all 8 sections, never skip sections, never rename the headings, "
-    "and never return unstructured text. In each section, be specific and concrete. "
-    "In section 3, describe the logical sequence of the sermon if it exists. "
-    "In section 6, point out lack of support only when the transcript justifies that criticism. "
-    "In section 7, be balanced; if there are no clear controversial points, explicitly say so. "
-    "If something is unclear in the transcript, explicitly say that in the relevant section instead "
-    "of inventing information. Prefer depth and clarity over brevity, and only finish after "
-    "completing all 8 sections."
+    "You must return only valid JSON, with no Markdown, no commentary, and no text outside the JSON object. "
+    "The JSON object must contain exactly these keys: "
+    "\"breve_resumo_da_mensagem\", "
+    "\"tema_central_da_pregacao\", "
+    "\"estrutura_da_pregacao\", "
+    "\"teses_centrais_enfatizadas\", "
+    "\"principais_argumentos\", "
+    "\"pontos_sem_embasamento_suficiente\", "
+    "\"pontos_polemicos_ou_fora_do_consenso\", "
+    "\"aplicacoes_utilizadas\". "
+    "Use string values for the first three keys. Use arrays of strings for the last five keys. "
+    "All keys are mandatory. If a section has no clear items, return an empty array or a string "
+    "explicitly stating that the transcript does not make that point clear. "
+    "Do not invent information. In \"pontos_polemicos_ou_fora_do_consenso\", be balanced; if there "
+    "are no clear controversial points, return an array with one string saying so explicitly."
 )
 
 SERMON_CRITIQUE_PROMPT = """
 Analise a transcricao a seguir e produza a critica conforme as instrucoes definidas.
+Retorne somente JSON valido.
 """
 
 SERMON_CRITIQUE_MAX_OUTPUT_TOKENS = 6000
@@ -74,6 +73,46 @@ def request_critique(transcript_text: str):
     )
     response.raise_for_status()
     return response.json()
+
+
+def extract_json_payload(text_value: str):
+
+    content = (text_value or "").strip()
+
+    if not content:
+        raise ValueError("Critique response is empty")
+
+    if content.startswith("```"):
+        content = re.sub(r"^```(?:json)?\s*", "", content.strip(), flags=re.IGNORECASE)
+        content = re.sub(r"\s*```$", "", content.strip())
+
+    try:
+        return json.loads(content)
+    except json.JSONDecodeError:
+        pass
+
+    match = re.search(r"\{.*\}", content, flags=re.DOTALL)
+
+    if not match:
+        raise ValueError(f"Critique response is not valid JSON: {content[:800]}")
+
+    return json.loads(match.group(0))
+
+
+def normalize_list(value):
+
+    if value is None:
+        return []
+
+    if isinstance(value, list):
+        return [
+            str(item).strip()
+            for item in value
+            if str(item).strip()
+        ]
+
+    text_value = str(value).strip()
+    return [text_value] if text_value else []
 
 
 def resolve_target_sermon(preaching_date: str = ""):
@@ -144,7 +183,7 @@ def build_email_subject(sermon):
     )
 
 
-def build_email_body(sermon, transcript, critique_text, model_name: str):
+def build_email_body(sermon, transcript, critique_data, model_name: str):
 
     metadata_lines = [
         f"Data: {sermon.get('preaching_date', '')}",
@@ -162,9 +201,35 @@ def build_email_body(sermon, transcript, critique_text, model_name: str):
 
     metadata = "\n".join(line for line in metadata_lines if not line.endswith(": "))
 
+    sections = [
+        ("1. Breve resumo da mensagem", critique_data.get("breve_resumo_da_mensagem", "")),
+        ("2. Tema central da pregacao", critique_data.get("tema_central_da_pregacao", "")),
+        ("3. Estrutura da pregacao", critique_data.get("estrutura_da_pregacao", "")),
+        ("4. Teses centrais enfatizadas", normalize_list(critique_data.get("teses_centrais_enfatizadas"))),
+        ("5. Principais argumentos", normalize_list(critique_data.get("principais_argumentos"))),
+        ("6. Pontos sem embasamento suficiente", normalize_list(critique_data.get("pontos_sem_embasamento_suficiente"))),
+        ("7. Pontos polemicos ou fora do consenso", normalize_list(critique_data.get("pontos_polemicos_ou_fora_do_consenso"))),
+        ("8. Aplicacoes utilizadas", normalize_list(critique_data.get("aplicacoes_utilizadas"))),
+    ]
+
+    section_blocks = []
+
+    for title, content in sections:
+        if isinstance(content, list):
+            if content:
+                body = "\n".join(f"- {item}" for item in content)
+            else:
+                body = "- Nao identificado com clareza na transcricao."
+        else:
+            body = str(content).strip() or "Nao identificado com clareza na transcricao."
+
+        section_blocks.append(f"{title}\n{body}")
+
+    critique_body = "\n\n".join(section_blocks).strip()
+
     return (
         f"{metadata}\n\n"
-        f"{critique_text.strip()}\n"
+        f"{critique_body}\n"
     )
 
 
@@ -254,6 +319,8 @@ def run(preaching_date: str = ""):
         if not critique_text:
             raise ValueError("AI service returned an empty critique")
 
+        critique_data = extract_json_payload(critique_text)
+
         print(
             "Critique generated | "
             f"chars={len(critique_text)} | "
@@ -265,7 +332,7 @@ def run(preaching_date: str = ""):
         body = build_email_body(
             sermon,
             transcript,
-            critique_text,
+            critique_data,
             critique.get("model_name", "unknown"),
         )
 

@@ -36,7 +36,7 @@ SERMON_SUMMARY_PROMPT = (
     "Resuma a transcricao a seguir conforme as instrucoes definidas."
 )
 
-SERMON_SUMMARY_MAX_OUTPUT_TOKENS = 120
+SERMON_SUMMARY_MAX_OUTPUT_TOKENS = 220
 
 INSERT_SUMMARY_SQL = """
 INSERT INTO silver_summaries (
@@ -161,6 +161,13 @@ def run(loopback_days=None, force_reprocess=False):
                     f"Skipped summary {index}/{total} | "
                     f"{row.get('preaching_date') or 'unknown-date'} | "
                     "empty summary returned"
+                )
+                print(
+                    "Empty summary payload | "
+                    f"canonical_sermon_id={row['canonical_sermon_id']} | "
+                    f"transcript_version={row['transcript_version']} | "
+                    f"model={result.get('model_name', 'unknown')} | "
+                    f"raw_result={result!r}"
                 )
                 continue
 
