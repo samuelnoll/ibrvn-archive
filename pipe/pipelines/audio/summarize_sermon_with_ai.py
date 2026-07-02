@@ -29,9 +29,13 @@ SERMON_SUMMARY_SYSTEM_PROMPT = (
 )
 
 SERMON_SUMMARY_PROMPT = (
-    "Resuma a pregacao em portugues do Brasil em no maximo 50 palavras, "
-    "destacando principalmente o tema principal e enfoques do pregador"
+    "Resuma a pregacao em portugues do Brasil em no maximo 50 palavras. "
+    "Nunca ultrapasse 50 palavras. Entregue uma unica frase ou no maximo "
+    "duas frases curtas, destacando somente o tema principal e os enfoques "
+    "centrais do pregador."
 )
+
+SERMON_SUMMARY_MAX_OUTPUT_TOKENS = 120
 
 INSERT_SUMMARY_SQL = """
 INSERT INTO silver_summaries (
@@ -59,6 +63,7 @@ def request_summary(transcript_text: str):
             "text": transcript_text,
             "system_prompt": SERMON_SUMMARY_SYSTEM_PROMPT,
             "prompt": SERMON_SUMMARY_PROMPT,
+            "max_output_tokens": SERMON_SUMMARY_MAX_OUTPUT_TOKENS,
         },
         timeout=AI_TIMEOUT_SECONDS,
     )

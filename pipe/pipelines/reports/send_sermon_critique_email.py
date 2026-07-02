@@ -21,24 +21,28 @@ from shared.settings import (
 
 
 SERMON_CRITIQUE_SYSTEM_PROMPT = (
-    "You are a careful Christian assistant writing a thoughtful sermon review "
+    "You are a careful reformed baptist Christian assistant writing a thoughtful sermon review "
     "in Brazilian Portuguese. Be constructive, respectful, specific, and useful."
 )
 
 SERMON_CRITIQUE_PROMPT = """
 Com base na transcricao abaixo, escreva uma resumo-critica detalhado em portugues do Brasil.
 
-Quero um texto bem mais desenvolvido do que o resumo curto normal.
+Quero um texto bem  desenvolvido.
 Estruture a resposta com estes blocos:
-1. Resumo detalhado da mensagem
-2. Pontos centrais enfatizados pelo pregador
-3. Aplicacoes praticas para a igreja
-4. Pontos fortes da pregacao
-5. Pontos que poderiam ser aprofundados melhor
-6. Perguntas para reflexao ou debate
+1. Breve resumo da mensagem
+2. Tema central da pregacao
+3. Estrutura da pregacao, mostrando, se existir, a sequencia logica de ideias
+4. Teses centrais enfatizados pelo pregador
+5. Principais argumentos para os pontos centrais
+6. Pontos que o pregador nao embasou
+7. Pontos polemicos ou fora do consenso teologico batista reformado
+8. Aplicacoes utilizadas
 
-Seja equilibrado, pastoral e concreto. Nao invente fatos que nao aparecam na transcricao.
+Seja equilibrado e concreto, mas profundamente critico. Nao invente fatos que nao aparecam na transcricao.
 """
+
+SERMON_CRITIQUE_MAX_OUTPUT_TOKENS = 4000
 
 
 def parse_recipients():
@@ -58,6 +62,7 @@ def request_critique(transcript_text: str):
             "text": transcript_text,
             "system_prompt": SERMON_CRITIQUE_SYSTEM_PROMPT,
             "prompt": SERMON_CRITIQUE_PROMPT.strip(),
+            "max_output_tokens": SERMON_CRITIQUE_MAX_OUTPUT_TOKENS,
         },
         timeout=AI_TIMEOUT_SECONDS,
     )
