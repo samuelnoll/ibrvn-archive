@@ -169,19 +169,19 @@ def run():
     try:
         rows = fetch_all("""
             SELECT
-                canonical_sermon_id,
+                sma.canonical_sermon_id,
                 MAX(sm.preaching_date) AS preaching_date,
-                MAX(CASE WHEN asset_type = 'audio' THEN source_url END) AS audio_source_url,
-                MAX(CASE WHEN asset_type = 'audio' THEN local_path END) AS audio_local_path,
-                MAX(CASE WHEN asset_type = 'audio' THEN mime_type END) AS audio_mime_type,
-                MAX(CASE WHEN asset_type = 'youtube_video' THEN source_url END) AS youtube_source_url
+                MAX(CASE WHEN sma.asset_type = 'audio' THEN sma.source_url END) AS audio_source_url,
+                MAX(CASE WHEN sma.asset_type = 'audio' THEN sma.local_path END) AS audio_local_path,
+                MAX(CASE WHEN sma.asset_type = 'audio' THEN sma.mime_type END) AS audio_mime_type,
+                MAX(CASE WHEN sma.asset_type = 'youtube_video' THEN sma.source_url END) AS youtube_source_url
             FROM silver_media_assets sma
             LEFT JOIN silver_sermon_metadata sm
                 ON sm.canonical_sermon_id = sma.canonical_sermon_id
             GROUP BY sma.canonical_sermon_id
             HAVING
-                COALESCE(MAX(CASE WHEN asset_type = 'audio' THEN source_url END), '') != ''
-                OR COALESCE(MAX(CASE WHEN asset_type = 'youtube_video' THEN source_url END), '') != ''
+                COALESCE(MAX(CASE WHEN sma.asset_type = 'audio' THEN sma.source_url END), '') != ''
+                OR COALESCE(MAX(CASE WHEN sma.asset_type = 'youtube_video' THEN sma.source_url END), '') != ''
         """)
 
         AUDIO_RAW_DIR.mkdir(parents=True, exist_ok=True)
