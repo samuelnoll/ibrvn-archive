@@ -85,7 +85,7 @@ def build_pending_rows(loopback_days=None, force_reprocess=False):
             st.canonical_sermon_id,
             st.transcript_text,
             st.transcript_version,
-            sm.preaching_date
+            MAX(sm.preaching_date) AS preaching_date
         FROM silver_transcripts st
         LEFT JOIN silver_sermon_metadata sm
             ON sm.canonical_sermon_id = st.canonical_sermon_id
@@ -96,7 +96,11 @@ def build_pending_rows(loopback_days=None, force_reprocess=False):
         )
         {summary_filter}
         {scope_sql}
-        ORDER BY sm.preaching_date DESC, st.canonical_sermon_id DESC
+        GROUP BY
+            st.canonical_sermon_id,
+            st.transcript_text,
+            st.transcript_version
+        ORDER BY MAX(sm.preaching_date) DESC, st.canonical_sermon_id DESC
     """, params)
 
 

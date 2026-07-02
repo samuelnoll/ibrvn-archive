@@ -207,17 +207,20 @@ def extract_serie_and_preacher(playlists):
 
     for playlist_title in playlists:
 
-        if playlist_title.lower().startswith("sÃ©rie"):
+        normalized_title = normalize_text(playlist_title)
 
-            m = re.search(r"\[(.*?)\]", playlist_title)
+        if not normalized_title.startswith("serie"):
+            continue
 
-            if m:
-                preacher_playlist = m.group(1).strip()
+        m = re.search(r"\[(.*?)\]", playlist_title)
 
-            cleaned = re.sub(r"\[.*?\]", "", playlist_title)
-            cleaned = cleaned.replace("SÃ©rie", "").strip()
+        if m:
+            preacher_playlist = m.group(1).strip()
 
-            serie = cleaned
+        cleaned = re.sub(r"\[.*?\]", "", playlist_title).strip()
+        cleaned = re.sub(r"^\s*s[ée]rie\s*[:\-]?\s*", "", cleaned, flags=re.IGNORECASE)
+
+        serie = cleaned.strip()
 
     return serie, preacher_playlist
 

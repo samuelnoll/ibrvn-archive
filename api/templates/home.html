@@ -3,16 +3,14 @@
 {% block content %}
 
 <div class="home-stats">
-
-{{ stats.sermons }} pregacoes •
-{{ stats.preachers }} pregadores •
-{{ stats.series }} series
-
+{{ stats.sermons }} prega&ccedil;&otilde;es &bull;
+{{ stats.preachers }} pregadores &bull;
+{{ stats.series }} s&eacute;ries
 </div>
 
 <input
 id="search"
-placeholder="Buscar pregacoes..."
+placeholder="Buscar prega&ccedil;&otilde;es..."
 autocomplete="off">
 
 <div id="results"></div>
@@ -53,12 +51,12 @@ href="/preachers/{{ s.preacher_name }}">
 
 {% if s.serie %}
 
- • 
+ &bull;
 
 <a class="meta-link"
-href="/series/{{ s.serie }}">
+href="/series/{{ s.serie | urlencode }}">
 
-Serie {{ s.serie }}
+S&eacute;rie {{ s.serie }}
 
 </a>
 
@@ -69,19 +67,19 @@ Serie {{ s.serie }}
 <div class="links">
 
 {% if s.media_link %}
-<a href="{{ s.media_link }}">🎧 Audio</a>
+<a href="{{ s.media_link }}">&#127911; &Aacute;udio</a>
 {% endif %}
 
 {% if s.download_link %}
-<a href="{{ s.download_link }}">💾 Arquivo</a>
+<a href="{{ s.download_link }}">&#128190; Arquivo</a>
 {% endif %}
 
 {% if s.youtube_link %}
-<a href="{{ s.youtube_link }}">▶ YouTube</a>
+<a href="{{ s.youtube_link }}">&#9654; YouTube</a>
 {% endif %}
 
 {% if s.wordpress_link %}
-<a href="{{ s.wordpress_link }}">🔗 Pagina</a>
+<a href="{{ s.wordpress_link }}">&#128279; P&aacute;gina</a>
 {% endif %}
 
 </div>
@@ -144,11 +142,11 @@ ${s.preacher_name}
 </a>
 
 ${s.serie ? `
- • 
+ &bull;
 <a class="meta-link"
 href="/series/${encodeURIComponent(s.serie)}">
 
-Serie ${s.serie}
+Série ${s.serie}
 
 </a>
 ` : ""}
@@ -157,13 +155,13 @@ Serie ${s.serie}
 
 <div class="links">
 
-${s.media_link ? `<a href="${s.media_link}">🎧 Audio</a>` : ""}
+${s.media_link ? `<a href="${s.media_link}">&#127911; Áudio</a>` : ""}
 
-${s.download_link ? `<a href="${s.download_link}">💾 Arquivo</a>` : ""}
+${s.download_link ? `<a href="${s.download_link}">&#128190; Arquivo</a>` : ""}
 
-${s.youtube_link ? `<a href="${s.youtube_link}">▶ YouTube</a>` : ""}
+${s.youtube_link ? `<a href="${s.youtube_link}">&#9654; YouTube</a>` : ""}
 
-${s.wordpress_link ? `<a href="${s.wordpress_link}">🔗 Pagina</a>` : ""}
+${s.wordpress_link ? `<a href="${s.wordpress_link}">&#128279; Página</a>` : ""}
 
 </div>
 

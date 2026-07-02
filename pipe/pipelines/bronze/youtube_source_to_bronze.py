@@ -143,7 +143,7 @@ def enrich_video_details(video_ids):
     return enriched
 
 
-def filter_recent_videos(videos, days=30):
+def filter_recent_videos(videos, days):
 
     cutoff = datetime.utcnow() - timedelta(days=days)
 
@@ -166,7 +166,7 @@ def filter_recent_videos(videos, days=30):
     return filtered
 
 
-def run(mode):
+def run(mode, loopback_days=None):
 
     channel_id = load_channel()
 
@@ -176,11 +176,11 @@ def run(mode):
 
     videos = fetch_playlist_items(uploads_playlist)
 
-    if mode == "weekly":
+    if loopback_days:
 
-        print("Filtering last 30 days videos...")
+        print(f"Filtering last {loopback_days} days videos...")
 
-        videos = filter_recent_videos(videos)
+        videos = filter_recent_videos(videos, days=int(loopback_days))
 
     video_map = {v["video_id"]: v for v in videos}
 
@@ -245,7 +245,12 @@ if __name__ == "__main__":
         choices=["historic", "weekly"],
         default="historic"
     )
+    parser.add_argument(
+        "--loopback-days",
+        type=int,
+        default=None,
+    )
 
     args = parser.parse_args()
 
-    run(args.mode)
+    run(args.mode, loopback_days=args.loopback_days)

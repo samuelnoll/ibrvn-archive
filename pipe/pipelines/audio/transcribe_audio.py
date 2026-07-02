@@ -89,7 +89,7 @@ def build_pending_rows(loopback_days=None, force_reprocess=False):
             sma.canonical_sermon_id,
             sma.local_path,
             sma.duration_seconds,
-            sm.preaching_date
+            MAX(sm.preaching_date) AS preaching_date
         FROM silver_media_assets sma
         LEFT JOIN silver_sermon_metadata sm
             ON sm.canonical_sermon_id = sma.canonical_sermon_id
@@ -97,7 +97,11 @@ def build_pending_rows(loopback_days=None, force_reprocess=False):
         AND COALESCE(sma.local_path, '') != ''
         {transcript_filter}
         {scope_sql}
-        ORDER BY sm.preaching_date DESC, sma.canonical_sermon_id DESC
+        GROUP BY
+            sma.canonical_sermon_id,
+            sma.local_path,
+            sma.duration_seconds
+        ORDER BY MAX(sm.preaching_date) DESC, sma.canonical_sermon_id DESC
     """, params)
 
 
@@ -134,6 +138,13 @@ def run(loopback_days=None, force_reprocess=False):
             force_reprocess=force_reprocess,
         )
         total = len(rows)
+
+        print(
+            "Transcription queue prepared | "
+            f"pending_sermons={total} | "
+            f"loopback_days={loopback_days if loopback_days is not None else 'all'} | "
+            f"force_reprocess={normalize_force_reprocess(force_reprocess)}"
+        )
 
         if total == 0:
             print("No sermons pending audio transcription for the selected scope")

@@ -42,3 +42,14 @@ AI_BASE_URL = os.getenv(
 AI_TIMEOUT_SECONDS = int(
     os.getenv("ARCHIVE_AI_TIMEOUT_SECONDS", "7200")
 )
+
+EMAIL_SMTP_HOST = os.getenv("ARCHIVE_EMAIL_SMTP_HOST", "").strip()
+EMAIL_SMTP_PORT = int(os.getenv("ARCHIVE_EMAIL_SMTP_PORT", "587"))
+EMAIL_SMTP_USER = os.getenv("ARCHIVE_EMAIL_SMTP_USER", "").strip()
+EMAIL_SMTP_PASSWORD = os.getenv("ARCHIVE_EMAIL_SMTP_PASSWORD", "")
+EMAIL_SMTP_USE_TLS = os.getenv(
+    "ARCHIVE_EMAIL_SMTP_USE_TLS",
+    "true",
+).strip().lower() in {"1", "true", "yes", "y", "on"}
+EMAIL_FROM = os.getenv("ARCHIVE_EMAIL_FROM", "").strip()
+EMAIL_TO = os.getenv("ARCHIVE_EMAIL_TO", "").strip()

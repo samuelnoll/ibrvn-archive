@@ -34,7 +34,7 @@ def run(loopback_days=None, force_reprocess=False):
                 sma.asset_type,
                 sma.local_path,
                 sma.duration_seconds,
-                sm.preaching_date
+                MAX(sm.preaching_date) AS preaching_date
             FROM silver_media_assets sma
             LEFT JOIN silver_sermon_metadata sm
                 ON sm.canonical_sermon_id = sma.canonical_sermon_id
@@ -42,7 +42,12 @@ def run(loopback_days=None, force_reprocess=False):
             AND COALESCE(sma.local_path, '') != ''
             {duration_filter}
             {scope_sql}
-            ORDER BY sm.preaching_date DESC, sma.canonical_sermon_id DESC
+            GROUP BY
+                sma.canonical_sermon_id,
+                sma.asset_type,
+                sma.local_path,
+                sma.duration_seconds
+            ORDER BY MAX(sm.preaching_date) DESC, sma.canonical_sermon_id DESC
         """, params)
 
         updates = []
