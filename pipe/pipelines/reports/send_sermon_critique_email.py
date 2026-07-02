@@ -22,27 +22,43 @@ from shared.settings import (
 
 SERMON_CRITIQUE_SYSTEM_PROMPT = (
     "You are a careful reformed baptist Christian assistant writing a thoughtful sermon review "
-    "in Brazilian Portuguese. Be constructive, respectful, specific, and useful."
+    "in Brazilian Portuguese. Be specific, and useful. "
+    "You must follow the requested structure exactly and fill every requested section."
 )
 
 SERMON_CRITIQUE_PROMPT = """
-Com base na transcricao abaixo, escreva uma resumo-critica detalhado em portugues do Brasil.
+Com base na transcricao abaixo, escreva uma critica detalhada em portugues do Brasil.
 
-Quero um texto bem  desenvolvido.
-Estruture a resposta com estes blocos:
-1. Breve resumo da mensagem
-2. Tema central da pregacao
-3. Estrutura da pregacao, mostrando, se existir, a sequencia logica de ideias
-4. Teses centrais enfatizados pelo pregador
-5. Principais argumentos para os pontos centrais
-6. Pontos que o pregador nao embasou
-7. Pontos polemicos ou fora do consenso teologico batista reformado
-8. Aplicacoes utilizadas
+Quero um texto bem desenvolvido e analitico.
+Nao escreva um texto corrido unico.
+Responda obrigatoriamente com exatamente 8 secoes, usando exatamente estes titulos, nesta ordem:
 
-Seja equilibrado e concreto, mas profundamente critico. Nao invente fatos que nao aparecam na transcricao.
+## 1. Breve resumo da mensagem
+## 2. Tema central da pregacao
+## 3. Estrutura da pregacao
+## 4. Teses centrais enfatizadas pelo pregador
+## 5. Principais argumentos para os pontos centrais
+## 6. Pontos que o pregador nao embasou suficientemente
+## 7. Pontos polemicos ou fora do consenso teologico batista reformado
+## 8. Aplicacoes utilizadas
+
+Regras obrigatorias:
+- Preencha todas as 8 secoes.
+- Nao pule nenhuma secao.
+- Nao troque os titulos.
+- Nao responda em formato de resumo curto.
+- Nao devolva texto sem estrutura.
+- Em cada secao, seja especifico e concreto.
+- Na secao 3, descreva a sequencia logica do sermao, se ela existir.
+- Na secao 6, aponte lacunas de embasamento apenas quando houver base para isso na transcricao.
+- Na secao 7, seja criterioso e equilibrado; se nao houver pontos polemicos claros, diga isso explicitamente.
+- Se alguma informacao nao estiver clara na transcricao, diga isso explicitamente naquela secao em vez de inventar.
+- Pode escrever com detalhes; prefira profundidade e clareza a brevidade.
+
+Seja equilibrado e concreto, mas profundamente critico. Nao invente fatos que nao aparecam na transcricao. So finalize depois de preencher todas as 8 secoes.
 """
 
-SERMON_CRITIQUE_MAX_OUTPUT_TOKENS = 4000
+SERMON_CRITIQUE_MAX_OUTPUT_TOKENS = 6000
 
 
 def parse_recipients():
@@ -133,8 +149,8 @@ def fetch_latest_transcript(canonical_sermon_id: str):
 def build_email_subject(sermon):
 
     return (
-        "[IBRVN] Resumo-critica da pregacao "
-        f"{sermon['preaching_date']} - {sermon.get('title', '').strip()}"
+        "Resumo-critica da pregacao "
+        f"{sermon['preaching_date']}"
     )
 
 
@@ -149,7 +165,6 @@ def build_email_body(sermon, transcript, critique_text, model_name: str):
         f"YouTube: {sermon.get('youtube_link', '')}",
         f"Pagina: {sermon.get('wordpress_link', '')}",
         f"Audio: {sermon.get('media_link', '')}",
-        f"Arquivo: {sermon.get('download_link', '')}",
         f"Transcript version: {transcript.get('transcript_version', '')}",
         f"Transcript model: {transcript.get('model_name', '')}",
         f"Critique model: {model_name}",
@@ -158,9 +173,7 @@ def build_email_body(sermon, transcript, critique_text, model_name: str):
     metadata = "\n".join(line for line in metadata_lines if not line.endswith(": "))
 
     return (
-        "Resumo-critica automatizado da pregacao\n\n"
         f"{metadata}\n\n"
-        "Resumo-critica\n\n"
         f"{critique_text.strip()}\n"
     )
 
