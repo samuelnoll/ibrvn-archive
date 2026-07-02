@@ -68,6 +68,7 @@ def request_critique(transcript_text: str):
             "system_prompt": SERMON_CRITIQUE_SYSTEM_PROMPT,
             "prompt": SERMON_CRITIQUE_PROMPT.strip(),
             "max_output_tokens": SERMON_CRITIQUE_MAX_OUTPUT_TOKENS,
+            "response_format": "json",
         },
         timeout=AI_TIMEOUT_SECONDS,
     )
