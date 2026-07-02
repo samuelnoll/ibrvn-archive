@@ -25,14 +25,15 @@ from .common import (
 
 SERMON_SUMMARY_SYSTEM_PROMPT = (
     "You are a careful assistant that summarizes spoken Christian sermons in "
-    "Brazilian Portuguese."
+    "Brazilian Portuguese. Always answer in Brazilian Portuguese. "
+    "Your response must be a short summary with at most 50 words. "
+    "Never exceed 50 words. Return a single sentence, or at most two very "
+    "short sentences. Focus only on the main theme and the preacher's main emphases. "
+    "Do not add explanations, headings, bullets, or extra commentary."
 )
 
 SERMON_SUMMARY_PROMPT = (
-    "Resuma a pregacao em portugues do Brasil em no maximo 50 palavras. "
-    "Nunca ultrapasse 50 palavras. Entregue uma unica frase ou no maximo "
-    "duas frases curtas, destacando somente o tema principal e os enfoques "
-    "centrais do pregador."
+    "Resuma a transcricao a seguir conforme as instrucoes definidas."
 )
 
 SERMON_SUMMARY_MAX_OUTPUT_TOKENS = 120
