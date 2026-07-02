@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import subprocess
 import tempfile
 from pathlib import Path
@@ -16,6 +17,8 @@ from shared.db import (
     get_engine,
 )
 from shared.settings import AUDIO_RAW_DIR
+
+from .common import build_preaching_date_scope, normalize_force_reprocess
 
 
 UPSERT_AUDIO_ASSET_SQL = """
@@ -92,9 +95,14 @@ def convert_to_mp3(source_path: Path, target_path: Path):
     ], check=True)
 
 
-def download_direct_audio(source_url: str, mime_type: str, target_path: Path):
+def download_direct_audio(
+    source_url: str,
+    mime_type: str,
+    target_path: Path,
+    force_reprocess: bool,
+):
 
-    if target_path.exists():
+    if target_path.exists() and not force_reprocess:
         return
 
     if target_path.suffix == ".mp3" and (
@@ -120,9 +128,13 @@ def download_direct_audio(source_url: str, mime_type: str, target_path: Path):
         temp_path.unlink(missing_ok=True)
 
 
-def download_youtube_audio(youtube_url: str, target_path: Path):
+def download_youtube_audio(
+    youtube_url: str,
+    target_path: Path,
+    force_reprocess: bool,
+):
 
-    if target_path.exists():
+    if target_path.exists() and not force_reprocess:
         return
 
     ydl_opts = {
@@ -159,7 +171,7 @@ def download_youtube_audio(youtube_url: str, target_path: Path):
         ydl.download([youtube_url])
 
 
-def run():
+def run(loopback_days=None, force_reprocess=False):
 
     run_id = begin_processing_run(
         "download_audio_assets",
@@ -167,7 +179,10 @@ def run():
     )
 
     try:
-        rows = fetch_all("""
+        force_reprocess = normalize_force_reprocess(force_reprocess)
+        scope_sql, params = build_preaching_date_scope("sm", loopback_days)
+
+        rows = fetch_all(f"""
             SELECT
                 sma.canonical_sermon_id,
                 MAX(sm.preaching_date) AS preaching_date,
@@ -180,9 +195,13 @@ def run():
                 ON sm.canonical_sermon_id = sma.canonical_sermon_id
             GROUP BY sma.canonical_sermon_id
             HAVING
-                COALESCE(MAX(CASE WHEN sma.asset_type = 'audio' THEN sma.source_url END), '') != ''
+                (
+                    COALESCE(MAX(CASE WHEN sma.asset_type = 'audio' THEN sma.source_url END), '') != ''
                 OR COALESCE(MAX(CASE WHEN sma.asset_type = 'youtube_video' THEN sma.source_url END), '') != ''
-        """)
+                )
+                {scope_sql.replace("AND sm.preaching_date", "AND MAX(sm.preaching_date)")}
+            ORDER BY MAX(sm.preaching_date) DESC, sma.canonical_sermon_id DESC
+        """, params)
 
         AUDIO_RAW_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -204,11 +223,13 @@ def run():
                         audio_source_url,
                         audio_mime_type,
                         target_path,
+                        force_reprocess,
                     )
                 elif youtube_source_url:
                     download_youtube_audio(
                         youtube_source_url,
                         target_path,
+                        force_reprocess,
                     )
                 else:
                     continue
@@ -253,4 +274,13 @@ def run():
 
 
 if __name__ == "__main__":
-    run()
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--loopback-days", type=int, default=None)
+    parser.add_argument("--force-reprocess", action="store_true")
+    args = parser.parse_args()
+
+    run(
+        loopback_days=args.loopback_days,
+        force_reprocess=args.force_reprocess,
+    )
