@@ -60,9 +60,10 @@ def guess_extension(source_url: str, mime_type: str) -> str:
     return mime_map.get(mime_type, ".bin")
 
 
-def build_target_path(canonical_sermon_id: str) -> Path:
+def build_target_path(preaching_date: str, canonical_sermon_id: str) -> Path:
 
-    filename = canonical_sermon_id.replace("-", "_") + ".mp3"
+    base_name = (preaching_date or canonical_sermon_id).replace("-", "_")
+    filename = f"{base_name}.mp3"
     return AUDIO_RAW_DIR / filename
 
 
@@ -129,6 +130,21 @@ def download_youtube_audio(youtube_url: str, target_path: Path):
         "noplaylist": True,
         "quiet": True,
         "no_warnings": True,
+        "retries": 10,
+        "fragment_retries": 10,
+        "socket_timeout": 120,
+        "extractor_args": {
+            "youtube": {
+                "player_client": ["android", "web"],
+            },
+        },
+        "http_headers": {
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/137.0.0.0 Safari/537.36"
+            ),
+        },
         "outtmpl": str(target_path.parent / f"{target_path.stem}.%(ext)s"),
         "postprocessors": [
             {
@@ -154,12 +170,15 @@ def run():
         rows = fetch_all("""
             SELECT
                 canonical_sermon_id,
+                MAX(sm.preaching_date) AS preaching_date,
                 MAX(CASE WHEN asset_type = 'audio' THEN source_url END) AS audio_source_url,
                 MAX(CASE WHEN asset_type = 'audio' THEN local_path END) AS audio_local_path,
                 MAX(CASE WHEN asset_type = 'audio' THEN mime_type END) AS audio_mime_type,
                 MAX(CASE WHEN asset_type = 'youtube_video' THEN source_url END) AS youtube_source_url
-            FROM silver_media_assets
-            GROUP BY canonical_sermon_id
+            FROM silver_media_assets sma
+            LEFT JOIN silver_sermon_metadata sm
+                ON sm.canonical_sermon_id = sma.canonical_sermon_id
+            GROUP BY sma.canonical_sermon_id
             HAVING
                 COALESCE(MAX(CASE WHEN asset_type = 'audio' THEN source_url END), '') != ''
                 OR COALESCE(MAX(CASE WHEN asset_type = 'youtube_video' THEN source_url END), '') != ''
@@ -168,25 +187,43 @@ def run():
         AUDIO_RAW_DIR.mkdir(parents=True, exist_ok=True)
 
         upserts = []
+        failures = []
 
         for row in rows:
-            target_path = build_target_path(row["canonical_sermon_id"])
+            target_path = build_target_path(
+                row.get("preaching_date", "") or "",
+                row["canonical_sermon_id"],
+            )
             audio_source_url = row.get("audio_source_url") or ""
             youtube_source_url = row.get("youtube_source_url") or ""
             audio_mime_type = row.get("audio_mime_type") or ""
 
-            if audio_source_url:
-                download_direct_audio(
-                    audio_source_url,
-                    audio_mime_type,
-                    target_path,
+            try:
+                if audio_source_url:
+                    download_direct_audio(
+                        audio_source_url,
+                        audio_mime_type,
+                        target_path,
+                    )
+                elif youtube_source_url:
+                    download_youtube_audio(
+                        youtube_source_url,
+                        target_path,
+                    )
+                else:
+                    continue
+            except Exception as exc:
+                failures.append({
+                    "canonical_sermon_id": row["canonical_sermon_id"],
+                    "preaching_date": row.get("preaching_date", ""),
+                    "audio_source_url": audio_source_url,
+                    "youtube_source_url": youtube_source_url,
+                    "error": str(exc),
+                })
+                print(
+                    "Failed to download audio asset for "
+                    f"{row['canonical_sermon_id']}: {exc}"
                 )
-            elif youtube_source_url:
-                download_youtube_audio(
-                    youtube_source_url,
-                    target_path,
-                )
-            else:
                 continue
 
             upserts.append({
@@ -206,6 +243,9 @@ def run():
 
         finish_processing_run(run_id, "success")
         print("Audio assets downloaded into silver media assets")
+
+        if failures:
+            print(f"Audio download failures: {len(failures)}")
 
     except Exception:
         finish_processing_run(run_id, "failed")
