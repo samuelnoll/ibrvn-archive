@@ -31,6 +31,27 @@ def format_brazilian_date(value):
     return f"{day}/{month}/{year}"
 
 
+def format_duration_minutes(value):
+
+    if value is None:
+        return ""
+
+    try:
+        total_seconds = float(value)
+    except (TypeError, ValueError):
+        return ""
+
+    if total_seconds <= 0:
+        return ""
+
+    minutes = int(total_seconds // 60)
+
+    if minutes <= 0:
+        return ""
+
+    return f"{minutes}min"
+
+
 def extract_book_name(text_reference):
 
     if not text_reference:
@@ -55,6 +76,9 @@ def serialize_sermon(row):
     sermon = dict(row)
     sermon["preaching_date"] = format_brazilian_date(
         sermon.get("preaching_date")
+    )
+    sermon["duration_minutes"] = format_duration_minutes(
+        sermon.get("duration_seconds")
     )
     return sermon
 

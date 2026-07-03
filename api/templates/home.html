@@ -43,6 +43,14 @@ href="/books/{{ s.text_reference.split(' ')[0] }}">
 
 <div class="meta">
 
+{% if s.duration_minutes %}
+<span class="meta-link">
+<span class="icon" aria-hidden="true">&#9203;</span>
+{{ s.duration_minutes }}
+</span>
+ &bull;
+{% endif %}
+
 <a class="meta-link"
 href="/preachers/{{ s.preacher_name | urlencode }}">
 
@@ -141,6 +149,14 @@ ${s.text_reference}
 ` : ""}
 
 <div class="meta">
+
+${s.duration_minutes ? `
+<span class="meta-link">
+<span class="icon" aria-hidden="true">&#9203;</span>
+${s.duration_minutes}
+</span>
+ &bull;
+` : ""}
 
 <a class="meta-link"
 href="/preachers/${encodeURIComponent(s.preacher_name)}">
