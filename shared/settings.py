@@ -43,6 +43,16 @@ AI_TIMEOUT_SECONDS = int(
     os.getenv("ARCHIVE_AI_TIMEOUT_SECONDS", "7200")
 )
 
+OPENAI_API_KEY = os.getenv("ARCHIVE_OPENAI_API_KEY", "").strip()
+OPENAI_BASE_URL = os.getenv(
+    "ARCHIVE_OPENAI_BASE_URL",
+    "https://api.openai.com/v1",
+).rstrip("/")
+OPENAI_MODEL = os.getenv("ARCHIVE_OPENAI_MODEL", "chat-latest").strip()
+OPENAI_TIMEOUT_SECONDS = int(
+    os.getenv("ARCHIVE_OPENAI_TIMEOUT_SECONDS", str(AI_TIMEOUT_SECONDS))
+)
+
 EMAIL_SMTP_HOST = os.getenv("ARCHIVE_EMAIL_SMTP_HOST", "").strip()
 EMAIL_SMTP_PORT = int(os.getenv("ARCHIVE_EMAIL_SMTP_PORT", "587"))
 EMAIL_SMTP_USER = os.getenv("ARCHIVE_EMAIL_SMTP_USER", "").strip()
