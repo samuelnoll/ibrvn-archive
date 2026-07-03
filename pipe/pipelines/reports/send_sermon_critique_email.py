@@ -31,11 +31,11 @@ Quero uma crítica real, não apenas um resumo respeitoso. Se houver afirmaçõe
 
 A sua resposta deve conter os seguintes itens:
 
-No começo, intitulado "Resumo da pregação", faça um resumo em 3 parágrafos no máximo contendo sobre o que foi essa pregação e a tese principal. Logo após esse resumo, cite as teses (focos) enfatizadas da pregação.
+No começo, intitulado 'Resumo da pregação', faça um resumo em 3 parágrafos no máximo contendo sobre o que foi essa pregação e a tese principal. Logo após esse resumo, cite as teses (focos) enfatizadas da pregação.
 
-Depois, intitulado "Avaliação crítica", faça uma avaliação crítica a partir dos seguintes títulos: alinhamento teológico dos enfoques, coerência do sermão, força dos argumentos, qualidade da fundamentação bíblica, clareza das aplicações e possíveis fragilidades no raciocínio. Algo em torno de 3 parágrafos por título tem um bom tamanho.
+Depois, intitulado 'Avaliação crítica', faça uma avaliação crítica a partir dos seguintes títulos: alinhamento teológico dos enfoques, coerência do sermão, força dos argumentos, qualidade da fundamentação bíblica, clareza das aplicações e possíveis fragilidades no raciocínio. Algo em torno de 3 parágrafos por título tem um bom tamanho.
 
-No final, intitulado "Análise geral", finalize com um veredito final com os pontos fortes e fracos de no máximo 2 parágrafos.
+No final, intitulado 'Análise geral', finalize com um veredito final com os pontos fortes e fracos de no máximo 2 parágrafos.
 
 Será enviado a seguir a transcrição da pregação.
 """
