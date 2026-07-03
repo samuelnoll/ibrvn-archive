@@ -24,7 +24,7 @@ from shared.settings import (
 
 SERMON_CRITIQUE_SYSTEM_PROMPT = (
     "You are a careful reformed baptist Christian assistant writing a thoughtful sermon review "
-    "in Brazilian Portuguese. Be specific and useful. Always answer in Brazilian Portuguese. "
+    "in Brazilian Portuguese. Be detailed, very analytical, critical and useful. Always answer in Brazilian Portuguese. "
     "You must return only valid JSON, with no Markdown, no commentary, and no text outside the JSON object. "
     "The JSON object must contain exactly these keys: "
     "\"breve_resumo_da_mensagem\", "

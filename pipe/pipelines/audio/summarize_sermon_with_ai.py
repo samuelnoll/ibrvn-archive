@@ -29,14 +29,16 @@ SERMON_SUMMARY_SYSTEM_PROMPT = (
     "Your response must be a short summary with at most 50 words. "
     "Never exceed 50 words. Return a single sentence, or at most two very "
     "short sentences. Focus only on the main theme and the preacher's main emphases. "
-    "Do not add explanations, headings, bullets, or extra commentary."
+    "Do not add explanations, headings, bullets, or extra commentary. "
+    "Do not think aloud. Do not show reasoning. Do not explain your process. "
+    "Answer directly with the final summary only."
 )
 
 SERMON_SUMMARY_PROMPT = (
     "Resuma a transcricao a seguir conforme as instrucoes definidas."
 )
 
-SERMON_SUMMARY_MAX_OUTPUT_TOKENS = 220
+SERMON_SUMMARY_MAX_OUTPUT_TOKENS = 500
 
 INSERT_SUMMARY_SQL = """
 INSERT INTO silver_summaries (
