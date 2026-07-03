@@ -33,6 +33,7 @@ autocomplete="off">
 <a class="bible-link"
 href="/books/{{ s.text_reference.split(' ')[0] }}">
 
+<span class="icon" aria-hidden="true">&#128214;</span>
 {{ s.text_reference }}
 
 </a>
@@ -43,8 +44,9 @@ href="/books/{{ s.text_reference.split(' ')[0] }}">
 <div class="meta">
 
 <a class="meta-link"
-href="/preachers/{{ s.preacher_name }}">
+href="/preachers/{{ s.preacher_name | urlencode }}">
 
+<span class="icon" aria-hidden="true">&#128100;</span>
 {{ s.preacher_name }}
 
 </a>
@@ -56,6 +58,7 @@ href="/preachers/{{ s.preacher_name }}">
 <a class="meta-link"
 href="/series/{{ s.serie | urlencode }}">
 
+<span class="icon" aria-hidden="true">&#128218;</span>
 S&eacute;rie {{ s.serie }}
 
 </a>
@@ -80,6 +83,10 @@ S&eacute;rie {{ s.serie }}
 
 {% if s.wordpress_link %}
 <a href="{{ s.wordpress_link }}">&#128279; P&aacute;gina</a>
+{% endif %}
+
+{% if s.transcript_available %}
+<a href="/transcripts/{{ s.canonical_sermon_id }}">&#128221; Transcri&ccedil;&atilde;o</a>
 {% endif %}
 
 </div>
@@ -127,6 +134,7 @@ div.innerHTML = `
 ${s.text_reference ? `
 <div class="text">
 <a class="bible-link" href="/books/${encodeURIComponent(s.text_reference.split(" ")[0])}">
+<span class="icon" aria-hidden="true">&#128214;</span>
 ${s.text_reference}
 </a>
 </div>
@@ -137,6 +145,7 @@ ${s.text_reference}
 <a class="meta-link"
 href="/preachers/${encodeURIComponent(s.preacher_name)}">
 
+<span class="icon" aria-hidden="true">&#128100;</span>
 ${s.preacher_name}
 
 </a>
@@ -146,6 +155,7 @@ ${s.serie ? `
 <a class="meta-link"
 href="/series/${encodeURIComponent(s.serie)}">
 
+<span class="icon" aria-hidden="true">&#128218;</span>
 Série ${s.serie}
 
 </a>
@@ -162,6 +172,8 @@ ${s.download_link ? `<a href="${s.download_link}">&#128190; Arquivo</a>` : ""}
 ${s.youtube_link ? `<a href="${s.youtube_link}">&#9654; YouTube</a>` : ""}
 
 ${s.wordpress_link ? `<a href="${s.wordpress_link}">&#128279; Página</a>` : ""}
+
+${s.transcript_available ? `<a href="/transcripts/${encodeURIComponent(s.canonical_sermon_id)}">&#128221; Transcrição</a>` : ""}
 
 </div>
 

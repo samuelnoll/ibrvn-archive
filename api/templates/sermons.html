@@ -22,6 +22,7 @@
 <a class="bible-link"
 href="/books/{{ s.text_reference.split(' ')[0] }}">
 
+<span class="icon" aria-hidden="true">&#128214;</span>
 {{ s.text_reference }}
 
 </a>
@@ -34,6 +35,7 @@ href="/books/{{ s.text_reference.split(' ')[0] }}">
 <a class="meta-link"
 href="/preachers/{{ s.preacher_name | urlencode }}">
 
+<span class="icon" aria-hidden="true">&#128100;</span>
 {{ s.preacher_name }}
 
 </a>
@@ -45,6 +47,7 @@ href="/preachers/{{ s.preacher_name | urlencode }}">
 <a class="meta-link"
 href="/series/{{ s.serie | urlencode }}">
 
+<span class="icon" aria-hidden="true">&#128218;</span>
 S&eacute;rie {{ s.serie }}
 
 </a>
@@ -69,6 +72,10 @@ S&eacute;rie {{ s.serie }}
 
 {% if s.wordpress_link %}
 <a href="{{ s.wordpress_link }}">&#128279; P&aacute;gina</a>
+{% endif %}
+
+{% if s.transcript_available %}
+<a href="/transcripts/{{ s.canonical_sermon_id }}">&#128221; Transcri&ccedil;&atilde;o</a>
 {% endif %}
 
 </div>

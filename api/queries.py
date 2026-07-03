@@ -246,3 +246,34 @@ def get_home_stats():
         "preachers": 0,
         "series": 0,
     }
+
+
+def get_transcript(canonical_sermon_id):
+
+    row = fetch_one("""
+        SELECT
+            gs.canonical_sermon_id,
+            gs.preaching_date,
+            gs.title,
+            gs.preacher_name,
+            gs.text_reference,
+            st.transcript_version,
+            st.transcript_text,
+            st.model_name,
+            st.created_at
+        FROM silver_transcripts st
+        JOIN {table} gs
+          ON gs.canonical_sermon_id = st.canonical_sermon_id
+        WHERE st.canonical_sermon_id = :canonical_sermon_id
+        ORDER BY st.transcript_version DESC
+        LIMIT 1
+    """.format(table=GOLD_TABLE), {"canonical_sermon_id": canonical_sermon_id})
+
+    if not row:
+        return None
+
+    transcript = dict(row)
+    transcript["preaching_date"] = format_brazilian_date(
+        transcript.get("preaching_date")
+    )
+    return transcript
