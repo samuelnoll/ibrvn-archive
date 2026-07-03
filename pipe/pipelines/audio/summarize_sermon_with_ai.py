@@ -38,7 +38,7 @@ SERMON_SUMMARY_PROMPT = (
     "Resuma a transcricao a seguir conforme as instrucoes definidas."
 )
 
-SERMON_SUMMARY_MAX_OUTPUT_TOKENS = 4000
+SERMON_SUMMARY_MAX_OUTPUT_TOKENS = 100
 
 INSERT_SUMMARY_SQL = """
 INSERT INTO silver_summaries (
