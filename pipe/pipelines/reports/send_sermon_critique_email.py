@@ -223,7 +223,23 @@ def build_email_html(body: str):
     metadata_block = sections[0].strip()
     critique_block = sections[1].strip() if len(sections) > 1 else ""
 
-    metadata_html = html.escape(metadata_block)
+    metadata_items = []
+
+    for line in metadata_block.splitlines():
+        cleaned = line.strip()
+
+        if not cleaned:
+            continue
+
+        if ": " in cleaned:
+            label, value = cleaned.split(": ", 1)
+            metadata_items.append(
+                f"<li><strong>{html.escape(label)}:</strong> {html.escape(value)}</li>"
+            )
+        else:
+            metadata_items.append(f"<li>{html.escape(cleaned)}</li>")
+
+    metadata_html = "\n".join(metadata_items)
 
     critique_html = markdown.markdown(
         critique_block,
@@ -238,7 +254,10 @@ def build_email_html(body: str):
 <html>
   <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #222;">
     <div style="margin-bottom: 24px;">
-      <pre style="white-space: pre-wrap; font-family: Arial, sans-serif; margin: 0;">{metadata_html}</pre>
+      <h2 style="margin: 0 0 12px 0; font-size: 20px;">Dados da avaliação</h2>
+      <ul style="margin: 0; padding-left: 20px;">
+        {metadata_html}
+      </ul>
     </div>
     <hr style="border: none; border-top: 1px solid #ddd; margin: 24px 0;">
     <div>
