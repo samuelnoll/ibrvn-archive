@@ -77,7 +77,7 @@ ON CONFLICT(source_system, source_item_id) DO UPDATE SET
     text_reference = EXCLUDED.text_reference,
     serie = COALESCE(
         NULLIF(TRIM(EXCLUDED.serie), ''),
-        NULLIF(TRIM(serie), '')
+        NULLIF(TRIM(silver_sermon_metadata.serie), '')
     ),
     confidence = EXCLUDED.confidence,
     processed_at = EXCLUDED.processed_at
