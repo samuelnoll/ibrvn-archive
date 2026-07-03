@@ -1,6 +1,7 @@
 import argparse
 import json
 import re
+import unicodedata
 from datetime import datetime, timedelta
 
 import yaml
@@ -72,9 +73,19 @@ ON CONFLICT(source_system, source_item_id) DO UPDATE SET
     title = EXCLUDED.title,
     preacher_name = EXCLUDED.preacher_name,
     text_reference = EXCLUDED.text_reference,
-    serie = EXCLUDED.serie,
+    serie = COALESCE(
+        NULLIF(TRIM(EXCLUDED.serie), ''),
+        NULLIF(TRIM(serie), '')
+    ),
     confidence = EXCLUDED.confidence,
     processed_at = EXCLUDED.processed_at
+"""
+
+NORMALIZE_EMPTY_SERIE_SQL = """
+UPDATE silver_sermon_metadata
+SET serie = NULL
+WHERE serie IS NOT NULL
+  AND TRIM(serie) = ''
 """
 
 UPSERT_MEDIA_ASSET_SQL = """
@@ -121,6 +132,13 @@ def normalize_text(text_value):
     normalized = str(text_value)
 
     return normalized.lower().strip()
+
+
+def normalize_nullable_text(text_value):
+
+    normalized = str(text_value or "").strip()
+
+    return normalized or None
 
 
 def convert_utc_to_brt(date_str):
@@ -202,7 +220,7 @@ def extract_text_reference(title):
 
 def extract_serie_and_preacher(playlists):
 
-    serie = ""
+    serie = None
     preacher_playlist = ""
 
     for playlist_title in playlists:
@@ -220,7 +238,7 @@ def extract_serie_and_preacher(playlists):
         cleaned = re.sub(r"\[.*?\]", "", playlist_title).strip()
         cleaned = re.sub(r"^\s*s[ée]rie\s*[:\-]?\s*", "", cleaned, flags=re.IGNORECASE)
 
-        serie = cleaned.strip()
+        serie = normalize_nullable_text(cleaned)
 
     return serie, preacher_playlist
 
@@ -257,6 +275,54 @@ def choose_preacher(preacher_playlist, preacher_title, preacher_description):
         return PREACHER_MAP[key]
 
     return preacher.title()
+
+
+def normalize_text(text_value):
+
+    if not text_value:
+        return ""
+
+    normalized = unicodedata.normalize("NFKD", str(text_value))
+    normalized = "".join(
+        char
+        for char in normalized
+        if not unicodedata.combining(char)
+    )
+
+    return normalized.lower().strip()
+
+
+def extract_serie_and_preacher(playlists):
+
+    serie = None
+    preacher_playlist = ""
+
+    for playlist_title in playlists:
+
+        normalized_title = normalize_text(playlist_title)
+
+        if not (
+            normalized_title.startswith("serie")
+            or normalized_title.startswith("minisserie")
+        ):
+            continue
+
+        m = re.search(r"\[(.*?)\]", playlist_title)
+
+        if m:
+            preacher_playlist = m.group(1).strip()
+
+        cleaned = re.sub(r"\[.*?\]", "", playlist_title).strip()
+        cleaned = re.sub(
+            r"^\s*(?:mini)?s(?:e|é)rie\s*[:\-]?\s*",
+            "",
+            cleaned,
+            flags=re.IGNORECASE,
+        )
+
+        serie = normalize_nullable_text(cleaned)
+
+    return serie, preacher_playlist
 
 
 def is_sermon(title):
@@ -329,7 +395,7 @@ def run(mode):
                 "title": extract_title_clean(title),
                 "preacher_name": preacher_name,
                 "text_reference": extract_text_reference(title),
-                "serie": serie,
+                "serie": normalize_nullable_text(serie),
                 "confidence": 1.0,
                 "processed_at": processed_at,
             })
@@ -345,6 +411,7 @@ def run(mode):
 
         with get_engine().begin() as conn:
             ensure_schema(conn)
+            conn.execute(text(NORMALIZE_EMPTY_SERIE_SQL))
 
             if source_records:
                 conn.execute(text(UPSERT_SOURCE_ITEM_SQL), source_records)
