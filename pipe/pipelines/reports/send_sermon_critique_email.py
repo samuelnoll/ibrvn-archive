@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import argparse
+import html
 import smtplib
 from email.message import EmailMessage
 
+import markdown
 import requests
 
 from shared.db import begin_processing_run, fetch_one, finish_processing_run
@@ -22,30 +24,26 @@ from shared.settings import (
 )
 
 
-SERMON_CRITIQUE_SYSTEM_PROMPT = (
-    "You are a careful reformed baptist Christian assistant writing a thoughtful sermon review "
-    "in Brazilian Portuguese. Be detailed, very analytical, critical and useful. "
-    "Always answer in Brazilian Portuguese. Do not invent information. "
-    "Write a normal plain-text response, not JSON. Avoid Markdown tables. "
-    "Organize the response with clear titled sections."
-)
+SERMON_CRITIQUE_SYSTEM_PROMPT = """
+Você é um assistente reformado batista, analítico e criterioso. A teologia a ser considerada correta é da linha batista reformada equilibrada.
 
-SERMON_CRITIQUE_PROMPT = """
-Analise a transcricao a seguir e produza uma critica detalhada em texto normal.
-Organize a resposta com secoes claras para:
-1. Breve resumo da mensagem
-2. Tema central da pregacao
-3. Estrutura da pregacao
-4. Teses centrais enfatizadas
-5. Principais argumentos
-6. Pontos sem embasamento suficiente
-7. Pontos polemicos ou fora do consenso
-8. Aplicacoes utilizadas
+Quero uma crítica real, não apenas um resumo respeitoso. Se houver afirmações vagas, saltos argumentativos, aplicações pouco sustentadas ou pontos teológicos discutíveis, destaque isso com clareza e equilíbrio. Não suavize demais a análise.
 
-Seja especifico e cite o conteudo real da transcricao. Nao seja generico.
+A sua resposta deve conter os seguintes itens:
+
+No começo, intitulado "Resumo da pregação", faça um resumo em 3 parágrafos no máximo contendo sobre o que foi essa pregação e a tese principal. Logo após esse resumo, cite as teses (focos) enfatizadas da pregação.
+
+Depois, intitulado "Avaliação crítica", faça uma avaliação crítica a partir dos seguintes títulos: alinhamento teológico dos enfoques, coerência do sermão, força dos argumentos, qualidade da fundamentação bíblica, clareza das aplicações e possíveis fragilidades no raciocínio. Algo em torno de 3 parágrafos por título tem um bom tamanho.
+
+No final, intitulado "Análise geral", finalize com um veredito final com os pontos fortes e fracos de no máximo 2 parágrafos.
+
+Será enviado a seguir a transcrição da pregação.
 """
 
-SERMON_CRITIQUE_MAX_OUTPUT_TOKENS = 6000
+SERMON_CRITIQUE_PROMPT = ""
+
+SERMON_CRITIQUE_MAX_OUTPUT_TOKENS = 15000
+SERMON_CRITIQUE_REASONING_EFFORT = "high"
 
 
 def parse_recipients():
@@ -63,18 +61,15 @@ def request_critique(transcript_text: str):
         raise ValueError("ARCHIVE_OPENAI_API_KEY is not configured")
 
     response = requests.post(
-        f"{OPENAI_BASE_URL}/chat/completions",
+        f"{OPENAI_BASE_URL}/responses",
         headers={
             "Authorization": f"Bearer {OPENAI_API_KEY}",
             "Content-Type": "application/json",
         },
         json={
             "model": OPENAI_MODEL,
-            "messages": [
-                {
-                    "role": "system",
-                    "content": SERMON_CRITIQUE_SYSTEM_PROMPT,
-                },
+            "instructions": SERMON_CRITIQUE_SYSTEM_PROMPT,
+            "input": [
                 {
                     "role": "user",
                     "content": (
@@ -83,22 +78,46 @@ def request_critique(transcript_text: str):
                     ),
                 },
             ],
-            "max_completion_tokens": SERMON_CRITIQUE_MAX_OUTPUT_TOKENS,
+            "max_output_tokens": SERMON_CRITIQUE_MAX_OUTPUT_TOKENS,
+            "reasoning": {
+                "effort": SERMON_CRITIQUE_REASONING_EFFORT,
+            },
+            "text": {
+                "format": {
+                    "type": "text",
+                }
+            },
         },
         timeout=OPENAI_TIMEOUT_SECONDS,
     )
     response.raise_for_status()
     payload = response.json()
-    choices = payload.get("choices", []) or []
-
-    if not choices:
-        raise ValueError("OpenAI response does not contain choices")
-
-    message = choices[0].get("message", {}) or {}
-    critique_text = (message.get("content", "") or "").strip()
+    critique_text = (payload.get("output_text", "") or "").strip()
 
     if not critique_text:
-        raise ValueError("OpenAI returned an empty critique")
+        output_items = payload.get("output", []) or []
+
+        for item in output_items:
+            if item.get("type") != "message":
+                continue
+
+            for content_item in item.get("content", []) or []:
+                if content_item.get("type") != "output_text":
+                    continue
+
+                critique_text = (content_item.get("text", "") or "").strip()
+
+                if critique_text:
+                    break
+
+            if critique_text:
+                break
+
+    if not critique_text:
+        raise ValueError(
+            "OpenAI returned an empty critique "
+            f"(status={payload.get('status')}, incomplete_details={payload.get('incomplete_details')})"
+        )
 
     return {
         "model_name": payload.get("model", OPENAI_MODEL),
@@ -198,6 +217,38 @@ def build_email_body(sermon, transcript, critique_text: str, model_name: str):
     )
 
 
+def build_email_html(body: str):
+
+    sections = body.split("\n\n", 1)
+    metadata_block = sections[0].strip()
+    critique_block = sections[1].strip() if len(sections) > 1 else ""
+
+    metadata_html = html.escape(metadata_block)
+
+    critique_html = markdown.markdown(
+        critique_block,
+        extensions=[
+            "extra",
+            "sane_lists",
+            "nl2br",
+        ],
+    )
+
+    return f"""
+<html>
+  <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #222;">
+    <div style="margin-bottom: 24px;">
+      <pre style="white-space: pre-wrap; font-family: Arial, sans-serif; margin: 0;">{metadata_html}</pre>
+    </div>
+    <hr style="border: none; border-top: 1px solid #ddd; margin: 24px 0;">
+    <div>
+      {critique_html}
+    </div>
+  </body>
+</html>
+""".strip()
+
+
 def send_email(subject: str, body: str):
 
     recipients = parse_recipients()
@@ -216,6 +267,7 @@ def send_email(subject: str, body: str):
     message["From"] = EMAIL_FROM
     message["To"] = ", ".join(recipients)
     message.set_content(body)
+    message.add_alternative(build_email_html(body), subtype="html")
 
     print(
         f"Connecting to SMTP host={EMAIL_SMTP_HOST} "
