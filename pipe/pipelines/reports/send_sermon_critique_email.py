@@ -72,10 +72,15 @@ def request_critique(transcript_text: str):
             "input": [
                 {
                     "role": "user",
-                    "content": (
-                        f"{SERMON_CRITIQUE_PROMPT.strip()}\n\n"
-                        f"TRANSCRICAO:\n{transcript_text}"
-                    ),
+                    "content": [
+                        {
+                            "type": "input_text",
+                            "text": (
+                                f"{SERMON_CRITIQUE_PROMPT.strip()}\n\n"
+                                f"TRANSCRIÇÃO:\n{transcript_text}"
+                            ),
+                        }
+                    ],
                 },
             ],
             "max_output_tokens": SERMON_CRITIQUE_MAX_OUTPUT_TOKENS,
@@ -90,7 +95,13 @@ def request_critique(transcript_text: str):
         },
         timeout=OPENAI_TIMEOUT_SECONDS,
     )
-    response.raise_for_status()
+
+    if response.status_code >= 400:
+        raise RuntimeError(
+            "OpenAI /responses request failed "
+            f"status={response.status_code} body={response.text}"
+        )
+
     payload = response.json()
     critique_text = (payload.get("output_text", "") or "").strip()
 
