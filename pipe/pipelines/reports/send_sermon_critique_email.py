@@ -43,7 +43,7 @@ Será enviado a seguir a transcrição da pregação.
 SERMON_CRITIQUE_PROMPT = ""
 
 SERMON_CRITIQUE_MAX_OUTPUT_TOKENS = 15000
-SERMON_CRITIQUE_REASONING_EFFORT = "high"
+SERMON_CRITIQUE_REASONING_EFFORT = "medium"
 
 
 def parse_recipients():
