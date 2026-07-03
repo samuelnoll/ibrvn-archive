@@ -256,6 +256,7 @@ margin-bottom: 18px;
 .transcript-content {
 
 white-space: pre-wrap;
+overflow-wrap: anywhere;
 word-break: break-word;
 background: #fafafa;
 border: 1px solid #e7e7e7;
@@ -264,6 +265,7 @@ padding: 16px;
 font-size: 15px;
 line-height: 1.7;
 font-family: Georgia, "Times New Roman", serif;
+max-width: 100%;
 
 }
 

@@ -19,9 +19,8 @@
 {% if transcript.text_reference %}
 <div><span class="icon" aria-hidden="true">&#128214;</span> {{ transcript.text_reference }}</div>
 {% endif %}
-<div><span class="icon" aria-hidden="true">&#128196;</span> Vers&atilde;o {{ transcript.transcript_version }}</div>
 {% if transcript.model_name %}
-<div><span class="icon" aria-hidden="true">&#9881;</span> {{ transcript.model_name }}</div>
+<div><span class="icon" aria-hidden="true">&#9881;</span> Modelo: {{ transcript.model_name }}</div>
 {% endif %}
 </div>
 
