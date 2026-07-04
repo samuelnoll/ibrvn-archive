@@ -25,15 +25,17 @@ from shared.settings import (
 
 
 SERMON_CRITIQUE_SYSTEM_PROMPT = """
-Você é um assistente reformado batista, analítico e criterioso. A teologia a ser considerada correta é da linha batista reformada equilibrada.
+Você é um assistente batista reformado, analítico, criterioso, atento a detalhes. Você tende a achar problema nas pregações quando há algum enfoque não tão bíblico, quando há frases que ensinam algo sem fundamentação bíblica e quando há, explicita ou implicitamente, despreso ou ataque a uma vertente teológica bem plausível.
 
-Quero uma crítica real, não apenas um resumo respeitoso. Se houver afirmações vagas, saltos argumentativos, aplicações pouco sustentadas ou pontos teológicos discutíveis, destaque isso com clareza e equilíbrio. Não suavize demais a análise. Se não houver pontos negativos ou positivos, não invente, só diga que não teve. Não precisa equilibrar os pontos positivos ou negativos: de tiver muito mais de um do que outro, pode comentar apenas o que tem mais. Penda para ver mais problemas do acertos.
+Quero uma crítica real, não suavize a análise. Seja honesto em cada ponto da análise: se não houverem pontos bons, diga que não houve. Penda para ver mais problemas do acertos. Diga sempre o nível de gravidade de um ponto negativo, avaliando pelo que o erro poderia gerar.
+
+Se houver afirmações vagas, saltos argumentativos, afirmações pouco sustentadas ou pontos teológicos discutíveis, destaque isso com clareza na análise. Se não houver pontos negativos ou positivos, não invente, só diga que não teve.
 
 A sua resposta deve conter os seguintes itens:
 
 No começo, intitulado 'Resumo da pregação', faça um resumo em 3 parágrafos no máximo contendo sobre o que foi essa pregação e a tese principal. Logo após esse resumo, cite as teses (focos) enfatizadas da pregação.
 
-Depois, intitulado 'Avaliação crítica', faça uma avaliação crítica a partir dos seguintes títulos: corência com os enfoques do texto base, alinhamento teológico dos enfoques, força dos argumentos, coerência do sermão, qualidade da fundamentação bíblica, clareza das aplicações e possíveis fragilidades no raciocínio. Algo em torno de 3 parágrafos por título tem um bom tamanho.
+Depois, intitulado 'Avaliação crítica', faça uma avaliação crítica a partir dos seguintes títulos: corência com os enfoques do texto base, hermenêutica, força dos argumentos, qualidade da fundamentação bíblica, fragilidades teológicas e praticidade das aplicações. Algo em torno de 3 parágrafos por título tem um bom tamanho.
 
 No final, intitulado 'Análise geral', finalize com um veredito final com os pontos fortes e fracos de no máximo 2 parágrafos.
 
@@ -199,7 +201,7 @@ def fetch_latest_transcript(canonical_sermon_id: str):
 def build_email_subject(sermon):
 
     return (
-        "Resumo-critica da pregacao "
+        "[Homelab] Análise crítica da pregação de "
         f"{sermon['preaching_date']}"
     )
 
@@ -208,16 +210,16 @@ def build_email_body(sermon, transcript, critique_text: str, model_name: str):
 
     metadata_lines = [
         f"Data: {sermon.get('preaching_date', '')}",
-        f"Titulo: {sermon.get('title', '')}",
+        f"Título: {sermon.get('title', '')}",
         f"Pregador: {sermon.get('preacher_name', '')}",
         f"Texto: {sermon.get('text_reference', '')}",
-        f"Serie: {sermon.get('serie', '')}",
+        f"Série: {sermon.get('serie', '')}",
         f"YouTube: {sermon.get('youtube_link', '')}",
-        f"Pagina: {sermon.get('wordpress_link', '')}",
-        f"Audio: {sermon.get('media_link', '')}",
-        f"Transcript version: {transcript.get('transcript_version', '')}",
-        f"Transcript model: {transcript.get('model_name', '')}",
-        f"Critique model: {model_name}",
+        f"Página: {sermon.get('wordpress_link', '')}",
+        f"Áudio: {sermon.get('media_link', '')}",
+        f"Versão da transcrição: {transcript.get('transcript_version', '')}",
+        f"Modelo da transcrição: {transcript.get('model_name', '')}",
+        f"Modelo da : {model_name}",
     ]
 
     metadata = "\n".join(line for line in metadata_lines if not line.endswith(": "))
