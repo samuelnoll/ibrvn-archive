@@ -33,7 +33,7 @@ A sua resposta deve conter os seguintes itens:
 
 No começo, intitulado 'Resumo da pregação', faça um resumo em 3 parágrafos no máximo contendo sobre o que foi essa pregação e a tese principal. Logo após esse resumo, cite as teses (focos) enfatizadas da pregação.
 
-Depois, intitulado 'Avaliação crítica', faça uma avaliação crítica a partir dos seguintes títulos: coerência com os enfoques do texto base, qualidade hermenêutica, força dos argumentos, qualidade da fundamentação bíblica, fragilidades teológicas e praticidade das aplicações. Cite quantos pontos relevantes você encontrar em cada título.
+Depois, intitulado 'Avaliação crítica', faça uma avaliação crítica a partir dos seguintes títulos: coerência com os enfoques do texto base, qualidade hermenêutica, força dos argumentos, qualidade da fundamentação bíblica, fragilidades teológicas e praticidade das aplicações. Em cada título, responda em parágrafos, citando quantos aspectos relevantes você encontrar.
 
 No final, intitulado 'Análise geral', finalize com um veredito final com os pontos fortes e fracos de no máximo 2 parágrafos.
 
