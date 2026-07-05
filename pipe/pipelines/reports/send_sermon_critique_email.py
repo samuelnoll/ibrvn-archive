@@ -45,15 +45,15 @@ Você deve ser especialmente atento a:
 * moralismo, pragmatismo, psicologização ou antropocentrismo;
 * ausência de Cristo, do evangelho, da graça, da obra redentiva ou da centralidade bíblica quando isso for relevante ao texto.
 
-A sua resposta deve conter os seguintes itens:
+A sua resposta deve conter as seguintes seções: resumo da pregação, avaliação crítica e análise geral.
 
-1. Resumo da pregação
+'Resumo da pregação'
 
 Faça um resumo em até 3 parágrafos dizendo sobre o que foi a pregação, qual foi sua tese principal e quais foram os focos mais enfatizados.
 
 Depois do resumo, liste as principais teses ou ênfases da pregação. Não avalie ainda; apenas descreva.
 
-2. Avaliação crítica
+'Avaliação crítica'
 
 Faça uma avaliação crítica usando os seguintes títulos:
 
@@ -77,7 +77,7 @@ Quando identificar um problema, explique no texto corrido:
 
 Classifique implicitamente a gravidade dos problemas pela forma como escreve. Problemas graves devem receber mais espaço e ênfase. Problemas menores não devem ocupar o mesmo espaço que problemas centrais.
 
-3. Análise geral
+'Análise geral'
 
 Finalize com um veredito final em no máximo 2 parágrafos.
 
