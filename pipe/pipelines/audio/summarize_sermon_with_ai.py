@@ -26,16 +26,16 @@ from .common import (
 SERMON_SUMMARY_MAX_WORDS = 70
 
 SERMON_SUMMARY_SYSTEM_PROMPT = (
-    "You summarize spoken Christian sermons in Brazilian Portuguese. "
-    "Always answer in Brazilian Portuguese. "
-    "Return exactly one short paragraph with no line breaks, at most 70 words, "
-    "and at most 3 short sentences. "
-    "If the sermon is long, keep only the central theme, the main thesis, and "
-    "the most repeated emphases. "
-    "Do not add headings, bullets, lists, introductions, conclusions, quotes, "
-    "or extra commentary. "
-    "Do not think aloud. Do not show reasoning. Do not explain your process. "
-    "Answer directly with the final summary only."
+    "Voce resume pregacoes cristas faladas em portugues do Brasil. "
+    "Responda sempre em portugues do Brasil. "
+    "Devolva exatamente 1 paragrafo curto, sem quebras de linha, com no maximo "
+    "70 palavras e no maximo 3 frases curtas. "
+    "Se a pregacao for longa, mantenha apenas o tema central, a tese principal "
+    "e as enfases mais repetidas. "
+    "Nao adicione titulo, lista, introducao, conclusao, comentario extra, "
+    "explicacao da tarefa, nem frases sobre o que voce vai fazer. "
+    "Nao pense em voz alta. Nao mostre raciocinio. Nao explique seu processo. "
+    "Responda somente com o resumo final."
 )
 
 SERMON_SUMMARY_PROMPT = (
@@ -43,16 +43,17 @@ SERMON_SUMMARY_PROMPT = (
 )
 
 SERMON_SUMMARY_REPAIR_SYSTEM_PROMPT = (
-    "You rewrite sermon summaries in Brazilian Portuguese. "
-    "Return exactly one short paragraph with no line breaks, at most 70 words, "
-    "and at most 3 short sentences. "
-    "Preserve only the central theme, the main thesis, and the most repeated emphases. "
-    "Do not add new information, headings, bullets, or commentary. "
-    "Answer directly with the rewritten summary only."
+    "Voce reescreve resumos de pregacoes em portugues do Brasil. "
+    "Devolva exatamente 1 paragrafo curto, sem quebras de linha, com no maximo "
+    "70 palavras e no maximo 3 frases curtas. "
+    "Preserve apenas o tema central, a tese principal e as enfases mais repetidas. "
+    "Remova comentarios sobre a tarefa, explicacoes, raciocinio, titulos, listas "
+    "e qualquer texto em ingles. "
+    "Nao adicione informacoes novas. Responda somente com o resumo final."
 )
 
 SERMON_SUMMARY_REPAIR_PROMPT = (
-    "Reescreva o texto abaixo como um resumo final mais curto, em um unico paragrafo."
+    "Reescreva o texto abaixo como um resumo final mais curto, em um unico paragrafo, sem comentar sobre a tarefa."
 )
 
 SERMON_SUMMARY_MAX_OUTPUT_TOKENS = 90
@@ -120,12 +121,46 @@ def count_words(text_value: str) -> int:
     return len([part for part in (text_value or "").split(" ") if part.strip()])
 
 
+def summary_has_meta_commentary(text_value: str) -> bool:
+
+    normalized = (text_value or "").strip().lower()
+
+    if not normalized:
+        return False
+
+    meta_markers = (
+        "okay,",
+        "ok,",
+        "the user wants",
+        "let me ",
+        "i need to",
+        "i should",
+        "the provided text",
+        "this segment",
+        "the main themes",
+        "the sermon references",
+        "vou resumir",
+        "o usuario quer",
+        "o usuário quer",
+        "a transcricao fala",
+        "a transcrição fala",
+        "o texto fala sobre o resumo",
+        "resumo:",
+        "summary:",
+    )
+
+    return any(marker in normalized for marker in meta_markers)
+
+
 def summary_needs_repair(raw_text: str, normalized_text: str) -> bool:
 
     if not normalized_text:
         return False
 
     if "\n" in (raw_text or "") or "\r" in (raw_text or ""):
+        return True
+
+    if summary_has_meta_commentary(normalized_text):
         return True
 
     return count_words(normalized_text) > SERMON_SUMMARY_MAX_WORDS
