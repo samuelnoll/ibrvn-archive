@@ -333,6 +333,56 @@ def is_sermon(title):
     return title.count("|") >= 2
 
 
+def parse_published_at(date_str):
+
+    if not date_str:
+        return None
+
+    try:
+        return datetime.fromisoformat(
+            str(date_str).replace("Z", "+00:00")
+        )
+    except Exception:
+        return None
+
+
+def sermon_candidate_sort_key(candidate):
+
+    video = candidate["video"]
+    published_at = parse_published_at(video.get("published_at"))
+    duration = str(video.get("duration", "") or "").strip()
+
+    return (
+        published_at or datetime.min,
+        1 if duration and duration != "P0D" else 0,
+        1 if bool(video.get("playlists")) else 0,
+        str(video.get("video_id", "") or ""),
+    )
+
+
+def choose_best_sermon_candidate(candidates):
+
+    return max(candidates, key=sermon_candidate_sort_key)
+
+
+def coalesce_metadata_from_candidates(selected_candidate, candidates):
+
+    metadata = dict(selected_candidate["metadata"])
+
+    for field in ("title", "preacher_name", "text_reference", "serie"):
+        if metadata.get(field):
+            continue
+
+        for candidate in candidates:
+            value = candidate["metadata"].get(field)
+
+            if value:
+                metadata[field] = value
+                break
+
+    return metadata
+
+
 def run(mode):
 
     input_path = HISTORIC_INPUT if mode == "historic" else WEEKLY_INPUT
@@ -346,8 +396,7 @@ def run(mode):
         captured_at = utc_now_iso()
         processed_at = utc_now_iso()
         source_records = []
-        metadata_records = []
-        media_records = []
+        sermon_candidates_by_date = {}
 
         for video in data:
             video_id = video.get("video_id", "")
@@ -387,7 +436,7 @@ def run(mode):
                 preacher_description,
             )
 
-            metadata_records.append({
+            metadata_record = {
                 "canonical_sermon_id": preaching_date,
                 "source_system": "youtube",
                 "source_item_id": video_id,
@@ -398,16 +447,50 @@ def run(mode):
                 "serie": normalize_nullable_text(serie),
                 "confidence": 1.0,
                 "processed_at": processed_at,
-            })
+            }
 
-            media_records.append({
+            media_record = {
                 "canonical_sermon_id": preaching_date,
                 "asset_type": "youtube_video",
                 "source_url": video.get("url", ""),
                 "local_path": "",
                 "duration_seconds": None,
                 "mime_type": "video/youtube",
+            }
+
+            sermon_candidates_by_date.setdefault(preaching_date, []).append({
+                "video": video,
+                "metadata": metadata_record,
+                "media": media_record,
             })
+
+        metadata_records = []
+        media_records = []
+
+        for preaching_date, candidates in sermon_candidates_by_date.items():
+            selected_candidate = choose_best_sermon_candidate(candidates)
+            selected_metadata = coalesce_metadata_from_candidates(
+                selected_candidate,
+                candidates,
+            )
+
+            metadata_records.append(selected_metadata)
+            media_records.append(dict(selected_candidate["media"]))
+
+            if len(candidates) > 1:
+                selected_video = selected_candidate["video"]
+                discarded_video_ids = [
+                    candidate["video"].get("video_id", "")
+                    for candidate in candidates
+                    if candidate["video"].get("video_id", "") != selected_video.get("video_id", "")
+                ]
+                print(
+                    "Resolved duplicate sermon videos for "
+                    f"{preaching_date}: kept video_id={selected_video.get('video_id', '')} "
+                    f"(published_at={selected_video.get('published_at', '')}, "
+                    f"live_start_time={selected_video.get('live_start_time', '')}) "
+                    f"and skipped {discarded_video_ids}"
+                )
 
         with get_engine().begin() as conn:
             ensure_schema(conn)
