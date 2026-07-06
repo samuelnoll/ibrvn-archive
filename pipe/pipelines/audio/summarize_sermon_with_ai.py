@@ -54,8 +54,8 @@ SERMON_SUMMARY_FINAL_PROMPT = (
     "Reescreva o texto abaixo como um resumo final em portugues do Brasil, em 1 unico paragrafo com no maximo 70 palavras, sem comentar a tarefa."
 )
 
-SERMON_SUMMARY_INTERMEDIATE_MAX_OUTPUT_TOKENS = 260
-SERMON_SUMMARY_FINAL_MAX_OUTPUT_TOKENS = 90
+SERMON_SUMMARY_INTERMEDIATE_MAX_OUTPUT_TOKENS = 1500
+SERMON_SUMMARY_FINAL_MAX_OUTPUT_TOKENS = 500
 SERMON_SUMMARY_RESPONSE_FORMAT = {
     "type": "object",
     "properties": {
