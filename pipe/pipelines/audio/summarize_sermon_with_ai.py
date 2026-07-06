@@ -130,6 +130,25 @@ def normalize_summary_text(summary_text: str) -> str:
     return " ".join(pieces).strip()
 
 
+def keep_only_first_two_sentences(text_value: str) -> str:
+
+    if not text_value:
+        return ""
+
+    dot_count = 0
+
+    for index, char in enumerate(text_value):
+        if char != ".":
+            continue
+
+        dot_count += 1
+
+        if dot_count == 2:
+            return text_value[:index + 1].strip()
+
+    return text_value.strip()
+
+
 def count_words(text_value: str) -> int:
 
     return len([part for part in (text_value or "").split(" ") if part.strip()])
@@ -283,7 +302,9 @@ def run(loopback_days=None, force_reprocess=False):
                 max_output_tokens=SERMON_SUMMARY_FINAL_MAX_OUTPUT_TOKENS,
             )
             raw_summary_text = (final_result.get("summary_text", "") or "").strip()
-            summary_text = normalize_summary_text(raw_summary_text)
+            summary_text = keep_only_first_two_sentences(
+                normalize_summary_text(raw_summary_text)
+            )
             summary_repaired = False
 
             if summary_needs_repair(raw_summary_text, summary_text):
@@ -298,6 +319,9 @@ def run(loopback_days=None, force_reprocess=False):
                 )
                 repaired_summary_text = normalize_summary_text(
                     (repaired_result.get("summary_text", "") or "").strip()
+                )
+                repaired_summary_text = keep_only_first_two_sentences(
+                    repaired_summary_text
                 )
 
                 if repaired_summary_text:
