@@ -23,22 +23,39 @@ from .common import (
 )
 
 
+SERMON_SUMMARY_MAX_WORDS = 70
+
 SERMON_SUMMARY_SYSTEM_PROMPT = (
-    "You are a careful assistant that summarizes spoken Christian sermons in "
-    "Brazilian Portuguese. Always answer in Brazilian Portuguese. "
-    "Your response must be a short summary with at most 50 words. "
-    "Never exceed 50 words. Return a single sentence, or at most two very "
-    "short sentences. Focus only on the main theme and the preacher's main emphases. "
-    "Do not add explanations, headings, bullets, or extra commentary. "
+    "You summarize spoken Christian sermons in Brazilian Portuguese. "
+    "Always answer in Brazilian Portuguese. "
+    "Return exactly one short paragraph with no line breaks, at most 70 words, "
+    "and at most 3 short sentences. "
+    "If the sermon is long, keep only the central theme, the main thesis, and "
+    "the most repeated emphases. "
+    "Do not add headings, bullets, lists, introductions, conclusions, quotes, "
+    "or extra commentary. "
     "Do not think aloud. Do not show reasoning. Do not explain your process. "
     "Answer directly with the final summary only."
 )
 
 SERMON_SUMMARY_PROMPT = (
-    "Resuma a transcricao a seguir conforme as instrucoes definidas."
+    "Leia a transcricao inteira e devolva somente o resumo final em um unico paragrafo curto."
 )
 
-SERMON_SUMMARY_MAX_OUTPUT_TOKENS = 100
+SERMON_SUMMARY_REPAIR_SYSTEM_PROMPT = (
+    "You rewrite sermon summaries in Brazilian Portuguese. "
+    "Return exactly one short paragraph with no line breaks, at most 70 words, "
+    "and at most 3 short sentences. "
+    "Preserve only the central theme, the main thesis, and the most repeated emphases. "
+    "Do not add new information, headings, bullets, or commentary. "
+    "Answer directly with the rewritten summary only."
+)
+
+SERMON_SUMMARY_REPAIR_PROMPT = (
+    "Reescreva o texto abaixo como um resumo final mais curto, em um unico paragrafo."
+)
+
+SERMON_SUMMARY_MAX_OUTPUT_TOKENS = 90
 
 INSERT_SUMMARY_SQL = """
 INSERT INTO silver_summaries (
@@ -58,20 +75,60 @@ VALUES (
 """
 
 
-def request_summary(transcript_text: str):
+def request_summary(
+    transcript_text: str,
+    system_prompt: str = SERMON_SUMMARY_SYSTEM_PROMPT,
+    prompt: str = SERMON_SUMMARY_PROMPT,
+    max_output_tokens: int = SERMON_SUMMARY_MAX_OUTPUT_TOKENS,
+):
 
     response = requests.post(
         f"{AI_BASE_URL}/v1/summaries",
         json={
             "text": transcript_text,
-            "system_prompt": SERMON_SUMMARY_SYSTEM_PROMPT,
-            "prompt": SERMON_SUMMARY_PROMPT,
-            "max_output_tokens": SERMON_SUMMARY_MAX_OUTPUT_TOKENS,
+            "system_prompt": system_prompt,
+            "prompt": prompt,
+            "max_output_tokens": max_output_tokens,
         },
         timeout=AI_TIMEOUT_SECONDS,
     )
     response.raise_for_status()
     return response.json()
+
+
+def normalize_summary_text(summary_text: str) -> str:
+
+    pieces = []
+
+    for raw_line in (summary_text or "").replace("\r\n", "\n").replace("\r", "\n").split("\n"):
+        cleaned = " ".join(raw_line.strip().split())
+
+        if not cleaned:
+            continue
+
+        if cleaned[:1] in {"-", "*"}:
+            cleaned = cleaned[1:].strip()
+
+        if cleaned:
+            pieces.append(cleaned)
+
+    return " ".join(pieces).strip()
+
+
+def count_words(text_value: str) -> int:
+
+    return len([part for part in (text_value or "").split(" ") if part.strip()])
+
+
+def summary_needs_repair(raw_text: str, normalized_text: str) -> bool:
+
+    if not normalized_text:
+        return False
+
+    if "\n" in (raw_text or "") or "\r" in (raw_text or ""):
+        return True
+
+    return count_words(normalized_text) > SERMON_SUMMARY_MAX_WORDS
 
 
 def build_pending_rows(loopback_days=None, force_reprocess=False):
@@ -156,7 +213,25 @@ def run(loopback_days=None, force_reprocess=False):
         for index, row in enumerate(rows, start=1):
             sermon_started_at = time.perf_counter()
             result = request_summary(row["transcript_text"])
-            summary_text = (result.get("summary_text", "") or "").strip()
+            raw_summary_text = (result.get("summary_text", "") or "").strip()
+            summary_text = normalize_summary_text(raw_summary_text)
+            summary_repaired = False
+
+            if summary_needs_repair(raw_summary_text, summary_text):
+                repaired_result = request_summary(
+                    summary_text or raw_summary_text or row["transcript_text"],
+                    system_prompt=SERMON_SUMMARY_REPAIR_SYSTEM_PROMPT,
+                    prompt=SERMON_SUMMARY_REPAIR_PROMPT,
+                    max_output_tokens=SERMON_SUMMARY_MAX_OUTPUT_TOKENS,
+                )
+                repaired_summary_text = normalize_summary_text(
+                    (repaired_result.get("summary_text", "") or "").strip()
+                )
+
+                if repaired_summary_text:
+                    result = repaired_result
+                    summary_text = repaired_summary_text
+                    summary_repaired = True
 
             if not summary_text:
                 print(
@@ -189,6 +264,8 @@ def run(loopback_days=None, force_reprocess=False):
                 f"step={format_elapsed_seconds(sermon_elapsed)} | "
                 f"total={format_elapsed_seconds(overall_elapsed)} | "
                 f"chars={len(summary_text)} | "
+                f"words={count_words(summary_text)} | "
+                f"repaired={'yes' if summary_repaired else 'no'} | "
                 f"transcript_version={row['transcript_version']} | "
                 f"summary_version={summary_version} | "
                 f"model={result.get('model_name', 'homelab-ai')}"

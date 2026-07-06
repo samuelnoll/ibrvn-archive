@@ -414,12 +414,12 @@ def run(preaching_date: str = ""):
             f"chars={len(transcript.get('transcript_text', ''))}"
         )
 
-        print("Requesting detailed sermon critique from AI service...")
+        print("Requesting detailed sermon critique from OpenAI Responses API...")
         critique = request_critique(transcript["transcript_text"])
         critique_text = (critique.get("critique_text", "") or "").strip()
 
         if not critique_text:
-            raise ValueError("AI service returned an empty critique")
+            raise ValueError("OpenAI returned an empty critique")
 
         print(
             "Critique generated | "
