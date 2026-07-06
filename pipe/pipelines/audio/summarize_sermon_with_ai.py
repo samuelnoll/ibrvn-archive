@@ -56,6 +56,15 @@ SERMON_SUMMARY_FINAL_PROMPT = (
 
 SERMON_SUMMARY_INTERMEDIATE_MAX_OUTPUT_TOKENS = 260
 SERMON_SUMMARY_FINAL_MAX_OUTPUT_TOKENS = 90
+SERMON_SUMMARY_RESPONSE_FORMAT = {
+    "type": "object",
+    "properties": {
+        "summary_text": {
+            "type": "string",
+        }
+    },
+    "required": ["summary_text"],
+}
 
 INSERT_SUMMARY_SQL = """
 INSERT INTO silver_summaries (
@@ -89,6 +98,7 @@ def request_summary(
             "system_prompt": system_prompt,
             "prompt": prompt,
             "max_output_tokens": max_output_tokens,
+            "response_format": SERMON_SUMMARY_RESPONSE_FORMAT,
         },
         timeout=AI_TIMEOUT_SECONDS,
     )
