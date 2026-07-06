@@ -25,25 +25,23 @@ from .common import (
 
 SERMON_SUMMARY_MAX_WORDS = 70
 
-SERMON_SUMMARY_SYSTEM_PROMPT = (
+SERMON_SUMMARY_INTERMEDIATE_SYSTEM_PROMPT = (
     "Voce resume pregacoes cristas faladas em portugues do Brasil. "
     "Responda sempre em portugues do Brasil. "
-    "Devolva exatamente 1 paragrafo curto, sem quebras de linha, com no maximo "
-    "70 palavras e no maximo 3 frases curtas. "
-    "Se a pregacao for longa, mantenha apenas o tema central, a tese principal "
-    "e as enfases mais repetidas. "
-    "Nao adicione titulo, lista, introducao, conclusao, comentario extra, "
-    "explicacao da tarefa, nem frases sobre o que voce vai fazer. "
+    "Faca um resumo padrao, claro e fiel ao conteudo da pregacao. "
+    "Mantenha o tema central, a tese principal e as enfases mais repetidas. "
+    "Nao adicione titulo, lista, comentario extra, explicacao da tarefa, "
+    "nem frases sobre o que voce vai fazer. "
     "Nao pense em voz alta. Nao mostre raciocinio. Nao explique seu processo. "
-    "Responda somente com o resumo final."
+    "Responda somente com o resumo."
 )
 
-SERMON_SUMMARY_PROMPT = (
-    "Leia a transcricao inteira e devolva somente o resumo final em um unico paragrafo curto."
+SERMON_SUMMARY_INTERMEDIATE_PROMPT = (
+    "Leia a transcricao inteira e devolva somente um resumo em portugues do Brasil, em texto corrido, sem comentar a tarefa."
 )
 
-SERMON_SUMMARY_REPAIR_SYSTEM_PROMPT = (
-    "Voce reescreve resumos de pregacoes em portugues do Brasil. "
+SERMON_SUMMARY_FINAL_SYSTEM_PROMPT = (
+    "Voce reescreve resumos de pregacoes cristas em portugues do Brasil. "
     "Devolva exatamente 1 paragrafo curto, sem quebras de linha, com no maximo "
     "70 palavras e no maximo 3 frases curtas. "
     "Preserve apenas o tema central, a tese principal e as enfases mais repetidas. "
@@ -52,11 +50,12 @@ SERMON_SUMMARY_REPAIR_SYSTEM_PROMPT = (
     "Nao adicione informacoes novas. Responda somente com o resumo final."
 )
 
-SERMON_SUMMARY_REPAIR_PROMPT = (
-    "Reescreva o texto abaixo como um resumo final mais curto, em um unico paragrafo, sem comentar sobre a tarefa."
+SERMON_SUMMARY_FINAL_PROMPT = (
+    "Reescreva o texto abaixo como um resumo final em portugues do Brasil, em 1 unico paragrafo com no maximo 70 palavras, sem comentar a tarefa."
 )
 
-SERMON_SUMMARY_MAX_OUTPUT_TOKENS = 90
+SERMON_SUMMARY_INTERMEDIATE_MAX_OUTPUT_TOKENS = 260
+SERMON_SUMMARY_FINAL_MAX_OUTPUT_TOKENS = 90
 
 INSERT_SUMMARY_SQL = """
 INSERT INTO silver_summaries (
@@ -78,9 +77,9 @@ VALUES (
 
 def request_summary(
     transcript_text: str,
-    system_prompt: str = SERMON_SUMMARY_SYSTEM_PROMPT,
-    prompt: str = SERMON_SUMMARY_PROMPT,
-    max_output_tokens: int = SERMON_SUMMARY_MAX_OUTPUT_TOKENS,
+    system_prompt: str,
+    prompt: str,
+    max_output_tokens: int,
 ):
 
     response = requests.post(
@@ -101,7 +100,12 @@ def normalize_summary_text(summary_text: str) -> str:
 
     pieces = []
 
-    for raw_line in (summary_text or "").replace("\r\n", "\n").replace("\r", "\n").split("\n"):
+    for raw_line in (
+        (summary_text or "")
+        .replace("\r\n", "\n")
+        .replace("\r", "\n")
+        .split("\n")
+    ):
         cleaned = " ".join(raw_line.strip().split())
 
         if not cleaned:
@@ -141,10 +145,10 @@ def summary_has_meta_commentary(text_value: str) -> bool:
         "the sermon references",
         "vou resumir",
         "o usuario quer",
-        "o usuário quer",
         "a transcricao fala",
-        "a transcrição fala",
         "o texto fala sobre o resumo",
+        "o resumo abaixo",
+        "a tarefa e",
         "resumo:",
         "summary:",
     )
@@ -247,24 +251,47 @@ def run(loopback_days=None, force_reprocess=False):
 
         for index, row in enumerate(rows, start=1):
             sermon_started_at = time.perf_counter()
-            result = request_summary(row["transcript_text"])
-            raw_summary_text = (result.get("summary_text", "") or "").strip()
+            intermediate_result = request_summary(
+                row["transcript_text"],
+                system_prompt=SERMON_SUMMARY_INTERMEDIATE_SYSTEM_PROMPT,
+                prompt=SERMON_SUMMARY_INTERMEDIATE_PROMPT,
+                max_output_tokens=SERMON_SUMMARY_INTERMEDIATE_MAX_OUTPUT_TOKENS,
+            )
+            intermediate_raw_summary = (
+                intermediate_result.get("summary_text", "") or ""
+            ).strip()
+            intermediate_summary = normalize_summary_text(
+                intermediate_raw_summary
+            )
+
+            final_result = request_summary(
+                intermediate_summary
+                or intermediate_raw_summary
+                or row["transcript_text"],
+                system_prompt=SERMON_SUMMARY_FINAL_SYSTEM_PROMPT,
+                prompt=SERMON_SUMMARY_FINAL_PROMPT,
+                max_output_tokens=SERMON_SUMMARY_FINAL_MAX_OUTPUT_TOKENS,
+            )
+            raw_summary_text = (final_result.get("summary_text", "") or "").strip()
             summary_text = normalize_summary_text(raw_summary_text)
             summary_repaired = False
 
             if summary_needs_repair(raw_summary_text, summary_text):
                 repaired_result = request_summary(
-                    summary_text or raw_summary_text or row["transcript_text"],
-                    system_prompt=SERMON_SUMMARY_REPAIR_SYSTEM_PROMPT,
-                    prompt=SERMON_SUMMARY_REPAIR_PROMPT,
-                    max_output_tokens=SERMON_SUMMARY_MAX_OUTPUT_TOKENS,
+                    summary_text
+                    or raw_summary_text
+                    or intermediate_summary
+                    or row["transcript_text"],
+                    system_prompt=SERMON_SUMMARY_FINAL_SYSTEM_PROMPT,
+                    prompt=SERMON_SUMMARY_FINAL_PROMPT,
+                    max_output_tokens=SERMON_SUMMARY_FINAL_MAX_OUTPUT_TOKENS,
                 )
                 repaired_summary_text = normalize_summary_text(
                     (repaired_result.get("summary_text", "") or "").strip()
                 )
 
                 if repaired_summary_text:
-                    result = repaired_result
+                    final_result = repaired_result
                     summary_text = repaired_summary_text
                     summary_repaired = True
 
@@ -278,15 +305,15 @@ def run(loopback_days=None, force_reprocess=False):
                     "Empty summary payload | "
                     f"canonical_sermon_id={row['canonical_sermon_id']} | "
                     f"transcript_version={row['transcript_version']} | "
-                    f"model={result.get('model_name', 'unknown')} | "
-                    f"raw_result={result!r}"
+                    f"model={final_result.get('model_name', 'unknown')} | "
+                    f"raw_result={final_result!r}"
                 )
                 continue
 
             summary_version = insert_summary({
                 "canonical_sermon_id": row["canonical_sermon_id"],
                 "summary_text": summary_text,
-                "model_name": result.get("model_name", "homelab-ai"),
+                "model_name": final_result.get("model_name", "homelab-ai"),
                 "created_at": utc_now_iso(),
             })
 
@@ -303,7 +330,8 @@ def run(loopback_days=None, force_reprocess=False):
                 f"repaired={'yes' if summary_repaired else 'no'} | "
                 f"transcript_version={row['transcript_version']} | "
                 f"summary_version={summary_version} | "
-                f"model={result.get('model_name', 'homelab-ai')}"
+                f"model={final_result.get('model_name', 'homelab-ai')} | "
+                f"intermediate_chars={len(intermediate_summary)}"
             )
 
         finish_processing_run(run_id, "success")
