@@ -23,7 +23,6 @@ from .common import (
 )
 
 
-SERMON_SUMMARY_MAX_WORDS = 50
 SERMON_SUMMARY_MODEL = "llama3.1:8b"
 
 SERMON_SUMMARY_INTERMEDIATE_SYSTEM_PROMPT = (
@@ -52,7 +51,7 @@ SERMON_SUMMARY_FINAL_SYSTEM_PROMPT = (
 SERMON_SUMMARY_FINAL_PROMPT = (
     "Transforme o texto abaixo em um micro-resumo em portugues do Brasil.\n\n"
     "Regras obrigatorias:\n"
-    "- de 30 a 50 palavras\n"
+    "- entre 40 e 50 palavras\n"
     "- sem titulo\n"
     "- sem explicacao\n"
     "- sem comentar a tarefa\n"
@@ -60,7 +59,7 @@ SERMON_SUMMARY_FINAL_PROMPT = (
     "Texto:\n"
 )
 
-SERMON_SUMMARY_INTERMEDIATE_MAX_OUTPUT_TOKENS = 1500
+SERMON_SUMMARY_INTERMEDIATE_MAX_OUTPUT_TOKENS = 2000
 SERMON_SUMMARY_FINAL_MAX_OUTPUT_TOKENS = 500
 SERMON_SUMMARY_RESPONSE_FORMAT = {
     "type": "object",
@@ -138,25 +137,6 @@ def normalize_summary_text(summary_text: str) -> str:
     return " ".join(pieces).strip()
 
 
-def keep_only_first_two_sentences(text_value: str) -> str:
-
-    if not text_value:
-        return ""
-
-    dot_count = 0
-
-    for index, char in enumerate(text_value):
-        if char != ".":
-            continue
-
-        dot_count += 1
-
-        if dot_count == 2:
-            return text_value[:index + 1].strip()
-
-    return text_value.strip()
-
-
 def count_words(text_value: str) -> int:
 
     return len([part for part in (text_value or "").split(" ") if part.strip()])
@@ -204,7 +184,7 @@ def summary_needs_repair(raw_text: str, normalized_text: str) -> bool:
     if summary_has_meta_commentary(normalized_text):
         return True
 
-    return count_words(normalized_text) > SERMON_SUMMARY_MAX_WORDS
+    return False
 
 
 def build_pending_rows(loopback_days=None, force_reprocess=False):
@@ -312,9 +292,7 @@ def run(loopback_days=None, force_reprocess=False):
                 model=SERMON_SUMMARY_MODEL,
             )
             raw_summary_text = (final_result.get("summary_text", "") or "").strip()
-            summary_text = keep_only_first_two_sentences(
-                normalize_summary_text(raw_summary_text)
-            )
+            summary_text = normalize_summary_text(raw_summary_text)
             summary_repaired = False
 
             if summary_needs_repair(raw_summary_text, summary_text):
@@ -331,10 +309,6 @@ def run(loopback_days=None, force_reprocess=False):
                 repaired_summary_text = normalize_summary_text(
                     (repaired_result.get("summary_text", "") or "").strip()
                 )
-                repaired_summary_text = keep_only_first_two_sentences(
-                    repaired_summary_text
-                )
-
                 if repaired_summary_text:
                     final_result = repaired_result
                     summary_text = repaired_summary_text
