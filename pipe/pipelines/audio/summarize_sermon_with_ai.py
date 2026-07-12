@@ -23,7 +23,8 @@ from .common import (
 )
 
 
-SERMON_SUMMARY_MAX_WORDS = 70
+SERMON_SUMMARY_MAX_WORDS = 50
+SERMON_SUMMARY_MODEL = "llama3.1:8b"
 
 SERMON_SUMMARY_INTERMEDIATE_SYSTEM_PROMPT = (
     "Voce resume pregacoes cristas faladas em portugues do Brasil. "
@@ -42,16 +43,21 @@ SERMON_SUMMARY_INTERMEDIATE_PROMPT = (
 
 SERMON_SUMMARY_FINAL_SYSTEM_PROMPT = (
     "Voce reescreve resumos de pregacoes cristas em portugues do Brasil. "
-    "Devolva exatamente 1 paragrafo curto, sem quebras de linha, com no maximo "
-    "70 palavras e no maximo 3 frases curtas. "
-    "Preserve apenas o tema central, a tese principal e as enfases mais repetidas. "
-    "Remova comentarios sobre a tarefa, explicacoes, raciocinio, titulos, listas "
-    "e qualquer texto em ingles. "
+    "Devolva somente um micro-resumo em portugues do Brasil, sem titulo, "
+    "sem explicacao, sem comentar a tarefa e sem quebras de linha. "
+    "Preserve apenas a tese central. "
     "Nao adicione informacoes novas. Responda somente com o resumo final."
 )
 
 SERMON_SUMMARY_FINAL_PROMPT = (
-    "Reescreva o texto abaixo como um resumo final em portugues do Brasil, em 1 unico paragrafo com no maximo 70 palavras, sem comentar a tarefa."
+    "Transforme o texto abaixo em um micro-resumo em portugues do Brasil.\n\n"
+    "Regras obrigatorias:\n"
+    "- de 30 a 50 palavras\n"
+    "- sem titulo\n"
+    "- sem explicacao\n"
+    "- sem comentar a tarefa\n"
+    "- preserve apenas a tese central\n\n"
+    "Texto:\n"
 )
 
 SERMON_SUMMARY_INTERMEDIATE_MAX_OUTPUT_TOKENS = 1500
@@ -89,6 +95,7 @@ def request_summary(
     system_prompt: str,
     prompt: str,
     max_output_tokens: int,
+    model: str = "",
 ):
 
     response = requests.post(
@@ -97,6 +104,7 @@ def request_summary(
             "text": transcript_text,
             "system_prompt": system_prompt,
             "prompt": prompt,
+            "model": model,
             "max_output_tokens": max_output_tokens,
             "response_format": SERMON_SUMMARY_RESPONSE_FORMAT,
         },
@@ -285,6 +293,7 @@ def run(loopback_days=None, force_reprocess=False):
                 system_prompt=SERMON_SUMMARY_INTERMEDIATE_SYSTEM_PROMPT,
                 prompt=SERMON_SUMMARY_INTERMEDIATE_PROMPT,
                 max_output_tokens=SERMON_SUMMARY_INTERMEDIATE_MAX_OUTPUT_TOKENS,
+                model=SERMON_SUMMARY_MODEL,
             )
             intermediate_raw_summary = (
                 intermediate_result.get("summary_text", "") or ""
@@ -300,6 +309,7 @@ def run(loopback_days=None, force_reprocess=False):
                 system_prompt=SERMON_SUMMARY_FINAL_SYSTEM_PROMPT,
                 prompt=SERMON_SUMMARY_FINAL_PROMPT,
                 max_output_tokens=SERMON_SUMMARY_FINAL_MAX_OUTPUT_TOKENS,
+                model=SERMON_SUMMARY_MODEL,
             )
             raw_summary_text = (final_result.get("summary_text", "") or "").strip()
             summary_text = keep_only_first_two_sentences(
@@ -316,6 +326,7 @@ def run(loopback_days=None, force_reprocess=False):
                     system_prompt=SERMON_SUMMARY_FINAL_SYSTEM_PROMPT,
                     prompt=SERMON_SUMMARY_FINAL_PROMPT,
                     max_output_tokens=SERMON_SUMMARY_FINAL_MAX_OUTPUT_TOKENS,
+                    model=SERMON_SUMMARY_MODEL,
                 )
                 repaired_summary_text = normalize_summary_text(
                     (repaired_result.get("summary_text", "") or "").strip()
