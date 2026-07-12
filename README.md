@@ -86,6 +86,7 @@ is centered on:
 - `silver_media_assets`
 - `silver_transcripts`
 - `silver_summaries`
+- `silver_critique`
 - `silver_processing_runs`
 
 Audio enrichment now calls the separate `homelab-ai` runtime for:
@@ -93,8 +94,9 @@ Audio enrichment now calls the separate `homelab-ai` runtime for:
 - local transcription with `faster-whisper`
 - local summarization with Ollama
 
-The sermon critique email flow is separate from that stack and calls the
-OpenAI API directly from `ibrvn-archive`.
+The sermon critique flow is separate from that stack and calls the
+OpenAI API directly from `ibrvn-archive`, then reports through email and the
+WhatsApp scheduler.
 
 Current core fields:
 
@@ -157,7 +159,7 @@ execution.
 - Silver and gold are stored in PostgreSQL in the homelab deployment.
 - Audio enrichment writes duration, transcript, and summary outputs into silver tables.
 - Local AI inference for audio enrichment is expected to run in the separate `homelab-ai` stack.
-- Sermon critique email generation uses the OpenAI API directly.
+- Sermon critique generation uses the OpenAI API directly.
 
 ## Docs
 

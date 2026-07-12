@@ -63,3 +63,28 @@ EMAIL_SMTP_USE_TLS = os.getenv(
 ).strip().lower() in {"1", "true", "yes", "y", "on"}
 EMAIL_FROM = os.getenv("ARCHIVE_EMAIL_FROM", "").strip()
 EMAIL_TO = os.getenv("ARCHIVE_EMAIL_TO", "").strip()
+
+LOCAL_TIMEZONE = os.getenv(
+    "ARCHIVE_LOCAL_TIMEZONE",
+    "America/Sao_Paulo",
+).strip()
+
+WHATSAPP_SCHEDULER_BASE_URL = os.getenv(
+    "ARCHIVE_WHATSAPP_SCHEDULER_BASE_URL",
+    "",
+).rstrip("/")
+WHATSAPP_SCHEDULER_TIMEOUT_SECONDS = int(
+    os.getenv("ARCHIVE_WHATSAPP_SCHEDULER_TIMEOUT_SECONDS", "120")
+)
+WHATSAPP_CRITIQUE_TARGET_TYPE = os.getenv(
+    "ARCHIVE_WHATSAPP_CRITIQUE_TARGET_TYPE",
+    "group",
+).strip()
+WHATSAPP_CRITIQUE_TARGET_VALUE = os.getenv(
+    "ARCHIVE_WHATSAPP_CRITIQUE_TARGET_VALUE",
+    "",
+).strip()
+WHATSAPP_CRITIQUE_TARGET_LABEL = os.getenv(
+    "ARCHIVE_WHATSAPP_CRITIQUE_TARGET_LABEL",
+    "Critica da pregacao",
+).strip()
