@@ -25,21 +25,6 @@ from .common import (
 
 SERMON_SUMMARY_MODEL = "llama3.1:8b"
 
-SERMON_SUMMARY_INTERMEDIATE_SYSTEM_PROMPT = (
-    "Voce resume pregacoes cristas faladas em portugues do Brasil. "
-    "Responda sempre em portugues do Brasil. "
-    "Faca um resumo padrao, claro e fiel ao conteudo da pregacao. "
-    "Mantenha o tema central, a tese principal e as enfases mais repetidas. "
-    "Nao adicione titulo, lista, comentario extra, explicacao da tarefa, "
-    "nem frases sobre o que voce vai fazer. "
-    "Nao pense em voz alta. Nao mostre raciocinio. Nao explique seu processo. "
-    "Responda somente com o resumo."
-)
-
-SERMON_SUMMARY_INTERMEDIATE_PROMPT = (
-    "Leia a transcricao inteira e devolva somente um resumo em portugues do Brasil, em texto corrido, sem comentar a tarefa."
-)
-
 SERMON_SUMMARY_FINAL_SYSTEM_PROMPT = (
     "Voce reescreve resumos de pregacoes cristas em portugues do Brasil. "
     "Devolva somente um micro-resumo em portugues do Brasil, sem titulo, "
@@ -59,7 +44,6 @@ SERMON_SUMMARY_FINAL_PROMPT = (
     "Texto:\n"
 )
 
-SERMON_SUMMARY_INTERMEDIATE_MAX_OUTPUT_TOKENS = 2000
 SERMON_SUMMARY_FINAL_MAX_OUTPUT_TOKENS = 500
 SERMON_SUMMARY_RESPONSE_FORMAT = {
     "type": "object",
@@ -140,51 +124,6 @@ def normalize_summary_text(summary_text: str) -> str:
 def count_words(text_value: str) -> int:
 
     return len([part for part in (text_value or "").split(" ") if part.strip()])
-
-
-def summary_has_meta_commentary(text_value: str) -> bool:
-
-    normalized = (text_value or "").strip().lower()
-
-    if not normalized:
-        return False
-
-    meta_markers = (
-        "okay,",
-        "ok,",
-        "the user wants",
-        "let me ",
-        "i need to",
-        "i should",
-        "the provided text",
-        "this segment",
-        "the main themes",
-        "the sermon references",
-        "vou resumir",
-        "o usuario quer",
-        "a transcricao fala",
-        "o texto fala sobre o resumo",
-        "o resumo abaixo",
-        "a tarefa e",
-        "resumo:",
-        "summary:",
-    )
-
-    return any(marker in normalized for marker in meta_markers)
-
-
-def summary_needs_repair(raw_text: str, normalized_text: str) -> bool:
-
-    if not normalized_text:
-        return False
-
-    if "\n" in (raw_text or "") or "\r" in (raw_text or ""):
-        return True
-
-    if summary_has_meta_commentary(normalized_text):
-        return True
-
-    return False
 
 
 def build_pending_rows(loopback_days=None, force_reprocess=False):
@@ -268,24 +207,8 @@ def run(loopback_days=None, force_reprocess=False):
 
         for index, row in enumerate(rows, start=1):
             sermon_started_at = time.perf_counter()
-            intermediate_result = request_summary(
-                row["transcript_text"],
-                system_prompt=SERMON_SUMMARY_INTERMEDIATE_SYSTEM_PROMPT,
-                prompt=SERMON_SUMMARY_INTERMEDIATE_PROMPT,
-                max_output_tokens=SERMON_SUMMARY_INTERMEDIATE_MAX_OUTPUT_TOKENS,
-                model=SERMON_SUMMARY_MODEL,
-            )
-            intermediate_raw_summary = (
-                intermediate_result.get("summary_text", "") or ""
-            ).strip()
-            intermediate_summary = normalize_summary_text(
-                intermediate_raw_summary
-            )
-
             final_result = request_summary(
-                intermediate_summary
-                or intermediate_raw_summary
-                or row["transcript_text"],
+                row["transcript_text"],
                 system_prompt=SERMON_SUMMARY_FINAL_SYSTEM_PROMPT,
                 prompt=SERMON_SUMMARY_FINAL_PROMPT,
                 max_output_tokens=SERMON_SUMMARY_FINAL_MAX_OUTPUT_TOKENS,
@@ -293,26 +216,6 @@ def run(loopback_days=None, force_reprocess=False):
             )
             raw_summary_text = (final_result.get("summary_text", "") or "").strip()
             summary_text = normalize_summary_text(raw_summary_text)
-            summary_repaired = False
-
-            if summary_needs_repair(raw_summary_text, summary_text):
-                repaired_result = request_summary(
-                    summary_text
-                    or raw_summary_text
-                    or intermediate_summary
-                    or row["transcript_text"],
-                    system_prompt=SERMON_SUMMARY_FINAL_SYSTEM_PROMPT,
-                    prompt=SERMON_SUMMARY_FINAL_PROMPT,
-                    max_output_tokens=SERMON_SUMMARY_FINAL_MAX_OUTPUT_TOKENS,
-                    model=SERMON_SUMMARY_MODEL,
-                )
-                repaired_summary_text = normalize_summary_text(
-                    (repaired_result.get("summary_text", "") or "").strip()
-                )
-                if repaired_summary_text:
-                    final_result = repaired_result
-                    summary_text = repaired_summary_text
-                    summary_repaired = True
 
             if not summary_text:
                 print(
@@ -346,11 +249,9 @@ def run(loopback_days=None, force_reprocess=False):
                 f"total={format_elapsed_seconds(overall_elapsed)} | "
                 f"chars={len(summary_text)} | "
                 f"words={count_words(summary_text)} | "
-                f"repaired={'yes' if summary_repaired else 'no'} | "
                 f"transcript_version={row['transcript_version']} | "
                 f"summary_version={summary_version} | "
-                f"model={final_result.get('model_name', 'homelab-ai')} | "
-                f"intermediate_chars={len(intermediate_summary)}"
+                f"model={final_result.get('model_name', 'homelab-ai')}"
             )
 
         finish_processing_run(run_id, "success")
