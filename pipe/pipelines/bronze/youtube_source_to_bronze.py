@@ -4,7 +4,8 @@ import time
 import yaml
 import requests
 import argparse
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 API_KEY = os.environ["YOUTUBE_API_KEY"]
 
@@ -15,6 +16,7 @@ WEEKLY_OUTPUT = "data/bronze/youtube_weekly_videos.json"
 REQUEST_TIMEOUT_SECONDS = 30
 MAX_API_ATTEMPTS = 4
 INITIAL_RETRY_DELAY_SECONDS = 2
+DEFAULT_CHANNEL_TIMEZONE = "America/Sao_Paulo"
 TRANSIENT_STATUS_CODES = {429, 500, 502, 503, 504}
 TRANSIENT_ERROR_REASONS = {
     "backendError",
@@ -116,6 +118,19 @@ def youtube_api_get(url, params, operation, require_items=False):
         delay_seconds *= 2
 
     raise YoutubeApiError(last_error or "Unknown YouTube API failure")
+
+
+def parse_published_at(value):
+
+    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+
+def normalize_target_date(value):
+
+    if isinstance(value, date) and not isinstance(value, datetime):
+        return value
+
+    return date.fromisoformat(str(value))
 
 
 def load_channel():
@@ -231,6 +246,74 @@ def fetch_playlist_items(playlist_id):
                 "description": snippet["description"],
                 "published_at": snippet["publishedAt"],
                 "url": f"https://www.youtube.com/watch?v={snippet['resourceId']['videoId']}"
+            })
+
+        next_page = r.get("nextPageToken")
+
+        if not next_page:
+            break
+
+    return videos
+
+
+def fetch_playlist_items_for_date(
+    playlist_id,
+    target_date,
+    timezone_name=DEFAULT_CHANNEL_TIMEZONE,
+):
+
+    url = "https://www.googleapis.com/youtube/v3/playlistItems"
+
+    videos = []
+    next_page = None
+    target_local_date = normalize_target_date(target_date)
+    channel_timezone = ZoneInfo(timezone_name)
+
+    while True:
+
+        params = {
+            "part": "snippet",
+            "playlistId": playlist_id,
+            "maxResults": 50,
+            "pageToken": next_page,
+            "key": API_KEY
+        }
+
+        r = youtube_api_get(
+            url,
+            params,
+            operation=(
+                "listing playlist items for "
+                f"playlist_id={playlist_id}, "
+                f"target_date={target_local_date.isoformat()}, "
+                f"page_token={next_page or '<first>'}"
+            ),
+            require_items=True,
+        )
+
+        for item in r["items"]:
+
+            snippet = item["snippet"]
+            published_at = parse_published_at(snippet["publishedAt"])
+            published_local_date = published_at.astimezone(
+                channel_timezone
+            ).date()
+
+            if published_local_date > target_local_date:
+                continue
+
+            if published_local_date < target_local_date:
+                return videos
+
+            videos.append({
+                "video_id": snippet["resourceId"]["videoId"],
+                "title": snippet["title"],
+                "description": snippet["description"],
+                "published_at": snippet["publishedAt"],
+                "url": (
+                    "https://www.youtube.com/watch?v="
+                    f"{snippet['resourceId']['videoId']}"
+                )
             })
 
         next_page = r.get("nextPageToken")
