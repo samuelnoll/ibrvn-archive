@@ -1,5 +1,6 @@
 import os
 import json
+import time
 import yaml
 import requests
 import argparse
@@ -11,6 +12,110 @@ CONFIG_PATH = "pipe/config/youtube.yaml"
 
 HISTORIC_OUTPUT = "data/bronze/youtube_videos.json"
 WEEKLY_OUTPUT = "data/bronze/youtube_weekly_videos.json"
+REQUEST_TIMEOUT_SECONDS = 30
+MAX_API_ATTEMPTS = 4
+INITIAL_RETRY_DELAY_SECONDS = 2
+TRANSIENT_STATUS_CODES = {429, 500, 502, 503, 504}
+TRANSIENT_ERROR_REASONS = {
+    "backendError",
+    "internalError",
+    "rateLimitExceeded",
+    "userRateLimitExceeded",
+}
+
+
+class YoutubeApiError(RuntimeError):
+    pass
+
+
+def extract_api_error(payload):
+
+    error = payload.get("error")
+
+    if not isinstance(error, dict):
+        return None, None, None
+
+    errors = error.get("errors") or []
+    first_error = errors[0] if errors and isinstance(errors[0], dict) else {}
+
+    return (
+        error.get("code"),
+        first_error.get("reason"),
+        error.get("message") or first_error.get("message"),
+    )
+
+
+def is_transient_api_error(status_code, reason):
+
+    return (
+        status_code in TRANSIENT_STATUS_CODES
+        or reason in TRANSIENT_ERROR_REASONS
+    )
+
+
+def youtube_api_get(url, params, operation, require_items=False):
+
+    delay_seconds = INITIAL_RETRY_DELAY_SECONDS
+    last_error = None
+
+    for attempt in range(1, MAX_API_ATTEMPTS + 1):
+
+        try:
+            response = requests.get(
+                url,
+                params=params,
+                timeout=REQUEST_TIMEOUT_SECONDS,
+            )
+            payload = response.json()
+        except requests.exceptions.RequestException as exc:
+            last_error = (
+                f"YouTube API request failed during {operation}: {exc}"
+            )
+            should_retry = True
+        except ValueError as exc:
+            last_error = (
+                f"YouTube API returned invalid JSON during {operation}: {exc}"
+            )
+            should_retry = True
+        else:
+            status_code, reason, message = extract_api_error(payload)
+
+            if response.ok and "error" not in payload:
+
+                if require_items and "items" not in payload:
+                    last_error = (
+                        f"YouTube API response during {operation} did not "
+                        f"include 'items'. Response keys: "
+                        f"{sorted(payload.keys())}"
+                    )
+                    should_retry = True
+                else:
+                    return payload
+            else:
+                effective_status = status_code or response.status_code
+                reason_label = reason or "unknown"
+                message_label = message or "Unknown YouTube API error"
+                last_error = (
+                    f"YouTube API error during {operation} "
+                    f"(status={effective_status}, reason={reason_label}): "
+                    f"{message_label}"
+                )
+                should_retry = is_transient_api_error(
+                    effective_status,
+                    reason,
+                )
+
+        if attempt >= MAX_API_ATTEMPTS or not should_retry:
+            raise YoutubeApiError(last_error)
+
+        print(
+            f"{last_error}. Retrying in {delay_seconds}s "
+            f"(attempt {attempt}/{MAX_API_ATTEMPTS})..."
+        )
+        time.sleep(delay_seconds)
+        delay_seconds *= 2
+
+    raise YoutubeApiError(last_error or "Unknown YouTube API failure")
 
 
 def load_channel():
@@ -31,7 +136,17 @@ def get_upload_playlist(channel_id):
         "key": API_KEY
     }
 
-    r = requests.get(url, params=params).json()
+    r = youtube_api_get(
+        url,
+        params,
+        operation=f"fetching upload playlist for channel_id={channel_id}",
+        require_items=True,
+    )
+
+    if not r["items"]:
+        raise YoutubeApiError(
+            f"No YouTube channel found for channel_id={channel_id}"
+        )
 
     return r["items"][0]["contentDetails"]["relatedPlaylists"]["uploads"]
 
@@ -53,7 +168,15 @@ def get_all_playlists(channel_id):
             "key": API_KEY
         }
 
-        r = requests.get(url, params=params).json()
+        r = youtube_api_get(
+            url,
+            params,
+            operation=(
+                "listing playlists for "
+                f"channel_id={channel_id}, page_token={next_page or '<first>'}"
+            ),
+            require_items=True,
+        )
 
         for item in r["items"]:
 
@@ -87,7 +210,16 @@ def fetch_playlist_items(playlist_id):
             "key": API_KEY
         }
 
-        r = requests.get(url, params=params).json()
+        r = youtube_api_get(
+            url,
+            params,
+            operation=(
+                "listing playlist items for "
+                f"playlist_id={playlist_id}, "
+                f"page_token={next_page or '<first>'}"
+            ),
+            require_items=True,
+        )
 
         for item in r["items"]:
 
@@ -125,7 +257,14 @@ def enrich_video_details(video_ids):
             "key": API_KEY
         }
 
-        r = requests.get(url, params=params).json()
+        r = youtube_api_get(
+            url,
+            params,
+            operation=(
+                "fetching video details for "
+                f"video_batch_start={i}, batch_size={len(batch)}"
+            ),
+        )
 
         for item in r.get("items", []):
 
