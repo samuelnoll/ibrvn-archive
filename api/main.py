@@ -132,6 +132,23 @@ def serie(request: Request, serie: str):
     )
 
 
+@app.get("/series/{serie}/preachers/{preacher}")
+def serie_by_preacher(request: Request, serie: str, preacher: str):
+
+    sermons = sermons_by_series_and_preacher(serie, preacher)
+
+    return render_template(
+        request,
+        "sermons.html",
+        {
+            "request": request,
+            "sermons": sermons,
+            "title": f"{serie} ({preacher})",
+            "last_update": get_last_update()
+        }
+    )
+
+
 @app.get("/preachers")
 def preachers(request: Request):
 

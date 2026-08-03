@@ -64,7 +64,7 @@ href="/preachers/{{ s.preacher_name | urlencode }}">
  &bull;
 
 <a class="meta-link"
-href="/series/{{ s.serie | urlencode }}">
+href="{% if s.preacher_name %}/series/{{ s.serie | urlencode }}/preachers/{{ s.preacher_name | urlencode }}{% else %}/series/{{ s.serie | urlencode }}{% endif %}">
 
 <span class="icon" aria-hidden="true">&#128218;</span>
 S&eacute;rie {{ s.serie }}
@@ -169,7 +169,7 @@ ${s.preacher_name}
 ${s.serie ? `
  &bull;
 <a class="meta-link"
-href="/series/${encodeURIComponent(s.serie)}">
+href="${s.preacher_name ? `/series/${encodeURIComponent(s.serie)}/preachers/${encodeURIComponent(s.preacher_name)}` : `/series/${encodeURIComponent(s.serie)}`}">
 
 <span class="icon" aria-hidden="true">&#128218;</span>
 Série ${s.serie}

@@ -8,8 +8,10 @@
 <ul class="simple-card-list">
 {% for s in series %}
 <li class="simple-card-item">
-<a class="simple-card-link" href="/series/{{ s.serie | urlencode }}">
+<a class="simple-card-link"
+href="{% if s.preacher_name %}/series/{{ s.serie | urlencode }}/preachers/{{ s.preacher_name | urlencode }}{% else %}/series/{{ s.serie | urlencode }}{% endif %}">
 <span class="simple-card-title">{{ s.serie }}</span>
+<span class="simple-card-count">{% if s.preacher_name %}{{ s.preacher_name }}{% else %}Pregador nao informado{% endif %}</span>
 <span class="simple-card-count">{{ s.n }} prega&ccedil;&otilde;es</span>
 </a>
 </li>

@@ -172,12 +172,12 @@ def sermons_by_book(book):
 def get_series():
 
     return fetch_all("""
-        SELECT serie, COUNT(*) AS n
+        SELECT serie, preacher_name, COUNT(*) AS n
         FROM {table}
         WHERE serie IS NOT NULL
         AND serie != ''
-        GROUP BY serie
-        ORDER BY serie
+        GROUP BY serie, preacher_name
+        ORDER BY serie, preacher_name
     """.format(table=GOLD_TABLE))
 
 
@@ -189,6 +189,22 @@ def sermons_by_series(serie):
         WHERE serie = :serie
         ORDER BY preaching_date DESC
     """.format(table=GOLD_TABLE), {"serie": serie})
+
+    return serialize_sermons(rows)
+
+
+def sermons_by_series_and_preacher(serie, preacher):
+
+    rows = fetch_all("""
+        SELECT *
+        FROM {table}
+        WHERE serie = :serie
+        AND preacher_name = :preacher
+        ORDER BY preaching_date DESC
+    """.format(table=GOLD_TABLE), {
+        "serie": serie,
+        "preacher": preacher,
+    })
 
     return serialize_sermons(rows)
 
