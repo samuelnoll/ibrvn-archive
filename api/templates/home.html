@@ -1,206 +1,144 @@
 {% extends "base.html" %}
+{% from "_sermon_card.html" import sermon_card %}
 
 {% block content %}
+<section class="home-intro">
+<div>
+<h1>Prega&ccedil;&otilde;es para ouvir, estudar e compartilhar.</h1>
+<p>O acervo de serm&otilde;es da Igreja Batista Reformada Vida Nova.</p>
+</div>
 
 <div class="home-stats">
-{{ stats.sermons }} prega&ccedil;&otilde;es &bull;
-{{ stats.preachers }} pregadores &bull;
+<strong>{{ stats.sermons }}</strong> prega&ccedil;&otilde;es
+<span aria-hidden="true">&middot;</span>
+{{ stats.preachers }} pregadores
+<span aria-hidden="true">&middot;</span>
 {{ stats.series }} s&eacute;ries
 </div>
+</section>
 
-<input
-id="search"
-placeholder="Buscar prega&ccedil;&otilde;es..."
-autocomplete="off">
+<div class="search-field">
+<svg class="icon" aria-hidden="true"><use href="#icon-search"></use></svg>
+<input id="search" type="search" placeholder="Buscar por t&iacute;tulo, texto b&iacute;blico ou pregador..." autocomplete="off" aria-label="Buscar prega&ccedil;&otilde;es">
+</div>
 
-<div id="results"></div>
+<div class="section-heading">
+<h2 id="sermon-list-title">Prega&ccedil;&otilde;es recentes</h2>
+<span id="sermon-list-context">Ordenadas por data</span>
+</div>
 
+<div id="results" aria-live="polite"></div>
+
+<div id="initial-sermons">
 {% for s in sermons %}
-
-<div class="sermon">
-
-<div class="date">
-{{ s.preaching_date }}
-</div>
-
-<div class="title">
-{{ s.title }}
-</div>
-
-{% if s.text_reference %}
-<div class="text">
-
-<a class="bible-link"
-href="/books/{{ s.text_reference.split(' ')[0] }}">
-
-<span class="icon" aria-hidden="true">&#128214;</span>
-{{ s.text_reference }}
-
-</a>
-
-</div>
-{% endif %}
-
-<div class="meta">
-
-{% if s.duration_minutes %}
-<span class="meta-link">
-<span class="icon" aria-hidden="true">&#9203;</span>
-{{ s.duration_minutes }}
-</span>
- &bull;
-{% endif %}
-
-<a class="meta-link"
-href="/preachers/{{ s.preacher_name | urlencode }}">
-
-<span class="icon" aria-hidden="true">&#128100;</span>
-{{ s.preacher_name }}
-
-</a>
-
-{% if s.serie %}
-
- &bull;
-
-<a class="meta-link"
-href="{% if s.preacher_name %}/series/{{ s.serie | urlencode }}/preachers/{{ s.preacher_name | urlencode }}{% else %}/series/{{ s.serie | urlencode }}{% endif %}">
-
-<span class="icon" aria-hidden="true">&#128218;</span>
-S&eacute;rie {{ s.serie }}
-
-</a>
-
-{% endif %}
-
-</div>
-
-<div class="links">
-
-{% if s.media_link %}
-<a href="{{ s.media_link }}">&#127911; &Aacute;udio</a>
-{% endif %}
-
-{% if s.download_link %}
-<a href="{{ s.download_link }}">&#128190; Arquivo</a>
-{% endif %}
-
-{% if s.youtube_link %}
-<a href="{{ s.youtube_link }}">&#9654; YouTube</a>
-{% endif %}
-
-{% if s.wordpress_link %}
-<a href="{{ s.wordpress_link }}">&#128279; P&aacute;gina</a>
-{% endif %}
-
-{% if s.transcript_available %}
-<a href="/transcripts/{{ s.canonical_sermon_id }}">&#128221; Transcri&ccedil;&atilde;o</a>
-{% endif %}
-
-</div>
-
-</div>
-
+{{ sermon_card(s) }}
 {% endfor %}
+</div>
 
 <script>
-
 const input = document.getElementById("search")
 const results = document.getElementById("results")
 const initial = document.getElementById("initial-sermons")
+const listTitle = document.getElementById("sermon-list-title")
+const listContext = document.getElementById("sermon-list-context")
+let activeRequest
 
-input.addEventListener("input", async () => {
+const escapeHTML = value => String(value ?? "").replace(/[&<>'"]/g, character => ({
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  "'": "&#39;",
+  '"': "&quot;"
+})[character])
 
-const q = input.value
+const icon = name => `<svg class="icon" aria-hidden="true"><use href="#icon-${name}"></use></svg>`
 
-if(q.length < 2){
-
-results.innerHTML = ""
-if(initial) initial.style.display = "block"
-return
-
+const fact = (name, content, href) => {
+  const inner = `${icon(name)}<span>${escapeHTML(content)}</span>`
+  return href
+    ? `<a class="sermon-fact" href="${href}">${inner}</a>`
+    : `<span class="sermon-fact">${inner}</span>`
 }
 
-const r = await fetch(`/api/search?q=${q}`)
-const data = await r.json()
+const action = (name, label, href) => href
+  ? `<a href="${escapeHTML(href)}">${icon(name)}<span>${label}</span></a>`
+  : ""
 
-results.innerHTML = ""
+const renderSermon = sermon => {
+  const hasTitle = Boolean(sermon.title)
+  const title = sermon.title || sermon.text_reference || `Prega\u00e7\u00e3o de ${sermon.preaching_date || "data n\u00e3o informada"}`
+  const facts = []
+  const actions = []
 
-if(initial) initial.style.display = "none"
+  if (hasTitle && sermon.text_reference) {
+    const book = encodeURIComponent(sermon.book_name)
+    facts.push(fact("book-open", sermon.text_reference, `/books/${book}`))
+  }
 
-data.forEach(s => {
+  if (sermon.preacher_name) {
+    facts.push(fact("user", sermon.preacher_name, `/preachers/${encodeURIComponent(sermon.preacher_name)}`))
+  }
 
-const div = document.createElement("div")
-div.className = "sermon"
+  if (sermon.serie) {
+    const seriesPath = sermon.preacher_name
+      ? `/series/${encodeURIComponent(sermon.serie)}/preachers/${encodeURIComponent(sermon.preacher_name)}`
+      : `/series/${encodeURIComponent(sermon.serie)}`
+    facts.push(fact("library", `S\u00e9rie ${sermon.serie}`, seriesPath))
+  }
 
-div.innerHTML = `
+  if (sermon.duration_minutes) facts.push(fact("clock", sermon.duration_minutes))
 
-<div class="date">${s.preaching_date}</div>
+  actions.push(action("headphones", "&Aacute;udio", sermon.media_link))
+  actions.push(action("download", "Arquivo", sermon.download_link))
+  actions.push(action("youtube", "YouTube", sermon.youtube_link))
+  actions.push(action("external-link", "P&aacute;gina", sermon.wordpress_link))
+  if (sermon.transcript_available) {
+    actions.push(action("file-text", "Transcri&ccedil;&atilde;o", `/transcripts/${encodeURIComponent(sermon.canonical_sermon_id)}`))
+  }
 
-<div class="title">${s.title ?? ""}</div>
+  const availableActions = actions.join("")
 
-${s.text_reference ? `
-<div class="text">
-<a class="bible-link" href="/books/${encodeURIComponent(s.text_reference.split(" ")[0])}">
-<span class="icon" aria-hidden="true">&#128214;</span>
-${s.text_reference}
-</a>
-</div>
-` : ""}
+  return `
+    <article class="sermon-card">
+      <time class="sermon-date">${escapeHTML(sermon.preaching_date)}</time>
+      <h3 class="sermon-title">${escapeHTML(title)}</h3>
+      <div class="sermon-facts">${facts.join("")}</div>
+      ${availableActions ? `<div class="sermon-actions">${availableActions}</div>` : ""}
+    </article>`
+}
 
-<div class="meta">
+input.addEventListener("input", async () => {
+  const query = input.value.trim()
 
-${s.duration_minutes ? `
-<span class="meta-link">
-<span class="icon" aria-hidden="true">&#9203;</span>
-${s.duration_minutes}
-</span>
- &bull;
-` : ""}
+  if (activeRequest) activeRequest.abort()
 
-<a class="meta-link"
-href="/preachers/${encodeURIComponent(s.preacher_name)}">
+  if (query.length < 2) {
+    results.innerHTML = ""
+    initial.hidden = false
+    listTitle.textContent = "Prega\u00e7\u00f5es recentes"
+    listContext.textContent = "Ordenadas por data"
+    return
+  }
 
-<span class="icon" aria-hidden="true">&#128100;</span>
-${s.preacher_name}
+  activeRequest = new AbortController()
 
-</a>
+  try {
+    const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`, {
+      signal: activeRequest.signal
+    })
+    const data = await response.json()
 
-${s.serie ? `
- &bull;
-<a class="meta-link"
-href="${s.preacher_name ? `/series/${encodeURIComponent(s.serie)}/preachers/${encodeURIComponent(s.preacher_name)}` : `/series/${encodeURIComponent(s.serie)}`}">
-
-<span class="icon" aria-hidden="true">&#128218;</span>
-Série ${s.serie}
-
-</a>
-` : ""}
-
-</div>
-
-<div class="links">
-
-${s.media_link ? `<a href="${s.media_link}">&#127911; Áudio</a>` : ""}
-
-${s.download_link ? `<a href="${s.download_link}">&#128190; Arquivo</a>` : ""}
-
-${s.youtube_link ? `<a href="${s.youtube_link}">&#9654; YouTube</a>` : ""}
-
-${s.wordpress_link ? `<a href="${s.wordpress_link}">&#128279; Página</a>` : ""}
-
-${s.transcript_available ? `<a href="/transcripts/${encodeURIComponent(s.canonical_sermon_id)}">&#128221; Transcrição</a>` : ""}
-
-</div>
-
-`
-
-results.appendChild(div)
-
+    initial.hidden = true
+    listTitle.textContent = "Resultados da busca"
+    listContext.textContent = `${data.length} resultado${data.length === 1 ? "" : "s"}`
+    results.innerHTML = data.length
+      ? data.map(renderSermon).join("")
+      : '<p class="empty-state">Nenhuma prega&ccedil;&atilde;o encontrada.</p>'
+  } catch (error) {
+    if (error.name !== "AbortError") {
+      results.innerHTML = '<p class="empty-state">N&atilde;o foi poss&iacute;vel realizar a busca.</p>'
+    }
+  }
 })
-
-})
-
 </script>
-
 {% endblock %}

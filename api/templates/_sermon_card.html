@@ -1,0 +1,67 @@
+{% macro icon(name) -%}
+<svg class="icon" aria-hidden="true"><use href="#icon-{{ name }}"></use></svg>
+{%- endmacro %}
+
+{% macro sermon_card(s) %}
+<article class="sermon-card">
+<time class="sermon-date">{{ s.preaching_date }}</time>
+
+<h3 class="sermon-title">
+{% if s.title %}{{ s.title }}{% elif s.text_reference %}{{ s.text_reference }}{% else %}Prega&ccedil;&atilde;o de {{ s.preaching_date }}{% endif %}
+</h3>
+
+<div class="sermon-facts">
+{% if s.title and s.text_reference %}
+<a class="sermon-fact" href="/books/{{ s.book_name | urlencode }}">
+{{ icon('book-open') }}
+<span>{{ s.text_reference }}</span>
+</a>
+{% endif %}
+
+{% if s.preacher_name %}
+<a class="sermon-fact" href="/preachers/{{ s.preacher_name | urlencode }}">
+{{ icon('user') }}
+<span>{{ s.preacher_name }}</span>
+</a>
+{% endif %}
+
+{% if s.serie %}
+<a class="sermon-fact" href="{% if s.preacher_name %}/series/{{ s.serie | urlencode }}/preachers/{{ s.preacher_name | urlencode }}{% else %}/series/{{ s.serie | urlencode }}{% endif %}">
+{{ icon('library') }}
+<span>S&eacute;rie {{ s.serie }}</span>
+</a>
+{% endif %}
+
+{% if s.duration_minutes %}
+<span class="sermon-fact">
+{{ icon('clock') }}
+<span>{{ s.duration_minutes }}</span>
+</span>
+{% endif %}
+</div>
+
+{% if s.media_link or s.download_link or s.youtube_link or s.wordpress_link or s.transcript_available %}
+<div class="sermon-actions">
+{% if s.media_link %}
+<a href="{{ s.media_link }}">{{ icon('headphones') }}<span>&Aacute;udio</span></a>
+{% endif %}
+
+{% if s.download_link %}
+<a href="{{ s.download_link }}">{{ icon('download') }}<span>Arquivo</span></a>
+{% endif %}
+
+{% if s.youtube_link %}
+<a href="{{ s.youtube_link }}">{{ icon('youtube') }}<span>YouTube</span></a>
+{% endif %}
+
+{% if s.wordpress_link %}
+<a href="{{ s.wordpress_link }}">{{ icon('external-link') }}<span>P&aacute;gina</span></a>
+{% endif %}
+
+{% if s.transcript_available %}
+<a href="/transcripts/{{ s.canonical_sermon_id | urlencode }}">{{ icon('file-text') }}<span>Transcri&ccedil;&atilde;o</span></a>
+{% endif %}
+</div>
+{% endif %}
+</article>
+{% endmacro %}

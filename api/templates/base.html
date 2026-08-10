@@ -4,43 +4,58 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Acervo de prega&ccedil;&otilde;es da Igreja Batista Reformada Vida Nova.">
 
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/style.css">
 
-<title>Arquivo IBRVN</title>
-
+<title>{% block title %}Arquivo IBRVN{% endblock %}</title>
 </head>
 
 <body>
+<svg class="icon-sprite" aria-hidden="true">
+<symbol id="icon-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></symbol>
+<symbol id="icon-book-open" viewBox="0 0 24 24"><path d="M12 7v14"></path><path d="M3 18a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3Z"></path></symbol>
+<symbol id="icon-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"></circle><path d="M20 21a8 8 0 0 0-16 0"></path></symbol>
+<symbol id="icon-library" viewBox="0 0 24 24"><path d="m16 6 4 14"></path><path d="M12 6v14"></path><path d="M8 8v12"></path><path d="M4 4v16"></path></symbol>
+<symbol id="icon-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></symbol>
+<symbol id="icon-headphones" viewBox="0 0 24 24"><path d="M4 14a8 8 0 0 1 16 0"></path><path d="M18 19v-5a2 2 0 0 1 2-2h1v7a2 2 0 0 1-2 2h-1Z"></path><path d="M6 19v-5a2 2 0 0 0-2-2H3v7a2 2 0 0 0 2 2h1Z"></path></symbol>
+<symbol id="icon-download" viewBox="0 0 24 24"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14"></path></symbol>
+<symbol id="icon-youtube" viewBox="0 0 24 24"><path d="M2.5 12c0-3.2.4-5.2.7-6.1A2.8 2.8 0 0 1 5 4.2C6.5 3.8 9 3.8 12 3.8s5.5 0 7 .4a2.8 2.8 0 0 1 1.8 1.7c.3.9.7 2.9.7 6.1s-.4 5.2-.7 6.1a2.8 2.8 0 0 1-1.8 1.7c-1.5.4-4 .4-7 .4s-5.5 0-7-.4a2.8 2.8 0 0 1-1.8-1.7c-.3-.9-.7-2.9-.7-6.1Z"></path><path d="m10 8 6 4-6 4Z"></path></symbol>
+<symbol id="icon-file-text" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"></path><path d="M14 2v6h6"></path><path d="M8 13h8"></path><path d="M8 17h8"></path></symbol>
+<symbol id="icon-external-link" viewBox="0 0 24 24"><path d="M15 3h6v6"></path><path d="m10 14 11-11"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></symbol>
+<symbol id="icon-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.6v-.2h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z"></path></symbol>
+</svg>
 
-<header>
+<div class="site-shell">
+<header class="site-header">
+<a class="site-brand" href="/" aria-label="Arquivo IBRVN - In&iacute;cio">
+<span class="brand-mark" aria-hidden="true">A</span>
+<span class="brand-text">
+<small>Igreja Batista Reformada Vida Nova</small>
+<strong>Arquivo IBRVN</strong>
+</span>
+</a>
 
-<h1>Arquivo IBRVN</h1>
-
-<nav>
-
-<a href="/">In&iacute;cio</a>
-<a href="/books">Livros</a>
-<a href="/series">S&eacute;ries</a>
-<a href="/preachers">Pregadores</a>
-<a href="/years">Anos</a>
-
+<nav class="site-nav" aria-label="Navega&ccedil;&atilde;o principal">
+<a href="/"{% if request.url.path == '/' %} aria-current="page"{% endif %}>In&iacute;cio</a>
+<a href="/books"{% if request.url.path.startswith('/books') %} aria-current="page"{% endif %}>Livros</a>
+<a href="/series"{% if request.url.path.startswith('/series') %} aria-current="page"{% endif %}>S&eacute;ries</a>
+<a href="/preachers"{% if request.url.path.startswith('/preachers') %} aria-current="page"{% endif %}>Pregadores</a>
+<a href="/years"{% if request.url.path.startswith('/years') %} aria-current="page"{% endif %}>Anos</a>
 </nav>
-
-<div class="update">
-
-&Uacute;ltima atualiza&ccedil;&atilde;o: {{ last_update }}
-
-</div>
-
 </header>
 
-<main>
-
+<main class="site-main">
 {% block content %}{% endblock %}
-
 </main>
 
+<footer class="site-footer">
+Acervo atualizado em {{ last_update }}
+</footer>
+</div>
 </body>
 
 </html>

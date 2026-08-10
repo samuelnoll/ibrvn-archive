@@ -74,6 +74,7 @@ def extract_book_name(text_reference):
 def serialize_sermon(row):
 
     sermon = dict(row)
+    sermon["book_name"] = extract_book_name(sermon.get("text_reference"))
     sermon["preaching_date"] = format_brazilian_date(
         sermon.get("preaching_date")
     )

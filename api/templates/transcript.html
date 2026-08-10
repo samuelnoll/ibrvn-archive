@@ -1,31 +1,28 @@
 {% extends "base.html" %}
+{% from "_sermon_card.html" import icon %}
+
+{% block title %}{% if transcript.title %}{{ transcript.title }}{% elif transcript.text_reference %}{{ transcript.text_reference }}{% else %}Transcri&ccedil;&atilde;o{% endif %} | Arquivo IBRVN{% endblock %}
 
 {% block content %}
-
 <article class="transcript-page">
+<time class="sermon-date">{{ transcript.preaching_date }}</time>
 
-<div class="date">
-{{ transcript.preaching_date }}
-</div>
-
-<h2 class="transcript-title">
-{{ transcript.title }}
-</h2>
+<h1 class="transcript-title">
+{% if transcript.title %}{{ transcript.title }}{% elif transcript.text_reference %}{{ transcript.text_reference }}{% else %}Prega&ccedil;&atilde;o de {{ transcript.preaching_date }}{% endif %}
+</h1>
 
 <div class="transcript-meta">
-{% if transcript.preacher_name %}
-<div><span class="icon" aria-hidden="true">&#128100;</span> {{ transcript.preacher_name }}</div>
+{% if transcript.title and transcript.text_reference %}
+<div>{{ icon('book-open') }} <span>{{ transcript.text_reference }}</span></div>
 {% endif %}
-{% if transcript.text_reference %}
-<div><span class="icon" aria-hidden="true">&#128214;</span> {{ transcript.text_reference }}</div>
+{% if transcript.preacher_name %}
+<div>{{ icon('user') }} <span>{{ transcript.preacher_name }}</span></div>
 {% endif %}
 {% if transcript.model_name %}
-<div><span class="icon" aria-hidden="true">&#9881;</span> Modelo: {{ transcript.model_name }}</div>
+<div>{{ icon('settings') }} <span>Modelo: {{ transcript.model_name }}</span></div>
 {% endif %}
 </div>
 
 <pre class="transcript-content">{{ transcript.transcript_text }}</pre>
-
 </article>
-
 {% endblock %}
