@@ -1,6 +1,7 @@
 import argparse
 import json
 import re
+import unicodedata
 from datetime import datetime, timedelta
 
 import yaml
@@ -72,9 +73,19 @@ ON CONFLICT(source_system, source_item_id) DO UPDATE SET
     title = EXCLUDED.title,
     preacher_name = EXCLUDED.preacher_name,
     text_reference = EXCLUDED.text_reference,
-    serie = EXCLUDED.serie,
+    serie = COALESCE(
+        NULLIF(TRIM(EXCLUDED.serie), ''),
+        NULLIF(TRIM(silver_sermon_metadata.serie), '')
+    ),
     confidence = EXCLUDED.confidence,
     processed_at = EXCLUDED.processed_at
+"""
+
+NORMALIZE_EMPTY_SERIE_SQL = """
+UPDATE silver_sermon_metadata
+SET serie = NULL
+WHERE serie IS NOT NULL
+  AND TRIM(serie) = ''
 """
 
 UPSERT_MEDIA_ASSET_SQL = """
@@ -121,6 +132,13 @@ def normalize_text(text_value):
     normalized = str(text_value)
 
     return normalized.lower().strip()
+
+
+def normalize_nullable_text(text_value):
+
+    normalized = str(text_value or "").strip()
+
+    return normalized or None
 
 
 def convert_utc_to_brt(date_str):
@@ -202,22 +220,25 @@ def extract_text_reference(title):
 
 def extract_serie_and_preacher(playlists):
 
-    serie = ""
+    serie = None
     preacher_playlist = ""
 
     for playlist_title in playlists:
 
-        if playlist_title.lower().startswith("sÃ©rie"):
+        normalized_title = normalize_text(playlist_title)
 
-            m = re.search(r"\[(.*?)\]", playlist_title)
+        if not normalized_title.startswith("serie"):
+            continue
 
-            if m:
-                preacher_playlist = m.group(1).strip()
+        m = re.search(r"\[(.*?)\]", playlist_title)
 
-            cleaned = re.sub(r"\[.*?\]", "", playlist_title)
-            cleaned = cleaned.replace("SÃ©rie", "").strip()
+        if m:
+            preacher_playlist = m.group(1).strip()
 
-            serie = cleaned
+        cleaned = re.sub(r"\[.*?\]", "", playlist_title).strip()
+        cleaned = re.sub(r"^\s*s[ée]rie\s*[:\-]?\s*", "", cleaned, flags=re.IGNORECASE)
+
+        serie = normalize_nullable_text(cleaned)
 
     return serie, preacher_playlist
 
@@ -256,12 +277,110 @@ def choose_preacher(preacher_playlist, preacher_title, preacher_description):
     return preacher.title()
 
 
+def normalize_text(text_value):
+
+    if not text_value:
+        return ""
+
+    normalized = unicodedata.normalize("NFKD", str(text_value))
+    normalized = "".join(
+        char
+        for char in normalized
+        if not unicodedata.combining(char)
+    )
+
+    return normalized.lower().strip()
+
+
+def extract_serie_and_preacher(playlists):
+
+    serie = None
+    preacher_playlist = ""
+
+    for playlist_title in playlists:
+
+        normalized_title = normalize_text(playlist_title)
+
+        if not (
+            normalized_title.startswith("serie")
+            or normalized_title.startswith("minisserie")
+        ):
+            continue
+
+        m = re.search(r"\[(.*?)\]", playlist_title)
+
+        if m:
+            preacher_playlist = m.group(1).strip()
+
+        cleaned = re.sub(r"\[.*?\]", "", playlist_title).strip()
+        cleaned = re.sub(
+            r"^\s*(?:mini)?s(?:e|é)rie\s*[:\-]?\s*",
+            "",
+            cleaned,
+            flags=re.IGNORECASE,
+        )
+
+        serie = normalize_nullable_text(cleaned)
+
+    return serie, preacher_playlist
+
+
 def is_sermon(title):
 
     if not title:
         return False
 
     return title.count("|") >= 2
+
+
+def parse_published_at(date_str):
+
+    if not date_str:
+        return None
+
+    try:
+        return datetime.fromisoformat(
+            str(date_str).replace("Z", "+00:00")
+        )
+    except Exception:
+        return None
+
+
+def sermon_candidate_sort_key(candidate):
+
+    video = candidate["video"]
+    published_at = parse_published_at(video.get("published_at"))
+    duration = str(video.get("duration", "") or "").strip()
+
+    return (
+        published_at or datetime.min,
+        1 if duration and duration != "P0D" else 0,
+        1 if bool(video.get("playlists")) else 0,
+        str(video.get("video_id", "") or ""),
+    )
+
+
+def choose_best_sermon_candidate(candidates):
+
+    return max(candidates, key=sermon_candidate_sort_key)
+
+
+def coalesce_metadata_from_candidates(selected_candidate, candidates):
+
+    metadata = dict(selected_candidate["metadata"])
+
+    for field in ("title", "preacher_name", "text_reference", "serie"):
+        if metadata.get(field):
+            continue
+
+        for candidate in candidates:
+            value = candidate["metadata"].get(field)
+
+            if value:
+                metadata[field] = value
+                break
+
+    return metadata
 
 
 def run(mode):
@@ -277,8 +396,7 @@ def run(mode):
         captured_at = utc_now_iso()
         processed_at = utc_now_iso()
         source_records = []
-        metadata_records = []
-        media_records = []
+        sermon_candidates_by_date = {}
 
         for video in data:
             video_id = video.get("video_id", "")
@@ -318,7 +436,7 @@ def run(mode):
                 preacher_description,
             )
 
-            metadata_records.append({
+            metadata_record = {
                 "canonical_sermon_id": preaching_date,
                 "source_system": "youtube",
                 "source_item_id": video_id,
@@ -326,22 +444,57 @@ def run(mode):
                 "title": extract_title_clean(title),
                 "preacher_name": preacher_name,
                 "text_reference": extract_text_reference(title),
-                "serie": serie,
+                "serie": normalize_nullable_text(serie),
                 "confidence": 1.0,
                 "processed_at": processed_at,
-            })
+            }
 
-            media_records.append({
+            media_record = {
                 "canonical_sermon_id": preaching_date,
                 "asset_type": "youtube_video",
                 "source_url": video.get("url", ""),
                 "local_path": "",
                 "duration_seconds": None,
                 "mime_type": "video/youtube",
+            }
+
+            sermon_candidates_by_date.setdefault(preaching_date, []).append({
+                "video": video,
+                "metadata": metadata_record,
+                "media": media_record,
             })
+
+        metadata_records = []
+        media_records = []
+
+        for preaching_date, candidates in sermon_candidates_by_date.items():
+            selected_candidate = choose_best_sermon_candidate(candidates)
+            selected_metadata = coalesce_metadata_from_candidates(
+                selected_candidate,
+                candidates,
+            )
+
+            metadata_records.append(selected_metadata)
+            media_records.append(dict(selected_candidate["media"]))
+
+            if len(candidates) > 1:
+                selected_video = selected_candidate["video"]
+                discarded_video_ids = [
+                    candidate["video"].get("video_id", "")
+                    for candidate in candidates
+                    if candidate["video"].get("video_id", "") != selected_video.get("video_id", "")
+                ]
+                print(
+                    "Resolved duplicate sermon videos for "
+                    f"{preaching_date}: kept video_id={selected_video.get('video_id', '')} "
+                    f"(published_at={selected_video.get('published_at', '')}, "
+                    f"live_start_time={selected_video.get('live_start_time', '')}) "
+                    f"and skipped {discarded_video_ids}"
+                )
 
         with get_engine().begin() as conn:
             ensure_schema(conn)
+            conn.execute(text(NORMALIZE_EMPTY_SERIE_SQL))
 
             if source_records:
                 conn.execute(text(UPSERT_SOURCE_ITEM_SQL), source_records)

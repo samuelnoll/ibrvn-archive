@@ -75,9 +75,19 @@ ON CONFLICT(source_system, source_item_id) DO UPDATE SET
     title = EXCLUDED.title,
     preacher_name = EXCLUDED.preacher_name,
     text_reference = EXCLUDED.text_reference,
-    serie = EXCLUDED.serie,
+    serie = COALESCE(
+        NULLIF(TRIM(EXCLUDED.serie), ''),
+        NULLIF(TRIM(silver_sermon_metadata.serie), '')
+    ),
     confidence = EXCLUDED.confidence,
     processed_at = EXCLUDED.processed_at
+"""
+
+NORMALIZE_EMPTY_SERIE_SQL = """
+UPDATE silver_sermon_metadata
+SET serie = NULL
+WHERE serie IS NOT NULL
+  AND TRIM(serie) = ''
 """
 
 UPSERT_MEDIA_ASSET_SQL = """
@@ -204,6 +214,13 @@ def normalize_text(text_value):
     )
 
     return normalized.lower().strip()
+
+
+def normalize_nullable_text(text_value):
+
+    normalized = str(text_value or "").strip()
+
+    return normalized or None
 
 
 def clean_title_text(text_value):
@@ -414,9 +431,9 @@ def extract_serie(tags, categories):
 
     for value in list(tags or []) + list(categories or []):
         if normalize_text(value).startswith("serie:"):
-            return value.split(":", 1)[1].strip()
+            return normalize_nullable_text(value.split(":", 1)[1])
 
-    return ""
+    return None
 
 
 def infer_mime_type(media_link):
@@ -544,6 +561,7 @@ def run():
 
         with get_engine().begin() as conn:
             ensure_schema(conn)
+            conn.execute(text(NORMALIZE_EMPTY_SERIE_SQL))
 
             if source_records:
                 conn.execute(text(UPSERT_SOURCE_ITEM_SQL), source_records)

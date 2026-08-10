@@ -35,12 +35,56 @@ AUDIO_RAW_DIR = Path(
     os.getenv("ARCHIVE_AUDIO_RAW_DIR", str(DEFAULT_AUDIO_RAW_DIR))
 )
 
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-OPENAI_TRANSCRIPTION_MODEL = os.getenv(
-    "OPENAI_TRANSCRIPTION_MODEL",
-    "gpt-4o-mini-transcribe",
+AI_BASE_URL = os.getenv(
+    "ARCHIVE_AI_BASE_URL",
+    "http://homelab-ai-api:8100",
+).rstrip("/")
+AI_TIMEOUT_SECONDS = int(
+    os.getenv("ARCHIVE_AI_TIMEOUT_SECONDS", "7200")
 )
-OPENAI_SUMMARY_MODEL = os.getenv(
-    "OPENAI_SUMMARY_MODEL",
-    "gpt-4.1-mini",
+
+OPENAI_API_KEY = os.getenv("ARCHIVE_OPENAI_API_KEY", "").strip()
+OPENAI_BASE_URL = os.getenv(
+    "ARCHIVE_OPENAI_BASE_URL",
+    "https://api.openai.com/v1",
+).rstrip("/")
+OPENAI_MODEL = os.getenv("ARCHIVE_OPENAI_MODEL", "chat-latest").strip()
+OPENAI_TIMEOUT_SECONDS = int(
+    os.getenv("ARCHIVE_OPENAI_TIMEOUT_SECONDS", str(AI_TIMEOUT_SECONDS))
 )
+
+EMAIL_SMTP_HOST = os.getenv("ARCHIVE_EMAIL_SMTP_HOST", "").strip()
+EMAIL_SMTP_PORT = int(os.getenv("ARCHIVE_EMAIL_SMTP_PORT", "587"))
+EMAIL_SMTP_USER = os.getenv("ARCHIVE_EMAIL_SMTP_USER", "").strip()
+EMAIL_SMTP_PASSWORD = os.getenv("ARCHIVE_EMAIL_SMTP_PASSWORD", "")
+EMAIL_SMTP_USE_TLS = os.getenv(
+    "ARCHIVE_EMAIL_SMTP_USE_TLS",
+    "true",
+).strip().lower() in {"1", "true", "yes", "y", "on"}
+EMAIL_FROM = os.getenv("ARCHIVE_EMAIL_FROM", "").strip()
+EMAIL_TO = os.getenv("ARCHIVE_EMAIL_TO", "").strip()
+
+LOCAL_TIMEZONE = os.getenv(
+    "ARCHIVE_LOCAL_TIMEZONE",
+    "America/Sao_Paulo",
+).strip()
+
+WHATSAPP_SCHEDULER_BASE_URL = os.getenv(
+    "ARCHIVE_WHATSAPP_SCHEDULER_BASE_URL",
+    "",
+).rstrip("/")
+WHATSAPP_SCHEDULER_TIMEOUT_SECONDS = int(
+    os.getenv("ARCHIVE_WHATSAPP_SCHEDULER_TIMEOUT_SECONDS", "120")
+)
+WHATSAPP_CRITIQUE_TARGET_TYPE = os.getenv(
+    "ARCHIVE_WHATSAPP_CRITIQUE_TARGET_TYPE",
+    "group",
+).strip()
+WHATSAPP_CRITIQUE_TARGET_VALUE = os.getenv(
+    "ARCHIVE_WHATSAPP_CRITIQUE_TARGET_VALUE",
+    "",
+).strip()
+WHATSAPP_CRITIQUE_TARGET_LABEL = os.getenv(
+    "ARCHIVE_WHATSAPP_CRITIQUE_TARGET_LABEL",
+    "Critica da pregacao",
+).strip()

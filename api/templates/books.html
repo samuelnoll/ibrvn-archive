@@ -3,14 +3,14 @@
 {% block content %}
 
 <section class="list-page">
-<h2>Livros da Biblia</h2>
+<h2>Livros da B&iacute;blia</h2>
 
 <ul class="simple-card-list">
 {% for b in books %}
 <li class="simple-card-item">
 <a class="simple-card-link" href="/books/{{ b.book | urlencode }}">
 <span class="simple-card-title">{{ b.book }}</span>
-<span class="simple-card-count">{{ b.n }} pregacoes</span>
+<span class="simple-card-count">{{ b.n }} prega&ccedil;&otilde;es</span>
 </a>
 </li>
 {% endfor %}

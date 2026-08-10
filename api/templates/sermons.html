@@ -22,7 +22,8 @@
 <a class="bible-link"
 href="/books/{{ s.text_reference.split(' ')[0] }}">
 
-📖 {{ s.text_reference }}
+<span class="icon" aria-hidden="true">&#128214;</span>
+{{ s.text_reference }}
 
 </a>
 
@@ -31,21 +32,31 @@ href="/books/{{ s.text_reference.split(' ')[0] }}">
 
 <div class="meta">
 
-<a class="meta-link"
-href="/preachers/{{ s.preacher_name }}">
+{% if s.duration_minutes %}
+<span class="meta-link">
+<span class="icon" aria-hidden="true">&#9203;</span>
+{{ s.duration_minutes }}
+</span>
+ &bull;
+{% endif %}
 
-👤 {{ s.preacher_name }}
+<a class="meta-link"
+href="/preachers/{{ s.preacher_name | urlencode }}">
+
+<span class="icon" aria-hidden="true">&#128100;</span>
+{{ s.preacher_name }}
 
 </a>
 
 {% if s.serie %}
 
- • 
+ &bull;
 
 <a class="meta-link"
-href="/series/{{ s.serie }}">
+href="{% if s.preacher_name %}/series/{{ s.serie | urlencode }}/preachers/{{ s.preacher_name | urlencode }}{% else %}/series/{{ s.serie | urlencode }}{% endif %}">
 
-📚 Série {{ s.serie }}
+<span class="icon" aria-hidden="true">&#128218;</span>
+S&eacute;rie {{ s.serie }}
 
 </a>
 
@@ -56,15 +67,23 @@ href="/series/{{ s.serie }}">
 <div class="links">
 
 {% if s.media_link %}
-<a href="{{ s.media_link }}">🎧 Áudio</a>
+<a href="{{ s.media_link }}">&#127911; &Aacute;udio</a>
+{% endif %}
+
+{% if s.download_link %}
+<a href="{{ s.download_link }}">&#128190; Arquivo</a>
 {% endif %}
 
 {% if s.youtube_link %}
-<a href="{{ s.youtube_link }}">▶ YouTube</a>
+<a href="{{ s.youtube_link }}">&#9654; YouTube</a>
 {% endif %}
 
 {% if s.wordpress_link %}
-<a href="{{ s.wordpress_link }}">🔗 Página</a>
+<a href="{{ s.wordpress_link }}">&#128279; P&aacute;gina</a>
+{% endif %}
+
+{% if s.transcript_available %}
+<a href="/transcripts/{{ s.canonical_sermon_id }}">&#128221; Transcri&ccedil;&atilde;o</a>
 {% endif %}
 
 </div>

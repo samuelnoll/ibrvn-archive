@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import argparse
+
 from mutagen import File as MutagenFile
 from sqlalchemy import text
 
@@ -11,8 +13,10 @@ from shared.db import (
     get_engine,
 )
 
+from .common import build_preaching_date_scope, normalize_force_reprocess
 
-def run():
+
+def run(loopback_days=None, force_reprocess=False):
 
     run_id = begin_processing_run(
         "measure_audio_duration",
@@ -20,16 +24,31 @@ def run():
     )
 
     try:
-        rows = fetch_all("""
+        force_reprocess = normalize_force_reprocess(force_reprocess)
+        scope_sql, params = build_preaching_date_scope("sm", loopback_days)
+        duration_filter = "" if force_reprocess else "AND sma.duration_seconds IS NULL"
+
+        rows = fetch_all(f"""
             SELECT
-                canonical_sermon_id,
-                asset_type,
-                local_path
-            FROM silver_media_assets
-            WHERE asset_type = 'audio'
-            AND COALESCE(local_path, '') != ''
-            AND duration_seconds IS NULL
-        """)
+                sma.canonical_sermon_id,
+                sma.asset_type,
+                sma.local_path,
+                sma.duration_seconds,
+                MAX(sm.preaching_date) AS preaching_date
+            FROM silver_media_assets sma
+            LEFT JOIN silver_sermon_metadata sm
+                ON sm.canonical_sermon_id = sma.canonical_sermon_id
+            WHERE sma.asset_type = 'audio'
+            AND COALESCE(sma.local_path, '') != ''
+            {duration_filter}
+            {scope_sql}
+            GROUP BY
+                sma.canonical_sermon_id,
+                sma.asset_type,
+                sma.local_path,
+                sma.duration_seconds
+            ORDER BY MAX(sm.preaching_date) DESC, sma.canonical_sermon_id DESC
+        """, params)
 
         updates = []
 
@@ -74,4 +93,13 @@ def run():
 
 
 if __name__ == "__main__":
-    run()
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--loopback-days", type=int, default=None)
+    parser.add_argument("--force-reprocess", action="store_true")
+    args = parser.parse_args()
+
+    run(
+        loopback_days=args.loopback_days,
+        force_reprocess=args.force_reprocess,
+    )

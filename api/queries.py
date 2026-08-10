@@ -31,6 +31,27 @@ def format_brazilian_date(value):
     return f"{day}/{month}/{year}"
 
 
+def format_duration_minutes(value):
+
+    if value is None:
+        return ""
+
+    try:
+        total_seconds = float(value)
+    except (TypeError, ValueError):
+        return ""
+
+    if total_seconds <= 0:
+        return ""
+
+    minutes = int(total_seconds // 60)
+
+    if minutes <= 0:
+        return ""
+
+    return f"{minutes}min"
+
+
 def extract_book_name(text_reference):
 
     if not text_reference:
@@ -55,6 +76,9 @@ def serialize_sermon(row):
     sermon = dict(row)
     sermon["preaching_date"] = format_brazilian_date(
         sermon.get("preaching_date")
+    )
+    sermon["duration_minutes"] = format_duration_minutes(
+        sermon.get("duration_seconds")
     )
     return sermon
 
@@ -148,12 +172,12 @@ def sermons_by_book(book):
 def get_series():
 
     return fetch_all("""
-        SELECT serie, COUNT(*) AS n
+        SELECT serie, preacher_name, COUNT(*) AS n
         FROM {table}
         WHERE serie IS NOT NULL
         AND serie != ''
-        GROUP BY serie
-        ORDER BY serie
+        GROUP BY serie, preacher_name
+        ORDER BY serie, preacher_name
     """.format(table=GOLD_TABLE))
 
 
@@ -165,6 +189,22 @@ def sermons_by_series(serie):
         WHERE serie = :serie
         ORDER BY preaching_date DESC
     """.format(table=GOLD_TABLE), {"serie": serie})
+
+    return serialize_sermons(rows)
+
+
+def sermons_by_series_and_preacher(serie, preacher):
+
+    rows = fetch_all("""
+        SELECT *
+        FROM {table}
+        WHERE serie = :serie
+        AND preacher_name = :preacher
+        ORDER BY preaching_date DESC
+    """.format(table=GOLD_TABLE), {
+        "serie": serie,
+        "preacher": preacher,
+    })
 
     return serialize_sermons(rows)
 
@@ -246,3 +286,34 @@ def get_home_stats():
         "preachers": 0,
         "series": 0,
     }
+
+
+def get_transcript(canonical_sermon_id):
+
+    row = fetch_one("""
+        SELECT
+            gs.canonical_sermon_id,
+            gs.preaching_date,
+            gs.title,
+            gs.preacher_name,
+            gs.text_reference,
+            st.transcript_version,
+            st.transcript_text,
+            st.model_name,
+            st.created_at
+        FROM silver_transcripts st
+        JOIN {table} gs
+          ON gs.canonical_sermon_id = st.canonical_sermon_id
+        WHERE st.canonical_sermon_id = :canonical_sermon_id
+        ORDER BY st.transcript_version DESC
+        LIMIT 1
+    """.format(table=GOLD_TABLE), {"canonical_sermon_id": canonical_sermon_id})
+
+    if not row:
+        return None
+
+    transcript = dict(row)
+    transcript["preaching_date"] = format_brazilian_date(
+        transcript.get("preaching_date")
+    )
+    return transcript

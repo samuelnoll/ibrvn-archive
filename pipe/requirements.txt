@@ -1,6 +1,6 @@
 lxml
+markdown
 mutagen
-openai
 pandas
 pyyaml
 requests

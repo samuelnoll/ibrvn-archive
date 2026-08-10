@@ -26,6 +26,7 @@ INSERT INTO gold_sermons (
     youtube_link,
     wordpress_link,
     media_link,
+    download_link,
     duration_seconds,
     summary_short,
     transcript_available,
@@ -41,6 +42,7 @@ VALUES (
     :youtube_link,
     :wordpress_link,
     :media_link,
+    :download_link,
     :duration_seconds,
     :summary_short,
     :transcript_available,
@@ -55,6 +57,7 @@ ON CONFLICT(canonical_sermon_id) DO UPDATE SET
     youtube_link = EXCLUDED.youtube_link,
     wordpress_link = EXCLUDED.wordpress_link,
     media_link = EXCLUDED.media_link,
+    download_link = EXCLUDED.download_link,
     duration_seconds = EXCLUDED.duration_seconds,
     summary_short = EXCLUDED.summary_short,
     transcript_available = EXCLUDED.transcript_available,
@@ -85,13 +88,18 @@ def choose_first_non_empty(rows, field_name):
 
 def build_media_link(audio_media):
 
+    return audio_media.get("source_url") or ""
+
+
+def build_download_link(audio_media):
+
     local_path = audio_media.get("local_path") or ""
 
-    if local_path:
-        filename = PurePath(str(local_path).replace("\\", "/")).name
-        return f"/media/{filename}"
+    if not local_path:
+        return ""
 
-    return audio_media.get("source_url") or ""
+    filename = PurePath(str(local_path).replace("\\", "/")).name
+    return f"/media/{filename}"
 
 
 def aggregate_gold_records():
@@ -189,6 +197,7 @@ def aggregate_gold_records():
                 if wordpress_rows else ""
             ),
             "media_link": build_media_link(audio_media),
+            "download_link": build_download_link(audio_media),
             "duration_seconds": audio_media.get("duration_seconds"),
             "summary_short": latest_summary.get("summary_text", ""),
             "transcript_available": 1 if transcripts_by_sermon[canonical_sermon_id] else 0,

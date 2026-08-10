@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 
@@ -132,6 +132,23 @@ def serie(request: Request, serie: str):
     )
 
 
+@app.get("/series/{serie}/preachers/{preacher}")
+def serie_by_preacher(request: Request, serie: str, preacher: str):
+
+    sermons = sermons_by_series_and_preacher(serie, preacher)
+
+    return render_template(
+        request,
+        "sermons.html",
+        {
+            "request": request,
+            "sermons": sermons,
+            "title": f"{serie} ({preacher})",
+            "last_update": get_last_update()
+        }
+    )
+
+
 @app.get("/preachers")
 def preachers(request: Request):
 
@@ -193,6 +210,25 @@ def year(request: Request, year: str):
             "request": request,
             "sermons": sermons,
             "title": year,
+            "last_update": get_last_update()
+        }
+    )
+
+
+@app.get("/transcripts/{canonical_sermon_id}")
+def transcript(request: Request, canonical_sermon_id: str):
+
+    row = get_transcript(canonical_sermon_id)
+
+    if not row:
+        raise HTTPException(status_code=404, detail="Transcript not found")
+
+    return render_template(
+        request,
+        "transcript.html",
+        {
+            "request": request,
+            "transcript": row,
             "last_update": get_last_update()
         }
     )

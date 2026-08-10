@@ -82,6 +82,18 @@ CREATE TABLE IF NOT EXISTS silver_summaries (
 )
 """
 
+CREATE_SILVER_CRITIQUE_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS silver_critique (
+    canonical_sermon_id TEXT NOT NULL,
+    critique_version INTEGER NOT NULL,
+    transcript_version INTEGER,
+    critique_text TEXT,
+    model_name TEXT,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (canonical_sermon_id, critique_version)
+)
+"""
+
 CREATE_SILVER_PROCESSING_RUNS_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS silver_processing_runs (
     run_id TEXT PRIMARY KEY,
@@ -104,6 +116,7 @@ CREATE TABLE IF NOT EXISTS gold_sermons (
     youtube_link TEXT,
     wordpress_link TEXT,
     media_link TEXT,
+    download_link TEXT,
     duration_seconds REAL,
     summary_short TEXT,
     transcript_available INTEGER DEFAULT 0,
@@ -173,8 +186,20 @@ def ensure_schema(conn):
     conn.execute(text(CREATE_SILVER_MEDIA_ASSETS_TABLE_SQL))
     conn.execute(text(CREATE_SILVER_TRANSCRIPTS_TABLE_SQL))
     conn.execute(text(CREATE_SILVER_SUMMARIES_TABLE_SQL))
+    conn.execute(text(CREATE_SILVER_CRITIQUE_TABLE_SQL))
     conn.execute(text(CREATE_SILVER_PROCESSING_RUNS_TABLE_SQL))
     conn.execute(text(CREATE_GOLD_SERMONS_TABLE_SQL))
+
+    gold_columns = {
+        column["name"]
+        for column in inspect(conn).get_columns("gold_sermons")
+    }
+
+    if "download_link" not in gold_columns:
+        conn.execute(text("""
+            ALTER TABLE gold_sermons
+            ADD COLUMN download_link TEXT
+        """))
 
 
 def create_indexes(conn):
@@ -202,6 +227,11 @@ def create_indexes(conn):
     conn.execute(text("""
         CREATE INDEX IF NOT EXISTS idx_silver_processing_runs_status
         ON silver_processing_runs(status, started_at)
+    """))
+
+    conn.execute(text("""
+        CREATE INDEX IF NOT EXISTS idx_silver_critique_canonical
+        ON silver_critique(canonical_sermon_id, critique_version)
     """))
 
     conn.execute(text("""
