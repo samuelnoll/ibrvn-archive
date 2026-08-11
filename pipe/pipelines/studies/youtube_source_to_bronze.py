@@ -120,6 +120,14 @@ def list_study_playlists(api_key: str, channel_id: str) -> list[dict]:
                 playlists.append({
                     "playlist_id": item["id"],
                     "title": title,
+                    "published_at": item.get("snippet", {}).get(
+                        "publishedAt",
+                        "",
+                    ),
+                    "url": (
+                        "https://www.youtube.com/playlist?list="
+                        f"{item['id']}"
+                    ),
                 })
 
         page_token = payload.get("nextPageToken")
@@ -223,61 +231,59 @@ def build_bronze_payload(
             "the existing study bronze was left unchanged."
         )
 
-    memberships_by_video: dict[str, list[dict]] = {}
+    memberships_by_playlist = {}
+    video_ids = set()
 
     for playlist in playlists:
         print(f"Reading study playlist: {playlist['title']}")
+        memberships = list_playlist_memberships(api_key, playlist)
+        memberships_by_playlist[playlist["playlist_id"]] = memberships
+        video_ids.update(item["video_id"] for item in memberships)
 
-        for membership in list_playlist_memberships(api_key, playlist):
-            memberships_by_video.setdefault(membership["video_id"], []).append(
-                membership
-            )
-
-    details = fetch_video_details(api_key, sorted(memberships_by_video))
+    details = fetch_video_details(api_key, sorted(video_ids))
     cutoff = None
 
     if loopback_days is not None:
         cutoff = datetime.now(timezone.utc) - timedelta(days=loopback_days)
 
-    videos = []
+    study_playlists = []
 
-    for video_id, memberships in memberships_by_video.items():
-        video = details.get(video_id)
+    for playlist in playlists:
+        videos = []
 
-        if not video:
+        for membership in memberships_by_playlist[playlist["playlist_id"]]:
+            video = details.get(membership["video_id"])
+
+            if not video:
+                continue
+
+            published_at = parse_timestamp(video.get("published_at", ""))
+
+            if cutoff and (not published_at or published_at < cutoff):
+                continue
+
+            videos.append({
+                **video,
+                "position": membership["position"],
+            })
+
+        if cutoff and not videos:
             continue
 
-        published_at = parse_timestamp(video.get("published_at", ""))
-
-        if cutoff and (not published_at or published_at < cutoff):
-            continue
-
-        playlist_titles = [item["playlist_title"] for item in memberships]
-        videos.append({
-            **video,
-            "study_type": infer_study_type(playlist_titles),
-            "playlists": sorted(
-                memberships,
-                key=lambda item: (
-                    normalize_text(item["playlist_title"]),
-                    item["position"],
-                ),
-            ),
+        study_playlists.append({
+            **playlist,
+            "study_type": infer_study_type([playlist["title"]]),
+            "videos": sorted(videos, key=lambda item: item["position"]),
         })
 
-    videos.sort(
-        key=lambda item: (item.get("published_at", ""), item["video_id"]),
-        reverse=True,
-    )
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "captured_at": datetime.now(timezone.utc).isoformat(),
         "channel_id": channel_id,
         "loopback_days": loopback_days,
         "complete_snapshot": loopback_days is None,
         "playlist_prefix": "Estudo ",
-        "playlists": playlists,
-        "videos": videos,
+        "playlists": study_playlists,
     }
 
 
@@ -308,7 +314,10 @@ def run(
     write_json_atomic(output_path, payload)
     result = {
         "playlists": len(payload["playlists"]),
-        "videos": len(payload["videos"]),
+        "videos": sum(
+            len(playlist["videos"])
+            for playlist in payload["playlists"]
+        ),
         "complete_snapshot": payload["complete_snapshot"],
     }
     print(f"YouTube study bronze saved to {output_path}: {result}")

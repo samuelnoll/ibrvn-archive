@@ -374,6 +374,31 @@ def stable_key(*parts: str) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
+def resource_display_name(
+    url: str,
+    resource_type: str,
+    fallback: str,
+) -> str:
+    parts = urlsplit(url)
+    filename = unquote(parts.path).rstrip("/").rsplit("/", 1)[-1]
+
+    if filename and filename not in {"watch", "playlist"}:
+        return filename
+
+    query = parse_qs(parts.query)
+
+    if resource_type == "youtube":
+        youtube_id = next(iter(query.get("v", []) or query.get("list", [])), "")
+
+        if youtube_id:
+            return youtube_id
+
+    if parts.netloc:
+        return parts.netloc.casefold().removeprefix("www.")
+
+    return fallback.strip() or url
+
+
 def build_resources(
     item: WordpressItem,
     study_key: str,
@@ -396,16 +421,25 @@ def build_resources(
         attachment = resolved_attachment or attachment
         mime_type = attachment.mime_type if attachment else ""
         canonical_url = canonicalize_url(resolved_url)
+        resource_type = classify_resource(
+            resolved_url,
+            candidate.element_tag,
+            mime_type,
+            items_by_link,
+        )
+
+        if resource_type == "image":
+            continue
+
         resource = ParsedResource(
             resource_key=stable_key(study_key, canonical_url),
             study_key=study_key,
-            resource_type=classify_resource(
+            resource_type=resource_type,
+            label=resource_display_name(
                 resolved_url,
-                candidate.element_tag,
-                mime_type,
-                items_by_link,
+                resource_type,
+                candidate.label,
             ),
-            label=candidate.label,
             source_url=resolved_url,
             canonical_url=canonical_url,
             mime_type=mime_type,
@@ -534,7 +568,11 @@ def discover_public_studies(items: list[WordpressItem]) -> list[ParsedStudy]:
             resource_key=stable_key(study_key, canonical_url),
             study_key=study_key,
             resource_type="pdf",
-            label=candidate.label,
+            label=resource_display_name(
+                candidate.url,
+                "pdf",
+                candidate.label,
+            ),
             source_url=candidate.url,
             canonical_url=canonical_url,
             mime_type="application/pdf",

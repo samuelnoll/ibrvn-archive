@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import text
+from sqlalchemy import inspect, text
 
 
 CREATE_SILVER_STUDY_PROCESSING_RUNS_SQL = """
@@ -47,13 +47,11 @@ CREATE TABLE IF NOT EXISTS silver_study_wordpress_resources (
 CREATE_SILVER_STUDY_YOUTUBE_SQL = """
 CREATE TABLE IF NOT EXISTS silver_study_youtube (
     study_key TEXT PRIMARY KEY,
-    youtube_video_id TEXT NOT NULL UNIQUE,
+    youtube_playlist_id TEXT NOT NULL UNIQUE,
     study_type TEXT NOT NULL,
     title TEXT NOT NULL,
     study_date TEXT,
     source_url TEXT NOT NULL,
-    collection_title TEXT,
-    playlist_ids TEXT,
     payload_version TEXT NOT NULL,
     processed_at TEXT NOT NULL
 )
@@ -109,10 +107,31 @@ def ensure_study_schema(conn) -> None:
     conn.execute(text(CREATE_SILVER_STUDY_PROCESSING_RUNS_SQL))
     conn.execute(text(CREATE_SILVER_STUDY_WORDPRESS_SQL))
     conn.execute(text(CREATE_SILVER_STUDY_WORDPRESS_RESOURCES_SQL))
+    migrate_youtube_playlist_schema(conn)
     conn.execute(text(CREATE_SILVER_STUDY_YOUTUBE_SQL))
     conn.execute(text(CREATE_SILVER_STUDY_YOUTUBE_RESOURCES_SQL))
     conn.execute(text(CREATE_GOLD_STUDIES_SQL))
     conn.execute(text(CREATE_GOLD_STUDY_RESOURCES_SQL))
+
+
+def migrate_youtube_playlist_schema(conn) -> None:
+    database = inspect(conn)
+
+    if not database.has_table("silver_study_youtube"):
+        return
+
+    columns = {
+        column["name"]
+        for column in database.get_columns("silver_study_youtube")
+    }
+
+    if "youtube_playlist_id" in columns:
+        return
+
+    # The first study schema modeled videos as studies. Rebuild only the
+    # source-specific YouTube silver so it can be repopulated from bronze v2.
+    conn.execute(text("DROP TABLE IF EXISTS silver_study_youtube_resources"))
+    conn.execute(text("DROP TABLE IF EXISTS silver_study_youtube"))
 
 
 def create_study_indexes(conn) -> None:

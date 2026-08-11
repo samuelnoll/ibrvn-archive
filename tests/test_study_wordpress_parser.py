@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import tempfile
-import unittest
 import ast
 import sqlite3
+import tempfile
+import unittest
 from collections import Counter
 from pathlib import Path
 
@@ -11,6 +11,7 @@ from pipe.pipelines.studies.youtube_rules import (
     infer_study_type,
     is_study_playlist,
 )
+from pipe.pipelines.studies.youtube_records import build_silver_records
 from pipe.pipelines.studies.wordpress_parser import parse_public_studies
 
 
@@ -72,7 +73,8 @@ def build_export() -> str:
             "ctb-doctrine",
             '<a href="https://ibrvn.com.br/files/class.mp3">Audio</a>'
             '<a href="https://ibrvn.com.br/files/guide.pdf">Guide</a>'
-            '<a href="https://ibrvn.com.br/files/guide.pdf">Guide duplicate</a>',
+            '<a href="https://ibrvn.com.br/files/guide.pdf">Guide duplicate</a>'
+            '<img src="https://ibrvn.com.br/files/decorative.jpg">',
             parent=9,
         ),
         item(11, "Draft", "draft", parent=9, status="draft"),
@@ -124,6 +126,45 @@ def build_export() -> str:
 
 
 class PublicWordpressStudyParserTest(unittest.TestCase):
+    def test_youtube_playlist_becomes_one_study_with_video_resources(self):
+        payload = {
+            "schema_version": 2,
+            "captured_at": "2026-08-11T12:00:00+00:00",
+            "playlists": [{
+                "playlist_id": "PL123",
+                "title": "Estudo Romanos",
+                "published_at": "2026-08-01T12:00:00Z",
+                "url": "https://www.youtube.com/playlist?list=PL123",
+                "study_type": "weekly",
+                "videos": [
+                    {
+                        "video_id": "video-1",
+                        "title": "Aula 1",
+                        "position": 1,
+                    },
+                    {
+                        "video_id": "video-2",
+                        "title": "Aula 2",
+                        "position": 2,
+                    },
+                ],
+            }],
+        }
+
+        studies, resources = build_silver_records(
+            payload,
+            "2026-08-11T12:00:00+00:00",
+        )
+
+        self.assertEqual(1, len(studies))
+        self.assertEqual("youtube:playlist:PL123", studies[0]["study_key"])
+        self.assertEqual(
+            "https://www.youtube.com/playlist?list=PL123",
+            studies[0]["source_url"],
+        )
+        self.assertEqual(2, len(resources))
+        self.assertEqual(["Aula 1", "Aula 2"], [row["label"] for row in resources])
+
     def test_youtube_playlist_rules_use_only_estudo_prefix(self):
         self.assertTrue(is_study_playlist("Estudo Romanos"))
         self.assertTrue(is_study_playlist("ESTUDO CTB 2026"))
@@ -207,6 +248,17 @@ class PublicWordpressStudyParserTest(unittest.TestCase):
             resources["wordpress:30"],
         )
         self.assertEqual(Counter({"pdf": 1}), resources["wordpress:pfd:1"])
+
+        resource_labels = {
+            study.study_key: {
+                resource.resource_type: resource.label
+                for resource in study.resources
+            }
+            for study in studies
+        }
+        self.assertEqual("class.mp3", resource_labels["wordpress:10"]["audio"])
+        self.assertEqual("guide.pdf", resource_labels["wordpress:10"]["pdf"])
+        self.assertNotIn("image", resources["wordpress:10"])
 
 
 if __name__ == "__main__":

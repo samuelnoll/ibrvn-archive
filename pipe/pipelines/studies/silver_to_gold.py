@@ -119,44 +119,15 @@ def aggregate_records(conn) -> tuple[list[dict], list[dict]]:
             "last_aggregated_at": aggregated_at,
         }
 
-    wordpress_youtube_owners = {
-        row["canonical_url"]: row["study_key"]
-        for row in wordpress_resources
-        if row.get("resource_type") == "youtube"
-    }
-    youtube_target_by_study = {}
-
     for row in youtube_studies:
-        canonical_video_url = (
-            f"https://youtube.com/watch?v={row['youtube_video_id']}"
-        )
-        target_study_id = wordpress_youtube_owners.get(
-            canonical_video_url,
-            row["study_key"],
-        )
-        youtube_target_by_study[row["study_key"]] = target_study_id
-
-        if target_study_id in studies:
-            existing = studies[target_study_id]
-            existing["source_system"] = combine_sources(
-                existing["source_system"],
-                "youtube",
-            )
-
-            if not existing.get("study_date") and row.get("study_date"):
-                existing["study_date"] = row["study_date"]
-                existing["study_year"] = str(row["study_date"])[:4]
-
-            continue
-
         study_date = str(row.get("study_date") or "")
-        studies[target_study_id] = {
-            "study_id": target_study_id,
+        studies[row["study_key"]] = {
+            "study_id": row["study_key"],
             "study_type": row["study_type"],
             "title": row["title"],
             "study_date": study_date or None,
             "study_year": study_date[:4] if len(study_date) >= 4 else None,
-            "collection_title": row.get("collection_title") or None,
+            "collection_title": None,
             "source_system": "youtube",
             "source_url": row.get("source_url"),
             "resource_count": 0,
@@ -192,11 +163,7 @@ def aggregate_records(conn) -> tuple[list[dict], list[dict]]:
         add_resource(row, row["study_key"], "wordpress")
 
     for row in youtube_resources:
-        target_study_id = youtube_target_by_study.get(
-            row["study_key"],
-            row["study_key"],
-        )
-        add_resource(row, target_study_id, "youtube")
+        add_resource(row, row["study_key"], "youtube")
 
     resource_counts = Counter(
         resource["study_id"]

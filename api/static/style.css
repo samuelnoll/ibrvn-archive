@@ -114,12 +114,41 @@ input {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
+  gap: 7px;
   padding: 4px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface);
   font-size: 12px;
+}
+
+.site-nav-primary,
+.sermon-nav-links,
+.sermon-nav-group {
+  display: flex;
+  align-items: center;
+}
+
+.site-nav-primary,
+.sermon-nav-links {
+  gap: 2px;
+}
+
+.sermon-nav-group {
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--page);
+}
+
+.sermon-nav-label {
+  padding: 0 6px;
+  color: var(--green);
+  font-size: 8px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .site-nav a {
@@ -652,6 +681,26 @@ a.sermon-fact:hover {
   font-size: 11px;
 }
 
+.study-origin-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 17px;
+  padding: 8px 11px;
+  border: 1px solid #c8d5ce;
+  border-radius: 6px;
+  background: var(--green-soft);
+  color: var(--green);
+  font-size: 11px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.study-origin-link:hover {
+  border-color: var(--green);
+  background: #dbe8e1;
+}
+
 .resource-groups {
   display: grid;
   gap: 26px;
@@ -737,6 +786,7 @@ a.sermon-fact:hover {
 
   .site-nav {
     width: fit-content;
+    max-width: 100%;
   }
 
   .home-intro {
@@ -785,6 +835,14 @@ a.sermon-fact:hover {
 
   .site-nav a {
     padding: 6px 8px;
+  }
+
+  .site-nav {
+    align-items: stretch;
+  }
+
+  .sermon-nav-group {
+    flex-wrap: wrap;
   }
 
   .section-heading span {

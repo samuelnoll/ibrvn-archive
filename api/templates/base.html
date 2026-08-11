@@ -40,12 +40,19 @@
 </a>
 
 <nav class="site-nav" aria-label="Navega&ccedil;&atilde;o principal">
+<div class="site-nav-primary">
 <a href="/"{% if request.url.path == '/' %} aria-current="page"{% endif %}>In&iacute;cio</a>
 <a href="/studies"{% if request.url.path.startswith('/studies') %} aria-current="page"{% endif %}>Estudos</a>
+</div>
+<div class="sermon-nav-group">
+<span class="sermon-nav-label">Prega&ccedil;&otilde;es</span>
+<div class="sermon-nav-links">
 <a href="/books"{% if request.url.path.startswith('/books') %} aria-current="page"{% endif %}>Livros</a>
 <a href="/series"{% if request.url.path.startswith('/series') %} aria-current="page"{% endif %}>S&eacute;ries</a>
 <a href="/preachers"{% if request.url.path.startswith('/preachers') %} aria-current="page"{% endif %}>Pregadores</a>
 <a href="/years"{% if request.url.path.startswith('/years') %} aria-current="page"{% endif %}>Anos</a>
+</div>
+</div>
 </nav>
 </header>
 

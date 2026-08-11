@@ -26,7 +26,6 @@ RESOURCE_TYPES = OrderedDict([
     ("document", ("Documentos", "file-text")),
     ("presentation", ("Apresenta\u00e7\u00f5es", "file-text")),
     ("spreadsheet", ("Planilhas", "file-text")),
-    ("image", ("Imagens", "file-text")),
     ("archive", ("Arquivos compactados", "download")),
     ("external_link", ("Links externos", "external-link")),
     ("internal_link", ("Links da IBRVN", "external-link")),
@@ -55,6 +54,11 @@ def serialize_study(row: dict) -> dict:
         study.get("study_type", ""),
     )
     study["study_date_display"] = format_date(study.get("study_date"))
+    study["origin_label"] = (
+        "Playlist original no YouTube"
+        if study.get("source_system") == "youtube"
+        else "P\u00e1gina original do estudo"
+    )
     return study
 
 
