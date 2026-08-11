@@ -4,6 +4,8 @@ import hashlib
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
+from pipe.pipelines.studies.title_rules import clean_study_title
+
 
 LOCAL_TIMEZONE = ZoneInfo("America/Sao_Paulo")
 VALID_STUDY_TYPES = {
@@ -81,8 +83,9 @@ def build_silver_records(
             str(playlist.get("url") or "").strip()
             or f"https://www.youtube.com/playlist?list={playlist_id}"
         )
-        title = str(playlist.get("title") or "").strip() or (
-            f"Estudo {playlist_id}"
+        title = clean_study_title(
+            str(playlist.get("title") or "").strip()
+            or f"Estudo {playlist_id}"
         )
         study_rows.append({
             "study_key": study_key,

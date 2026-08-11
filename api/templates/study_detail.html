@@ -14,11 +14,15 @@
 <span>{{ study.resource_count }} recurso{% if study.resource_count != 1 %}s{% endif %}</span>
 {% if study.collection_title %}<span>{{ study.collection_title }}</span>{% endif %}
 </div>
-{% if study.source_url %}
-<a class="study-origin-link" href="{{ study.source_url }}" target="_blank" rel="noopener noreferrer">
+{% if study.origins %}
+<div class="study-origin-links">
+{% for origin in study.origins %}
+<a class="study-origin-link" href="{{ origin.source_url }}" target="_blank" rel="noopener noreferrer">
 <svg class="icon" aria-hidden="true"><use href="#icon-external-link"></use></svg>
-<span>{{ study.origin_label }}</span>
+<span>{{ origin.label }}</span>
 </a>
+{% endfor %}
+</div>
 {% endif %}
 </header>
 

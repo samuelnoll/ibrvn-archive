@@ -102,6 +102,17 @@ CREATE TABLE IF NOT EXISTS gold_study_resources (
 )
 """
 
+CREATE_GOLD_STUDY_ORIGINS_SQL = """
+CREATE TABLE IF NOT EXISTS gold_study_origins (
+    origin_id TEXT PRIMARY KEY,
+    study_id TEXT NOT NULL,
+    source_system TEXT NOT NULL,
+    label TEXT NOT NULL,
+    source_url TEXT NOT NULL,
+    UNIQUE (study_id, source_url)
+)
+"""
+
 
 def ensure_study_schema(conn) -> None:
     conn.execute(text(CREATE_SILVER_STUDY_PROCESSING_RUNS_SQL))
@@ -112,6 +123,7 @@ def ensure_study_schema(conn) -> None:
     conn.execute(text(CREATE_SILVER_STUDY_YOUTUBE_RESOURCES_SQL))
     conn.execute(text(CREATE_GOLD_STUDIES_SQL))
     conn.execute(text(CREATE_GOLD_STUDY_RESOURCES_SQL))
+    conn.execute(text(CREATE_GOLD_STUDY_ORIGINS_SQL))
 
 
 def migrate_youtube_playlist_schema(conn) -> None:
@@ -159,6 +171,10 @@ def create_study_indexes(conn) -> None:
         """
         CREATE INDEX IF NOT EXISTS idx_gold_study_resources_study_type
         ON gold_study_resources(study_id, resource_type)
+        """,
+        """
+        CREATE INDEX IF NOT EXISTS idx_gold_study_origins_study
+        ON gold_study_origins(study_id, source_system)
         """,
         """
         CREATE INDEX IF NOT EXISTS idx_silver_study_runs_status

@@ -666,11 +666,17 @@ a.sermon-fact:hover {
   font-size: 11px;
 }
 
+.study-origin-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 17px;
+}
+
 .study-origin-link {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  margin-top: 17px;
   padding: 8px 11px;
   border: 1px solid #c8d5ce;
   border-radius: 6px;

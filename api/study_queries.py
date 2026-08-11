@@ -64,7 +64,11 @@ def serialize_study(row: dict) -> dict:
 
 def pfd_catalog_sort_key(study: dict) -> tuple:
     year = str(study.get("study_year") or "")
-    sequence_match = re.match(r"^Estudo\s+(\d+)\b", study.get("title", ""))
+    sequence_match = re.match(
+        r"^(?:Estudo\s+)?(\d+)\b",
+        study.get("title", ""),
+        re.I,
+    )
     sequence = int(sequence_match.group(1)) if sequence_match else 9999
     return (
         -int(year) if year.isdigit() else 0,
@@ -160,6 +164,23 @@ def get_study_detail(study_id: str) -> dict | None:
         return None
 
     study = serialize_study(row)
+    origins = fetch_all("""
+        SELECT source_system, label, source_url
+        FROM gold_study_origins
+        WHERE study_id = :study_id
+        ORDER BY
+            CASE source_system WHEN 'wordpress' THEN 1 ELSE 2 END,
+            source_url
+    """, {"study_id": study_id})
+
+    if not origins and study.get("source_url"):
+        origins = [{
+            "source_system": study.get("source_system"),
+            "label": study.get("origin_label"),
+            "source_url": study["source_url"],
+        }]
+
+    study["origins"] = origins
     resources = fetch_all("""
         SELECT
             resource_id,

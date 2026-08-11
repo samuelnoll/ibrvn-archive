@@ -7,12 +7,17 @@ import unittest
 from collections import Counter
 from pathlib import Path
 
+from sqlalchemy import create_engine, text
+
+from pipe.pipelines.studies.silver_to_gold import aggregate_records
 from pipe.pipelines.studies.youtube_rules import (
     infer_study_type,
     is_study_playlist,
 )
 from pipe.pipelines.studies.youtube_records import build_silver_records
+from pipe.pipelines.studies.title_rules import clean_study_title, title_identity
 from pipe.pipelines.studies.wordpress_parser import parse_public_studies
+from shared.study_db import ensure_study_schema
 
 
 ITEM_TEMPLATE = """
@@ -91,6 +96,7 @@ def build_export() -> str:
             20,
             "Conference",
             "conference",
+            '<p>Realizada em 02/11/14.</p>'
             '<iframe src="https://youtu.be/abc123"></iframe>',
             parent=1298,
         ),
@@ -167,6 +173,7 @@ class PublicWordpressStudyParserTest(unittest.TestCase):
             studies[0]["source_url"],
         )
         self.assertEqual("2026-07-20", studies[0]["study_date"])
+        self.assertEqual("Romanos", studies[0]["title"])
         self.assertEqual(2, len(resources))
         self.assertEqual(["Aula 1", "Aula 2"], [row["label"] for row in resources])
 
@@ -191,6 +198,29 @@ class PublicWordpressStudyParserTest(unittest.TestCase):
             infer_study_type(["Retiro de Jovens"]),
         )
 
+    def test_study_titles_remove_editorial_markers_but_keep_retiro(self):
+        self.assertEqual(
+            "Hist\u00f3ria da Igreja",
+            clean_study_title("CTB Hist\u00f3ria da Igreja | CTB 2008"),
+        )
+        self.assertEqual(
+            "Hist\u00f3ria da Igreja",
+            clean_study_title("Estudo Hist\u00f3ria da Igreja [Jo\u00e3o Silva]"),
+        )
+        self.assertEqual("2026", clean_study_title("Estudo CTB 2026"))
+        self.assertEqual(
+            "Reforma",
+            clean_study_title("Confer\u00eancia Reforma [Nome Sobrenome]"),
+        )
+        self.assertEqual(
+            "Retiro 2025",
+            clean_study_title("Retiro 2025 [Nome Sobrenome]"),
+        )
+        self.assertEqual(
+            title_identity("Hist\u00f3ria da Igreja"),
+            title_identity("historia-da igreja"),
+        )
+
     def test_independent_study_schema_is_valid_sqlite(self):
         schema_path = Path("shared/study_db.py")
         module = ast.parse(schema_path.read_text(encoding="utf-8"))
@@ -210,6 +240,7 @@ class PublicWordpressStudyParserTest(unittest.TestCase):
             "silver_study_youtube_resources",
             "gold_studies",
             "gold_study_resources",
+            "gold_study_origins",
         }
 
         with sqlite3.connect(":memory:") as connection:
@@ -224,6 +255,61 @@ class PublicWordpressStudyParserTest(unittest.TestCase):
             }
 
         self.assertTrue(expected_tables.issubset(actual_tables))
+
+    def test_gold_merges_equal_titles_and_keeps_every_origin(self):
+        engine = create_engine("sqlite:///:memory:")
+
+        with engine.begin() as connection:
+            ensure_study_schema(connection)
+            connection.execute(text("""
+                INSERT INTO silver_study_wordpress (
+                    study_key, source_item_id, wordpress_post_id, study_type,
+                    title, study_date, source_url, collection_slug,
+                    payload_version, processed_at
+                ) VALUES (
+                    'wordpress:1', '1', '1', 'ctb',
+                    'Hist\u00f3ria da Igreja | CTB 2008', '2008',
+                    'https://ibrvn.com.br/historia/', 'historia', 'v1', 'now'
+                )
+            """))
+            connection.execute(text("""
+                INSERT INTO silver_study_youtube (
+                    study_key, youtube_playlist_id, study_type, title,
+                    study_date, source_url, payload_version, processed_at
+                ) VALUES (
+                    'youtube:playlist:PL1', 'PL1', 'ctb',
+                    'CTB Historia da Igreja [Nome Sobrenome]', '2007-03-04',
+                    'https://youtube.com/playlist?list=PL1', 'v2', 'now'
+                )
+            """))
+            connection.execute(text("""
+                INSERT INTO silver_study_wordpress_resources (
+                    resource_key, study_key, resource_type, label, source_url,
+                    canonical_url, mime_type, position, processed_at
+                ) VALUES (
+                    'r1', 'wordpress:1', 'pdf', 'apostila.pdf',
+                    'https://ibrvn.com.br/apostila.pdf',
+                    'https://ibrvn.com.br/apostila.pdf', 'application/pdf', 1, 'now'
+                )
+            """))
+            connection.execute(text("""
+                INSERT INTO silver_study_youtube_resources (
+                    resource_key, study_key, resource_type, label, source_url,
+                    canonical_url, mime_type, position, processed_at
+                ) VALUES (
+                    'r2', 'youtube:playlist:PL1', 'youtube', 'Aula 1',
+                    'https://youtube.com/watch?v=abc',
+                    'https://youtube.com/watch?v=abc', 'video/youtube', 1, 'now'
+                )
+            """))
+            studies, resources, origins = aggregate_records(connection)
+
+        self.assertEqual(1, len(studies))
+        self.assertEqual("Hist\u00f3ria da Igreja", studies[0]["title"])
+        self.assertEqual("2007-03-04", studies[0]["study_date"])
+        self.assertEqual("wordpress,youtube", studies[0]["source_system"])
+        self.assertEqual(2, len(resources))
+        self.assertEqual(2, len(origins))
 
     def test_only_published_pages_reachable_from_public_roots_are_loaded(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -242,7 +328,8 @@ class PublicWordpressStudyParserTest(unittest.TestCase):
         self.assertNotIn("wordpress:40", {study.study_key for study in studies})
         study_by_key = {study.study_key: study for study in studies}
         self.assertEqual("2020-02-05", study_by_key["wordpress:10"].study_date)
-        self.assertEqual("2024", study_by_key["wordpress:20"].study_date)
+        self.assertEqual("2014-11-02", study_by_key["wordpress:20"].study_date)
+        self.assertEqual("Doctrine", study_by_key["wordpress:10"].title)
 
     def test_resources_are_classified_and_deduplicated_per_study(self):
         with tempfile.TemporaryDirectory() as directory:

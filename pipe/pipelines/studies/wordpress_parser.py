@@ -13,6 +13,8 @@ from urllib.parse import parse_qs, unquote, urljoin, urlsplit, urlunsplit
 from lxml import html
 from lxml.etree import ParserError
 
+from pipe.pipelines.studies.title_rules import clean_study_title
+
 
 NS = {
     "content": "http://purl.org/rss/1.0/modules/content/",
@@ -477,7 +479,7 @@ def extract_explicit_dates(value: str) -> list[str]:
     dates = set()
     text_value = html_lib.unescape(value or "")
     day_first_pattern = re.compile(
-        r"(?<!\d)(\d{1,2})[./_-](\d{1,2})[./_-](19\d{2}|20\d{2})(?!\d)"
+        r"(?<!\d)(\d{1,2})[./_-](\d{1,2})[./_-](\d{2}|19\d{2}|20\d{2})(?!\d)"
     )
     year_first_pattern = re.compile(
         r"(?<!\d)(19\d{2}|20\d{2})[./_-](\d{1,2})[./_-](\d{1,2})(?!\d)"
@@ -485,7 +487,10 @@ def extract_explicit_dates(value: str) -> list[str]:
 
     for day, month, year in day_first_pattern.findall(text_value):
         try:
-            dates.add(datetime(int(year), int(month), int(day)).date().isoformat())
+            resolved_year = 2000 + int(year) if len(year) == 2 else int(year)
+            dates.add(
+                datetime(resolved_year, int(month), int(day)).date().isoformat()
+            )
         except ValueError:
             continue
 
@@ -585,7 +590,7 @@ def discover_public_studies(items: list[WordpressItem]) -> list[ParsedStudy]:
                 source_item_id=item.post_id,
                 wordpress_post_id=item.post_id,
                 study_type=PUBLIC_ROOT_TYPES[root_slug],
-                title=item.title.strip() or item.slug,
+                title=clean_study_title(item.title.strip() or item.slug),
                 study_date=infer_study_date(item),
                 source_url=item.link,
                 collection_slug=item.slug,
@@ -644,7 +649,7 @@ def discover_public_studies(items: list[WordpressItem]) -> list[ParsedStudy]:
             source_item_id=f"{pfd_root.post_id}:pfd:{number}",
             wordpress_post_id=pfd_root.post_id,
             study_type="pfd",
-            title=f"Estudo {number} - {label}",
+            title=clean_study_title(f"Estudo {number} - {label}"),
             study_date=resource_upload_year(canonical_url) or normalize_date(
                 pfd_root.post_date
             )[:4],
