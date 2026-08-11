@@ -127,9 +127,9 @@ Study tables:
 
 WordPress ingestion uses only published pages directly reachable from the
 `ctb`, `palestras-conferencias`, and `materiais-de-estudo` public roots. The
-YouTube extractor uses only playlists whose normalized title begins with
-`Estudo `. Each qualifying playlist is one study and its videos are the
-study resources.
+The YouTube extractor uses only playlists whose normalized title begins with
+`Estudo `, `CTB `, `Conferencia `, or `Retiro `. Each qualifying playlist is
+one study and its videos are the study resources.
 
 Manual pipeline commands:
 

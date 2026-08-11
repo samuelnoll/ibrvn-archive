@@ -10,10 +10,10 @@ from .db import fetch_all, fetch_one
 
 
 STUDY_TYPES = OrderedDict([
-    ("lecture_or_conference", "Palestras e Confer\u00eancias"),
     ("ctb", "Centro de Treinamento B\u00edblico"),
-    ("pfd", "Programa de Forma\u00e7\u00e3o de Disc\u00edpulos"),
+    ("lecture_or_conference", "Palestras e Confer\u00eancias"),
     ("weekly", "Estudos Semanais"),
+    ("pfd", "Programa de Forma\u00e7\u00e3o de Disc\u00edpulos"),
 ])
 
 RESOURCE_TYPES = OrderedDict([
@@ -87,10 +87,10 @@ def get_study_catalog() -> list[dict]:
         FROM gold_studies
         ORDER BY
             CASE study_type
-                WHEN 'lecture_or_conference' THEN 1
-                WHEN 'ctb' THEN 2
-                WHEN 'pfd' THEN 3
-                WHEN 'weekly' THEN 4
+                WHEN 'ctb' THEN 1
+                WHEN 'lecture_or_conference' THEN 2
+                WHEN 'weekly' THEN 3
+                WHEN 'pfd' THEN 4
                 ELSE 9
             END,
             study_year DESC,
@@ -129,6 +129,18 @@ def get_study_catalog() -> list[dict]:
         })
 
     return catalog
+
+
+def get_study_home_stats() -> dict:
+    row = fetch_one("""
+        SELECT
+            (SELECT COUNT(*) FROM gold_studies) AS studies,
+            (SELECT COUNT(*) FROM gold_study_resources) AS resources
+    """)
+    return row or {
+        "studies": 0,
+        "resources": 0,
+    }
 
 
 def resource_fallback_label(resource_url: str) -> str:

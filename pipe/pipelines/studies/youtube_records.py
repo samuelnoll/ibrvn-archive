@@ -27,6 +27,30 @@ def study_date(value: str) -> str:
         return ""
 
 
+def playlist_study_date(playlist: dict) -> str:
+    oldest_published_at = str(
+        playlist.get("oldest_video_published_at") or ""
+    ).strip()
+
+    if oldest_published_at:
+        resolved = study_date(oldest_published_at)
+
+        if resolved:
+            return resolved
+
+    video_dates = sorted(
+        resolved
+        for video in playlist.get("videos", [])
+        if (resolved := study_date(video.get("published_at", "")))
+    )
+
+    if video_dates:
+        return video_dates[0]
+
+    playlist_year = str(playlist.get("published_at") or "")[:4]
+    return playlist_year if playlist_year.isdigit() else ""
+
+
 def build_silver_records(
     payload: dict,
     processed_at: str,
@@ -65,7 +89,7 @@ def build_silver_records(
             "youtube_playlist_id": playlist_id,
             "study_type": resolved_study_type,
             "title": title,
-            "study_date": study_date(playlist.get("published_at", "")) or None,
+            "study_date": playlist_study_date(playlist) or None,
             "source_url": source_url,
             "payload_version": payload_version,
             "processed_at": processed_at,

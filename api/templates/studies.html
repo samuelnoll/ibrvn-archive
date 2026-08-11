@@ -4,12 +4,6 @@
 
 {% block content %}
 <section class="studies-page">
-<header class="study-hero">
-<p>Biblioteca de forma&ccedil;&atilde;o</p>
-<h1>Estudos</h1>
-<span>&Aacute;udios, v&iacute;deos, PDFs e outros materiais reunidos por tema e ano.</span>
-</header>
-
 <nav class="study-type-nav" aria-label="Tipos de estudos">
 {% for section in catalog %}
 <a href="#{{ section.study_type }}">

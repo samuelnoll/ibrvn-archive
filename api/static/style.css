@@ -214,6 +214,10 @@ input {
   font-weight: 500;
 }
 
+.home-stats-row + .home-stats-row {
+  margin-top: 4px;
+}
+
 .search-field {
   position: relative;
   margin-bottom: 34px;
@@ -483,16 +487,6 @@ a.sermon-fact:hover {
   padding-top: 34px;
 }
 
-.study-hero {
-  padding: 34px 36px;
-  border: 1px solid #cad8d1;
-  border-radius: 12px;
-  background:
-    linear-gradient(115deg, rgba(255, 255, 255, 0.82), rgba(228, 236, 232, 0.42)),
-    repeating-linear-gradient(135deg, transparent 0 18px, rgba(49, 94, 80, 0.045) 18px 19px);
-}
-
-.study-hero p,
 .study-type-heading p,
 .study-detail-heading > p {
   margin: 0 0 5px;
@@ -503,7 +497,6 @@ a.sermon-fact:hover {
   text-transform: uppercase;
 }
 
-.study-hero h1,
 .study-detail-heading h1 {
   margin: 0;
   font-size: clamp(32px, 5vw, 46px);
@@ -512,19 +505,11 @@ a.sermon-fact:hover {
   line-height: 1.08;
 }
 
-.study-hero > span {
-  display: block;
-  max-width: 580px;
-  margin-top: 10px;
-  color: var(--muted);
-  font-size: 13px;
-}
-
 .study-type-nav {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
-  margin: 16px 0 44px;
+  margin: 0 0 44px;
 }
 
 .study-type-nav a {
@@ -863,10 +848,6 @@ a.sermon-fact:hover {
   .series-card-link .simple-card-count:first-of-type {
     grid-column: auto;
     grid-row: auto;
-  }
-
-  .study-hero {
-    padding: 27px 22px;
   }
 
   .study-type-nav {

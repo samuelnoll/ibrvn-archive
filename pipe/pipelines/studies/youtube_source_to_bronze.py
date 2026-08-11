@@ -227,7 +227,7 @@ def build_bronze_payload(
 
     if not playlists:
         raise ValueError(
-            "No YouTube playlists beginning with 'Estudo ' were found; "
+            "No supported YouTube study playlists were found; "
             "the existing study bronze was left unchanged."
         )
 
@@ -250,6 +250,7 @@ def build_bronze_payload(
 
     for playlist in playlists:
         videos = []
+        all_published_dates = []
 
         for membership in memberships_by_playlist[playlist["playlist_id"]]:
             video = details.get(membership["video_id"])
@@ -258,6 +259,9 @@ def build_bronze_payload(
                 continue
 
             published_at = parse_timestamp(video.get("published_at", ""))
+
+            if published_at:
+                all_published_dates.append(published_at)
 
             if cutoff and (not published_at or published_at < cutoff):
                 continue
@@ -273,6 +277,11 @@ def build_bronze_payload(
         study_playlists.append({
             **playlist,
             "study_type": infer_study_type([playlist["title"]]),
+            "oldest_video_published_at": (
+                min(all_published_dates).isoformat()
+                if all_published_dates
+                else ""
+            ),
             "videos": sorted(videos, key=lambda item: item["position"]),
         })
 
@@ -282,7 +291,12 @@ def build_bronze_payload(
         "channel_id": channel_id,
         "loopback_days": loopback_days,
         "complete_snapshot": loopback_days is None,
-        "playlist_prefix": "Estudo ",
+        "playlist_prefixes": [
+            "Estudo ",
+            "CTB ",
+            "Confer\u00eancia ",
+            "Retiro ",
+        ],
         "playlists": study_playlists,
     }
 
@@ -327,8 +341,8 @@ def run(
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Extract videos from YouTube playlists beginning with 'Estudo ' "
-            "into the independent study bronze."
+            "Extract videos from supported YouTube study playlists into the "
+            "independent study bronze."
         )
     )
     parser.add_argument("--loopback-days", type=int, default=None)

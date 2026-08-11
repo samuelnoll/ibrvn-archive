@@ -4,7 +4,11 @@ from fastapi.staticfiles import StaticFiles
 
 from .db import initialize_database
 from .queries import *
-from .study_queries import get_study_catalog, get_study_detail
+from .study_queries import (
+    get_study_catalog,
+    get_study_detail,
+    get_study_home_stats,
+)
 from shared.settings import AUDIO_RAW_DIR
 
 app = FastAPI()
@@ -37,6 +41,7 @@ def home(request: Request):
 
     sermons = get_recent_sermons()
     stats = get_home_stats()
+    study_stats = get_study_home_stats()
 
     return render_template(
         request,
@@ -45,6 +50,7 @@ def home(request: Request):
             "request": request,
             "sermons": sermons,
             "stats": stats,
+            "study_stats": study_stats,
             "last_update": get_last_update()
         }
     )

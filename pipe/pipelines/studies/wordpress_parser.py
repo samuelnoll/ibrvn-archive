@@ -399,6 +399,15 @@ def resource_display_name(
     return fallback.strip() or url
 
 
+def is_self_reference(url: str, item: WordpressItem) -> bool:
+    if canonicalize_url(url) == canonicalize_url(item.link):
+        return True
+
+    query = parse_qs(urlsplit(url).query)
+    referenced_ids = query.get("page_id", []) + query.get("p", [])
+    return item.post_id in referenced_ids
+
+
 def build_resources(
     item: WordpressItem,
     study_key: str,
@@ -408,6 +417,9 @@ def build_resources(
     deduplicated: dict[str, ParsedResource] = {}
 
     for candidate in extract_resource_candidates(item):
+        if is_self_reference(candidate.url, item):
+            continue
+
         original_canonical = canonicalize_url(candidate.url)
         attachment = items_by_link.get(original_canonical)
         resolved_url = candidate.url
@@ -461,13 +473,48 @@ def normalize_date(value: str) -> str:
         return ""
 
 
+def extract_explicit_dates(value: str) -> list[str]:
+    dates = set()
+    text_value = html_lib.unescape(value or "")
+    day_first_pattern = re.compile(
+        r"(?<!\d)(\d{1,2})[./_-](\d{1,2})[./_-](19\d{2}|20\d{2})(?!\d)"
+    )
+    year_first_pattern = re.compile(
+        r"(?<!\d)(19\d{2}|20\d{2})[./_-](\d{1,2})[./_-](\d{1,2})(?!\d)"
+    )
+
+    for day, month, year in day_first_pattern.findall(text_value):
+        try:
+            dates.add(datetime(int(year), int(month), int(day)).date().isoformat())
+        except ValueError:
+            continue
+
+    for year, month, day in year_first_pattern.findall(text_value):
+        try:
+            dates.add(datetime(int(year), int(month), int(day)).date().isoformat())
+        except ValueError:
+            continue
+
+    return sorted(dates)
+
+
+def extract_content_years(value: str) -> list[str]:
+    return sorted(set(re.findall(r"(?<!\d)(19\d{2}|20\d{2})(?!\d)", value or "")))
+
+
 def infer_study_date(item: WordpressItem) -> str:
-    title_year = re.search(r"\b(19\d{2}|20\d{2})\b", item.title)
+    page_content = f"{item.title}\n{item.content}"
+    explicit_dates = extract_explicit_dates(page_content)
 
-    if title_year:
-        return f"{title_year.group(1)}-01-01"
+    if explicit_dates:
+        return explicit_dates[0]
 
-    return normalize_date(item.post_date)
+    content_years = extract_content_years(page_content)
+
+    if content_years:
+        return content_years[0]
+
+    return normalize_date(item.post_date)[:4]
 
 
 def pfd_number(url: str) -> int | None:
@@ -478,7 +525,7 @@ def pfd_number(url: str) -> int | None:
 
 def resource_upload_year(url: str) -> str:
     match = re.search(r"/uploads/(19\d{2}|20\d{2})/", url)
-    return f"{match.group(1)}-01-01" if match else ""
+    return match.group(1) if match else ""
 
 
 def discover_public_studies(items: list[WordpressItem]) -> list[ParsedStudy]:
@@ -600,7 +647,7 @@ def discover_public_studies(items: list[WordpressItem]) -> list[ParsedStudy]:
             title=f"Estudo {number} - {label}",
             study_date=resource_upload_year(canonical_url) or normalize_date(
                 pfd_root.post_date
-            ),
+            )[:4],
             source_url=pfd_root.link,
             collection_slug=f"pfd-estudo-{number}",
             resources=(resource,),

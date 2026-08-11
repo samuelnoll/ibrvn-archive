@@ -71,9 +71,12 @@ def build_export() -> str:
             10,
             "Doctrine | CTB 2020",
             "ctb-doctrine",
+            '<p>Encontros em 10/03/2020 e 05/02/2020.</p>'
             '<a href="https://ibrvn.com.br/files/class.mp3">Audio</a>'
             '<a href="https://ibrvn.com.br/files/guide.pdf">Guide</a>'
             '<a href="https://ibrvn.com.br/files/guide.pdf">Guide duplicate</a>'
+            '<a href="https://ibrvn.com.br/ctb-doctrine/">Self pretty</a>'
+            '<a href="/?page_id=10">Self query</a>'
             '<img src="https://ibrvn.com.br/files/decorative.jpg">',
             parent=9,
         ),
@@ -134,6 +137,7 @@ class PublicWordpressStudyParserTest(unittest.TestCase):
                 "playlist_id": "PL123",
                 "title": "Estudo Romanos",
                 "published_at": "2026-08-01T12:00:00Z",
+                "oldest_video_published_at": "2026-07-20T12:00:00Z",
                 "url": "https://www.youtube.com/playlist?list=PL123",
                 "study_type": "weekly",
                 "videos": [
@@ -162,20 +166,29 @@ class PublicWordpressStudyParserTest(unittest.TestCase):
             "https://www.youtube.com/playlist?list=PL123",
             studies[0]["source_url"],
         )
+        self.assertEqual("2026-07-20", studies[0]["study_date"])
         self.assertEqual(2, len(resources))
         self.assertEqual(["Aula 1", "Aula 2"], [row["label"] for row in resources])
 
-    def test_youtube_playlist_rules_use_only_estudo_prefix(self):
+    def test_youtube_playlist_rules_use_supported_prefixes(self):
         self.assertTrue(is_study_playlist("Estudo Romanos"))
         self.assertTrue(is_study_playlist("ESTUDO CTB 2026"))
+        self.assertTrue(is_study_playlist("CTB Doutrinas da Graca"))
+        self.assertTrue(is_study_playlist("Confer\u00eancia da Reforma"))
+        self.assertTrue(is_study_playlist("Retiro 2025"))
         self.assertFalse(is_study_playlist("Estudos Semanais"))
         self.assertFalse(is_study_playlist("Serie Estudo Romanos"))
         self.assertEqual("weekly", infer_study_type(["Estudo Romanos"]))
         self.assertEqual("ctb", infer_study_type(["Estudo CTB 2026"]))
+        self.assertEqual("ctb", infer_study_type(["CTB 2026"]))
         self.assertEqual("pfd", infer_study_type(["Estudo PFD"]))
         self.assertEqual(
             "lecture_or_conference",
             infer_study_type(["Estudo Conferencia da Reforma"]),
+        )
+        self.assertEqual(
+            "lecture_or_conference",
+            infer_study_type(["Retiro de Jovens"]),
         )
 
     def test_independent_study_schema_is_valid_sqlite(self):
@@ -227,6 +240,9 @@ class PublicWordpressStudyParserTest(unittest.TestCase):
         }, Counter(study.study_type for study in studies))
         self.assertNotIn("wordpress:11", {study.study_key for study in studies})
         self.assertNotIn("wordpress:40", {study.study_key for study in studies})
+        study_by_key = {study.study_key: study for study in studies}
+        self.assertEqual("2020-02-05", study_by_key["wordpress:10"].study_date)
+        self.assertEqual("2024", study_by_key["wordpress:20"].study_date)
 
     def test_resources_are_classified_and_deduplicated_per_study(self):
         with tempfile.TemporaryDirectory() as directory:
