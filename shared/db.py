@@ -282,9 +282,13 @@ def create_indexes(conn):
 
 def initialize_database():
 
+    from .study_db import create_study_indexes, ensure_study_schema
+
     with get_engine().begin() as conn:
         ensure_schema(conn)
         create_indexes(conn)
+        ensure_study_schema(conn)
+        create_study_indexes(conn)
 
 
 def fetch_all(query, params=None):

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Estudos | Arquivo IBRVN{% endblock %}
+
+{% block content %}
+<section class="studies-page">
+<header class="study-hero">
+<p>Biblioteca de forma&ccedil;&atilde;o</p>
+<h1>Estudos</h1>
+<span>&Aacute;udios, v&iacute;deos, PDFs e outros materiais reunidos por tema e ano.</span>
+</header>
+
+<nav class="study-type-nav" aria-label="Tipos de estudos">
+{% for section in catalog %}
+<a href="#{{ section.study_type }}">
+<span>{{ section.label }}</span>
+<strong>{{ section.count }}</strong>
+</a>
+{% endfor %}
+</nav>
+
+{% for section in catalog %}
+<section class="study-type-section" id="{{ section.study_type }}">
+<div class="study-type-heading">
+<div>
+<p>Tipo de material</p>
+<h2>{{ section.label }}</h2>
+</div>
+<span>{{ section.count }} estudo{% if section.count != 1 %}s{% endif %}</span>
+</div>
+
+{% for year_group in section.years %}
+<div class="study-year-group">
+<h3>{{ year_group.year }}</h3>
+<div class="study-grid">
+{% for study in year_group.studies %}
+<a class="study-card" href="/studies/{{ study.study_id | urlencode }}">
+<span class="study-card-date">{% if study.study_date_display %}{{ study.study_date_display }}{% else %}Data n&atilde;o informada{% endif %}</span>
+<strong>{{ study.title }}</strong>
+{% if study.collection_title %}<small>{{ study.collection_title }}</small>{% endif %}
+<span class="study-card-resources">{{ study.resource_count }} recurso{% if study.resource_count != 1 %}s{% endif %}</span>
+</a>
+{% endfor %}
+</div>
+</div>
+{% else %}
+<p class="empty-state">Nenhum estudo publicado neste grupo.</p>
+{% endfor %}
+</section>
+{% endfor %}
+</section>
+{% endblock %}

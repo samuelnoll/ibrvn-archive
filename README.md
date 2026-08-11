@@ -110,6 +110,43 @@ Current core fields:
 - `media_link`
 - `download_link`
 
+### Study Archive
+
+Studies use a separate data model and do not write to sermon tables. WordPress
+and YouTube remain separate through silver and are merged only in gold.
+
+Study tables:
+
+- `silver_study_wordpress`
+- `silver_study_wordpress_resources`
+- `silver_study_youtube`
+- `silver_study_youtube_resources`
+- `silver_study_processing_runs`
+- `gold_studies`
+- `gold_study_resources`
+
+WordPress ingestion uses only published pages directly reachable from the
+`ctb`, `palestras-conferencias`, and `materiais-de-estudo` public roots. The
+YouTube extractor uses only playlists whose normalized title begins with
+`Estudo `.
+
+Manual pipeline commands:
+
+```bash
+python -m pipe.pipelines.studies.wordpress_bronze_to_silver
+python -m pipe.pipelines.studies.youtube_source_to_bronze
+python -m pipe.pipelines.studies.youtube_source_to_bronze --loopback-days 30
+python -m pipe.pipelines.studies.youtube_bronze_to_silver
+python -m pipe.pipelines.studies.silver_to_gold
+```
+
+Study orchestration is isolated in these DAGs:
+
+- `ibrvn_study_wordpress_historic`
+- `ibrvn_study_youtube_bronze`
+- `ibrvn_study_metadata_silver`
+- `ibrvn_study_gold_refresh`
+
 ## Running
 
 Start the homelab stack:

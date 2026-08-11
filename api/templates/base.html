@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Acervo de prega&ccedil;&otilde;es da Igreja Batista Reformada Vida Nova.">
+<meta name="description" content="Acervo de prega&ccedil;&otilde;es e estudos da Igreja Batista Reformada Vida Nova.">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -41,6 +41,7 @@
 
 <nav class="site-nav" aria-label="Navega&ccedil;&atilde;o principal">
 <a href="/"{% if request.url.path == '/' %} aria-current="page"{% endif %}>In&iacute;cio</a>
+<a href="/studies"{% if request.url.path.startswith('/studies') %} aria-current="page"{% endif %}>Estudos</a>
 <a href="/books"{% if request.url.path.startswith('/books') %} aria-current="page"{% endif %}>Livros</a>
 <a href="/series"{% if request.url.path.startswith('/series') %} aria-current="page"{% endif %}>S&eacute;ries</a>
 <a href="/preachers"{% if request.url.path.startswith('/preachers') %} aria-current="page"{% endif %}>Pregadores</a>

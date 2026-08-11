@@ -4,6 +4,7 @@ from fastapi.staticfiles import StaticFiles
 
 from .db import initialize_database
 from .queries import *
+from .study_queries import get_study_catalog, get_study_detail
 from shared.settings import AUDIO_RAW_DIR
 
 app = FastAPI()
@@ -231,6 +232,39 @@ def transcript(request: Request, canonical_sermon_id: str):
             "transcript": row,
             "last_update": get_last_update()
         }
+    )
+
+
+@app.get("/studies")
+def studies(request: Request):
+
+    return render_template(
+        request,
+        "studies.html",
+        {
+            "request": request,
+            "catalog": get_study_catalog(),
+            "last_update": get_last_update(),
+        },
+    )
+
+
+@app.get("/studies/{study_id}")
+def study_detail(request: Request, study_id: str):
+
+    study = get_study_detail(study_id)
+
+    if not study:
+        raise HTTPException(status_code=404, detail="Study not found")
+
+    return render_template(
+        request,
+        "study_detail.html",
+        {
+            "request": request,
+            "study": study,
+            "last_update": get_last_update(),
+        },
     )
 
 

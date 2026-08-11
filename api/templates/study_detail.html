@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}{{ study.title }} | Estudos | Arquivo IBRVN{% endblock %}
+
+{% block content %}
+<article class="study-detail-page">
+<a class="study-back-link" href="/studies">&larr; Todos os estudos</a>
+
+<header class="study-detail-heading">
+<p>{{ study.study_type_label }}</p>
+<h1>{{ study.title }}</h1>
+<div class="study-detail-meta">
+{% if study.study_date_display %}<time>{{ study.study_date_display }}</time>{% endif %}
+<span>{{ study.resource_count }} recurso{% if study.resource_count != 1 %}s{% endif %}</span>
+{% if study.collection_title %}<span>{{ study.collection_title }}</span>{% endif %}
+</div>
+</header>
+
+<div class="resource-groups">
+{% for group in study.resource_groups %}
+<section class="resource-group">
+<div class="resource-group-heading">
+<svg class="icon" aria-hidden="true"><use href="#icon-{{ group.icon }}"></use></svg>
+<h2>{{ group.label }}</h2>
+<span>{{ group.resources | length }}</span>
+</div>
+
+<ul class="resource-list">
+{% for resource in group.resources %}
+<li>
+<a href="{{ resource.source_url }}" target="_blank" rel="noopener noreferrer">
+<span>{{ resource.display_label }}</span>
+<svg class="icon" aria-hidden="true"><use href="#icon-external-link"></use></svg>
+</a>
+</li>
+{% endfor %}
+</ul>
+</section>
+{% else %}
+<p class="empty-state">Nenhum recurso foi encontrado para este estudo.</p>
+{% endfor %}
+</div>
+</article>
+{% endblock %}
