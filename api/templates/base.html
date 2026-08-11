@@ -42,7 +42,6 @@
 <nav class="site-nav" aria-label="Navega&ccedil;&atilde;o principal">
 <div class="site-nav-primary">
 <a href="/"{% if request.url.path == '/' %} aria-current="page"{% endif %}>In&iacute;cio</a>
-<a href="/studies"{% if request.url.path.startswith('/studies') %} aria-current="page"{% endif %}>Estudos</a>
 </div>
 <div class="sermon-nav-group">
 <span class="sermon-nav-label">Prega&ccedil;&otilde;es</span>
@@ -53,6 +52,7 @@
 <a href="/years"{% if request.url.path.startswith('/years') %} aria-current="page"{% endif %}>Anos</a>
 </div>
 </div>
+<a href="/studies"{% if request.url.path.startswith('/studies') %} aria-current="page"{% endif %}>Estudos</a>
 </nav>
 </header>
 
