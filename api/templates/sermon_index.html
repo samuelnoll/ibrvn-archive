@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% from "_sermon_card.html" import sermon_card %}
+
+{% block title %}Prega&ccedil;&otilde;es | Arquivo IBRVN{% endblock %}
+
+{% block content %}
+<section class="sermons-page">
+<nav class="study-type-nav sermon-index-nav" aria-label="Classifica&ccedil;&otilde;es de prega&ccedil;&otilde;es">
+<a href="/books">
+<svg class="icon" aria-hidden="true"><use href="#icon-book-open"></use></svg>
+<strong>Por Livro</strong>
+</a>
+<a href="/series">
+<svg class="icon" aria-hidden="true"><use href="#icon-library"></use></svg>
+<strong>Por S&eacute;rie</strong>
+</a>
+<a href="/preachers">
+<svg class="icon" aria-hidden="true"><use href="#icon-user"></use></svg>
+<strong>Por Pregador</strong>
+</a>
+<a href="/years">
+<svg class="icon" aria-hidden="true"><use href="#icon-clock"></use></svg>
+<strong>Por Ano</strong>
+</a>
+</nav>
+
+{% include "_sermon_browser.html" %}
+</section>
+{% endblock %}

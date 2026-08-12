@@ -142,10 +142,10 @@ input {
   background: var(--page);
 }
 
-.sermon-nav-label {
-  padding: 0 6px;
+.site-nav .sermon-nav-label {
+  padding: 6px 8px;
   color: var(--green);
-  font-size: 8px;
+  font-size: 9px;
   font-weight: 500;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -482,6 +482,7 @@ a.sermon-fact:hover {
   text-align: center;
 }
 
+.sermons-page,
 .studies-page,
 .study-detail-page {
   padding-top: 34px;
@@ -559,6 +560,22 @@ a.sermon-fact:hover {
   color: var(--green);
   font-size: 16px;
   font-weight: 500;
+}
+
+.sermon-index-nav a {
+  justify-content: flex-start;
+  min-height: 58px;
+}
+
+.sermon-index-nav .icon {
+  width: 18px;
+  height: 18px;
+  color: var(--green);
+}
+
+.sermon-index-nav strong {
+  color: var(--ink);
+  font-size: 12px;
 }
 
 .study-type-section {

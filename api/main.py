@@ -56,6 +56,20 @@ def home(request: Request):
     )
 
 
+@app.get("/sermons")
+def sermons(request: Request):
+
+    return render_template(
+        request,
+        "sermon_index.html",
+        {
+            "request": request,
+            "sermons": get_recent_sermons(),
+            "last_update": get_last_update(),
+        },
+    )
+
+
 @app.get("/search")
 def search(request: Request, q: str):
 
