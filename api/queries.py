@@ -1,9 +1,43 @@
 from collections import Counter
 from datetime import date, datetime
+import re
+import unicodedata
 
 from .db import fetch_all, fetch_one
 
 GOLD_TABLE = "gold_sermons"
+
+OLD_TESTAMENT_BOOKS = {
+    "ageu", "amos", "cantico", "canticos", "cantares", "daniel",
+    "deuteronomio", "eclesiastes", "esdras", "ester", "exodo",
+    "ezequiel", "genesis", "habacuque", "isaias", "jeremias", "jo",
+    "joel", "jonas", "josue", "juizes", "lamentacoes", "levitico",
+    "malaquias", "miqueias", "naum", "neemias", "numeros", "obadias",
+    "oseias", "proverbios", "rute", "salmo", "salmos", "sofonias",
+    "zacarias",
+    "1 cronicas", "1 reis", "1 samuel", "2 cronicas", "2 reis",
+    "2 samuel",
+}
+
+NEW_TESTAMENT_BOOKS = {
+    "apocalipse", "atos", "colossenses", "efesios", "filemom",
+    "filipenses", "galatas", "hebreus", "joao", "judas", "lucas",
+    "marcos", "mateus", "romanos", "tiago", "tito",
+    "1 corintios", "1 joao", "1 pedro", "1 tessalonicenses",
+    "1 timoteo", "2 corintios", "2 joao", "2 pedro",
+    "2 tessalonicenses", "2 timoteo", "3 joao",
+}
+
+BOOK_ALIASES = {
+    "ap": "apocalipse", "at": "atos", "cl": "colossenses",
+    "co": "corintios", "cr": "cronicas", "ef": "efesios", "ex": "exodo",
+    "fp": "filipenses", "gl": "galatas", "gn": "genesis",
+    "hb": "hebreus", "is": "isaias", "jr": "jeremias", "lc": "lucas",
+    "mc": "marcos", "mt": "mateus", "nm": "numeros", "pe": "pedro",
+    "pv": "proverbios", "rm": "romanos", "rs": "reis", "sl": "salmos",
+    "sm": "samuel", "tg": "tiago", "tm": "timoteo",
+    "ts": "tessalonicenses",
+}
 
 
 def format_brazilian_date(value):
@@ -69,6 +103,45 @@ def extract_book_name(text_reference):
         return ""
 
     return parts[0].strip()
+
+
+def normalize_book_name(text_reference):
+
+    book = extract_book_name(text_reference)
+
+    if not book:
+        return ""
+
+    normalized = unicodedata.normalize("NFKD", book)
+    normalized = "".join(
+        character
+        for character in normalized
+        if not unicodedata.combining(character)
+    ).lower()
+    normalized = re.sub(r"^([123])\s*", r"\1 ", normalized)
+    normalized = re.sub(r"[^a-z0-9]+", " ", normalized).strip()
+
+    prefix = ""
+    alias = normalized
+
+    if re.match(r"^[123] ", normalized):
+        prefix, alias = normalized.split(" ", 1)
+
+    alias = BOOK_ALIASES.get(alias, alias)
+    return f"{prefix} {alias}".strip()
+
+
+def classify_testament(text_reference):
+
+    book = normalize_book_name(text_reference)
+
+    if book in OLD_TESTAMENT_BOOKS:
+        return "old"
+
+    if book in NEW_TESTAMENT_BOOKS:
+        return "new"
+
+    return ""
 
 
 def serialize_sermon(row):
@@ -286,6 +359,32 @@ def get_home_stats():
         "sermons": 0,
         "preachers": 0,
         "series": 0,
+    }
+
+
+def get_sermon_testament_composition():
+
+    rows = fetch_all("""
+        SELECT text_reference
+        FROM {table}
+    """.format(table=GOLD_TABLE))
+    counts = Counter(
+        testament
+        for row in rows
+        if (testament := classify_testament(row.get("text_reference")))
+    )
+    old_count = counts["old"]
+    new_count = counts["new"]
+    classified = old_count + new_count
+    old_percentage = round(old_count * 100 / classified) if classified else 0
+
+    return {
+        "old": old_count,
+        "new": new_count,
+        "classified": classified,
+        "unclassified": len(rows) - classified,
+        "old_percentage": old_percentage,
+        "new_percentage": 100 - old_percentage if classified else 0,
     }
 
 

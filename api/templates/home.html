@@ -2,35 +2,76 @@
 
 {% block content %}
 <section class="home-intro">
-<div>
 <h1>Prega&ccedil;&otilde;es e estudos para ouvir, estudar e compartilhar.</h1>
 <p>O acervo centralizado de serm&otilde;es e estudos da Igreja Batista Reformada Vida Nova.</p>
-</div>
-
-<div class="home-stats">
-<div class="home-stats-row">
-<strong>{{ stats.sermons }}</strong> prega&ccedil;&otilde;es
-<span aria-hidden="true">&middot;</span>
-{{ stats.preachers }} pregadores
-<span aria-hidden="true">&middot;</span>
-{{ stats.series }} s&eacute;ries
-</div>
-<div class="home-stats-row">
-<strong>{{ study_stats.studies }}</strong> estudos
-<span aria-hidden="true">&middot;</span>
-{{ study_stats.resources }} recursos
-</div>
-</div>
 </section>
 
 <section class="home-library-grid" aria-label="Acessar o acervo">
 <a class="home-library-button" href="/sermons">
+<span class="home-library-copy">
 <strong>Prega&ccedil;&otilde;es</strong>
+<small>{{ stats.sermons }} prega&ccedil;&otilde;es &middot; {{ stats.preachers }} pregadores &middot; {{ stats.series }} s&eacute;ries</small>
+</span>
 <span class="home-library-arrow" aria-hidden="true">&rarr;</span>
 </a>
 <a class="home-library-button" href="/studies">
+<span class="home-library-copy">
 <strong>Estudos</strong>
+<small>{{ study_stats.studies }} estudos &middot; {{ study_stats.resources }} recursos</small>
+</span>
 <span class="home-library-arrow" aria-hidden="true">&rarr;</span>
 </a>
+</section>
+
+<section class="home-insights" aria-label="Distribui&ccedil;&atilde;o do acervo">
+<div class="home-chart-grid">
+<article class="home-chart-panel">
+<h2>Prega&ccedil;&otilde;es por testamento</h2>
+<p>Distribui&ccedil;&atilde;o conforme o texto b&iacute;blico pregado</p>
+<div class="home-testament-chart">
+<div
+class="home-testament-donut{% if not sermon_composition.classified %} is-empty{% endif %}"
+style="--new-testament-share: {{ sermon_composition.new_percentage }}%;"
+role="img"
+aria-label="{{ sermon_composition.new }} prega&ccedil;&otilde;es no Novo Testamento e {{ sermon_composition.old }} no Antigo Testamento"
+>
+<span><strong>{{ sermon_composition.classified }}</strong>com texto identificado</span>
+</div>
+<div class="home-chart-legend">
+<div class="home-chart-legend-row">
+<span class="home-chart-swatch is-new-testament" aria-hidden="true"></span>
+<span>Novo Testamento</span>
+<strong>{{ sermon_composition.new }} <small>{{ sermon_composition.new_percentage }}%</small></strong>
+</div>
+<div class="home-chart-legend-row">
+<span class="home-chart-swatch is-old-testament" aria-hidden="true"></span>
+<span>Antigo Testamento</span>
+<strong>{{ sermon_composition.old }} <small>{{ sermon_composition.old_percentage }}%</small></strong>
+</div>
+{% if sermon_composition.unclassified %}
+<small class="home-chart-note">{{ sermon_composition.unclassified }} sem livro b&iacute;blico reconhecido</small>
+{% endif %}
+</div>
+</div>
+</article>
+
+<article class="home-chart-panel">
+<h2>Estudos por categoria</h2>
+<p>Quantidade de estudos publicados</p>
+<div class="home-study-bars">
+{% for item in study_composition %}
+<div class="home-study-bar-row">
+<div class="home-study-bar-label">
+<span>{{ item.label }}</span>
+<strong>{{ item.count }}</strong>
+</div>
+<div class="home-study-bar-track" aria-hidden="true">
+<span style="width: {{ item.percentage }}%"></span>
+</div>
+</div>
+{% endfor %}
+</div>
+</article>
+</div>
 </section>
 {% endblock %}

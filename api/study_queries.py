@@ -147,6 +147,38 @@ def get_study_home_stats() -> dict:
     }
 
 
+def get_study_type_composition() -> list[dict]:
+    rows = fetch_all("""
+        SELECT study_type, COUNT(*) AS studies
+        FROM gold_studies
+        GROUP BY study_type
+    """)
+    counts = {
+        row["study_type"]: row["studies"]
+        for row in rows
+    }
+    maximum = max(counts.values(), default=0)
+    short_labels = {
+        "ctb": "CTB",
+        "lecture_or_conference": "Palestras e conferências",
+        "weekly": "Estudos semanais",
+        "pfd": "PFD",
+    }
+
+    return [
+        {
+            "study_type": study_type,
+            "label": short_labels[study_type],
+            "count": counts.get(study_type, 0),
+            "percentage": (
+                round(counts.get(study_type, 0) * 100 / maximum)
+                if maximum else 0
+            ),
+        }
+        for study_type in STUDY_TYPES
+    ]
+
+
 def resource_fallback_label(resource_url: str) -> str:
     path = unquote(urlsplit(resource_url or "").path)
     filename = PurePosixPath(path).name

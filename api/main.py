@@ -8,6 +8,7 @@ from .study_queries import (
     get_study_catalog,
     get_study_detail,
     get_study_home_stats,
+    get_study_type_composition,
 )
 from shared.settings import AUDIO_RAW_DIR
 
@@ -41,6 +42,8 @@ def home(request: Request):
 
     stats = get_home_stats()
     study_stats = get_study_home_stats()
+    sermon_composition = get_sermon_testament_composition()
+    study_composition = get_study_type_composition()
 
     return render_template(
         request,
@@ -49,6 +52,8 @@ def home(request: Request):
             "request": request,
             "stats": stats,
             "study_stats": study_stats,
+            "sermon_composition": sermon_composition,
+            "study_composition": study_composition,
             "last_update": get_last_update()
         }
     )

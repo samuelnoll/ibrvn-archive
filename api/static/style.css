@@ -7,6 +7,8 @@
   --line: #dde1de;
   --green: #315e50;
   --green-soft: #e4ece8;
+  --ochre: #aa7540;
+  --ochre-soft: #eee1d4;
   --content-width: 920px;
 }
 
@@ -175,10 +177,6 @@ input {
 }
 
 .home-intro {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: end;
-  gap: 28px;
   padding: 42px 0 28px;
 }
 
@@ -199,23 +197,6 @@ input {
   margin: 7px 0 0;
   color: var(--muted);
   font-size: 13px;
-}
-
-.home-stats {
-  color: var(--muted);
-  font-size: 11px;
-  text-align: right;
-  white-space: nowrap;
-}
-
-.home-stats strong {
-  color: var(--ink);
-  font-size: 17px;
-  font-weight: 500;
-}
-
-.home-stats-row + .home-stats-row {
-  margin-top: 4px;
 }
 
 .home-library-grid {
@@ -246,9 +227,17 @@ input {
 }
 
 .home-library-button strong {
+  display: block;
   font-size: clamp(25px, 4vw, 32px);
   font-weight: 500;
   letter-spacing: -0.045em;
+}
+
+.home-library-copy small {
+  display: block;
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: 11px;
 }
 
 .home-library-arrow {
@@ -268,6 +257,165 @@ input {
 .home-library-button:hover .home-library-arrow {
   border-color: var(--green);
   transform: translateX(2px);
+}
+
+.home-insights {
+  margin-top: 34px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+}
+
+.home-chart-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 38px;
+}
+
+.home-chart-panel h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.home-chart-panel > p {
+  margin: 4px 0 20px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.home-testament-chart {
+  display: grid;
+  grid-template-columns: 126px minmax(0, 1fr);
+  align-items: center;
+  gap: 22px;
+  min-height: 152px;
+}
+
+.home-testament-donut {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 126px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: conic-gradient(
+    var(--green) 0 var(--new-testament-share),
+    var(--ochre) var(--new-testament-share) 100%
+  );
+}
+
+.home-testament-donut.is-empty {
+  background: var(--line);
+}
+
+.home-testament-donut::after {
+  position: absolute;
+  width: 88px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--page);
+  content: "";
+}
+
+.home-testament-donut > span {
+  z-index: 1;
+  max-width: 72px;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.home-testament-donut strong {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--ink);
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.home-chart-legend {
+  display: grid;
+  gap: 12px;
+}
+
+.home-chart-legend-row {
+  display: grid;
+  grid-template-columns: 9px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.home-chart-legend-row > strong {
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 500;
+  text-align: right;
+}
+
+.home-chart-legend-row > strong small {
+  display: block;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 400;
+}
+
+.home-chart-swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.home-chart-swatch.is-new-testament {
+  background: var(--green);
+}
+
+.home-chart-swatch.is-old-testament {
+  background: var(--ochre);
+}
+
+.home-chart-note {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.home-study-bars {
+  display: grid;
+  gap: 13px;
+  min-height: 152px;
+}
+
+.home-study-bar-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.home-study-bar-label strong {
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.home-study-bar-track {
+  height: 7px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: var(--green-soft);
+}
+
+.home-study-bar-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--green);
 }
 
 .search-field {
@@ -1016,18 +1164,16 @@ a.sermon-fact:hover {
   }
 
   .home-intro {
-    grid-template-columns: 1fr;
-    gap: 13px;
     padding-top: 32px;
   }
 
-  .home-stats {
-    text-align: left;
-    white-space: normal;
+  .home-library-grid,
+  .home-chart-grid {
+    grid-template-columns: 1fr;
   }
 
-  .home-library-grid {
-    grid-template-columns: 1fr;
+  .home-chart-grid {
+    gap: 32px;
   }
 
   .series-card-link {
