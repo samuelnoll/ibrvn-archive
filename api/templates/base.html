@@ -43,8 +43,8 @@
 <div class="site-nav-primary">
 <a href="/"{% if request.url.path == '/' %} aria-current="page"{% endif %}>In&iacute;cio</a>
 </div>
-<div class="sermon-nav-group">
-<a class="sermon-nav-label" href="/sermons"{% if request.url.path == '/sermons' %} aria-current="page"{% endif %}>Prega&ccedil;&otilde;es</a>
+<div class="archive-nav-group sermon-nav-group">
+<a class="archive-nav-label" href="/sermons"{% if request.url.path == '/sermons' %} aria-current="page"{% endif %}>Prega&ccedil;&otilde;es</a>
 <div class="sermon-nav-links">
 <a href="/books"{% if request.url.path.startswith('/books') %} aria-current="page"{% endif %}>Livros</a>
 <a href="/series"{% if request.url.path.startswith('/series') %} aria-current="page"{% endif %}>S&eacute;ries</a>
@@ -52,7 +52,9 @@
 <a href="/years"{% if request.url.path.startswith('/years') %} aria-current="page"{% endif %}>Anos</a>
 </div>
 </div>
-<a href="/studies"{% if request.url.path.startswith('/studies') %} aria-current="page"{% endif %}>Estudos</a>
+<div class="archive-nav-group study-nav-group">
+<a class="archive-nav-label" href="/studies"{% if request.url.path.startswith('/studies') %} aria-current="page"{% endif %}>Estudos</a>
+</div>
 </nav>
 </header>
 

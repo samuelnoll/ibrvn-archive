@@ -78,12 +78,16 @@ const renderSermon = sermon => {
   }
 
   const availableActions = actions.join("")
+  const audioPlayer = sermon.download_link
+    ? `<audio class="sermon-audio-player" controls preload="none" src="${escapeHTML(sermon.download_link)}">Seu navegador n\u00e3o oferece suporte ao player de \u00e1udio.</audio>`
+    : ""
 
   return `
     <article class="sermon-card">
       <time class="sermon-date">${escapeHTML(sermon.preaching_date)}</time>
       <h3 class="sermon-title">${escapeHTML(title)}</h3>
       <div class="sermon-facts">${facts.join("")}</div>
+      ${audioPlayer}
       ${availableActions ? `<div class="sermon-actions">${availableActions}</div>` : ""}
     </article>`
 }

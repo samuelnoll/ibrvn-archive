@@ -40,6 +40,12 @@
 {% endif %}
 </div>
 
+{% if s.download_link %}
+<audio class="sermon-audio-player" controls preload="none" src="{{ s.download_link }}">
+Seu navegador n&atilde;o oferece suporte ao player de &aacute;udio.
+</audio>
+{% endif %}
+
 {% if s.media_link or s.download_link or s.youtube_link or s.wordpress_link or s.transcript_available %}
 <div class="sermon-actions">
 {% if s.media_link %}

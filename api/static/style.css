@@ -124,7 +124,7 @@ input {
 
 .site-nav-primary,
 .sermon-nav-links,
-.sermon-nav-group {
+.archive-nav-group {
   display: flex;
   align-items: center;
 }
@@ -134,7 +134,7 @@ input {
   gap: 2px;
 }
 
-.sermon-nav-group {
+.archive-nav-group {
   gap: 3px;
   padding: 3px;
   border: 1px solid var(--line);
@@ -142,7 +142,7 @@ input {
   background: var(--page);
 }
 
-.site-nav .sermon-nav-label {
+.site-nav .archive-nav-label {
   padding: 6px 8px;
   color: var(--green);
   font-size: 9px;
@@ -221,7 +221,8 @@ input {
 .home-library-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 16px;
+  margin-top: 20px;
 }
 
 .home-library-button {
@@ -229,8 +230,8 @@ input {
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  min-height: 108px;
-  padding: 24px 26px;
+  min-height: 142px;
+  padding: 30px 30px;
   border: 1px solid #c8d5ce;
   border-radius: 9px;
   background: var(--surface);
@@ -408,6 +409,13 @@ a.sermon-fact:hover {
   color: var(--green);
 }
 
+.sermon-audio-player {
+  display: block;
+  width: 100%;
+  height: 36px;
+  margin-top: 13px;
+}
+
 [hidden] {
   display: none !important;
 }
@@ -537,6 +545,14 @@ a.sermon-fact:hover {
 .studies-page,
 .study-detail-page {
   padding-top: 34px;
+}
+
+.archive-index-title {
+  margin: 0 0 20px;
+  font-size: clamp(29px, 4.6vw, 38px);
+  font-weight: 500;
+  letter-spacing: -0.045em;
+  line-height: 1.12;
 }
 
 .study-type-heading p,
@@ -927,7 +943,7 @@ a.sermon-fact:hover {
     align-items: stretch;
   }
 
-  .sermon-nav-group {
+  .archive-nav-group {
     flex-wrap: wrap;
   }
 
