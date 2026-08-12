@@ -56,6 +56,8 @@ class SermonIndexTest(unittest.TestCase):
         )
         self.assertIn("const audioPlayer = sermon.download_link", rendered)
         self.assertIn('<script src="/static/audio-player.js" defer></script>', rendered)
+        self.assertEqual(2, rendered.count('class="site-nav-divider"'))
+        self.assertNotIn('class="archive-nav-group', rendered)
 
         for destination in ("/books", "/series", "/preachers", "/years"):
             self.assertIn(f'href="{destination}"', rendered)
@@ -126,7 +128,7 @@ class SermonIndexTest(unittest.TestCase):
         self.assertEqual(100, composition[0]["percentage"])
         self.assertEqual(50, composition[3]["percentage"])
 
-    def test_study_index_has_title_and_matching_header_group(self):
+    def test_study_index_has_title_and_active_header_link(self):
         request = SimpleNamespace(url=SimpleNamespace(path="/studies"))
         rendered = templates.env.get_template("studies.html").render(
             request=request,
@@ -135,11 +137,12 @@ class SermonIndexTest(unittest.TestCase):
         )
 
         self.assertIn('<h1 class="archive-index-title">Estudos</h1>', rendered)
-        self.assertIn('class="archive-nav-group study-nav-group"', rendered)
+        self.assertIn('href="/">Home</a>', rendered)
         self.assertIn(
-            'class="archive-nav-label" href="/studies" aria-current="page"',
+            'class="site-nav-section-link" href="/studies" aria-current="page"',
             rendered,
         )
+        self.assertNotIn('class="archive-nav-group', rendered)
 
 
 if __name__ == "__main__":

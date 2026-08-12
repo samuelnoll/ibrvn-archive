@@ -116,7 +116,7 @@ input {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 7px;
+  gap: 2px;
   padding: 4px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -124,33 +124,16 @@ input {
   font-size: 12px;
 }
 
-.site-nav-primary,
-.sermon-nav-links,
-.archive-nav-group {
-  display: flex;
-  align-items: center;
-}
-
-.site-nav-primary,
-.sermon-nav-links {
-  gap: 2px;
-}
-
-.archive-nav-group {
-  gap: 3px;
-  padding: 3px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: var(--page);
-}
-
-.site-nav .archive-nav-label {
-  padding: 6px 8px;
+.site-nav .site-nav-section-link {
   color: var(--green);
-  font-size: 9px;
   font-weight: 500;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+}
+
+.site-nav-divider {
+  width: 1px;
+  height: 22px;
+  margin: 0 4px;
+  background: var(--line);
 }
 
 .site-nav a {
@@ -1217,8 +1200,10 @@ a.sermon-fact:hover {
     align-items: stretch;
   }
 
-  .archive-nav-group {
-    flex-wrap: wrap;
+  .site-nav-divider {
+    width: 100%;
+    height: 1px;
+    margin: 2px 4px;
   }
 
   .section-heading span {
