@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 import argparse
+import os
 from collections import Counter
 from pathlib import Path
 
 from sqlalchemy import text
 
 from pipe.pipelines.studies.wordpress_parser import parse_public_studies
+from pipe.pipelines.studies.youtube_resource_titles import (
+    enrich_youtube_resource_titles,
+)
 from shared.db import get_engine, utc_now_iso
 from shared.study_db import (
     begin_study_processing_run,
@@ -91,6 +95,19 @@ def run(input_path: Path | None = None) -> dict[str, int]:
 
     try:
         studies = parse_public_studies(input_path)
+        enriched_youtube_titles = 0
+        youtube_api_key = os.getenv("YOUTUBE_API_KEY", "").strip()
+
+        if not youtube_api_key:
+            raise ValueError(
+                "YOUTUBE_API_KEY is required to resolve WordPress YouTube "
+                "resource titles."
+            )
+
+        studies, enriched_youtube_titles = enrich_youtube_resource_titles(
+            studies,
+            youtube_api_key,
+        )
         type_counts = Counter(study.study_type for study in studies)
         required_types = {
             "ctb",
@@ -153,6 +170,7 @@ def run(input_path: Path | None = None) -> dict[str, int]:
         result = {
             "studies": len(study_rows),
             "resources": len(resource_rows),
+            "youtube_titles_enriched": enriched_youtube_titles,
             **dict(sorted(type_counts.items())),
         }
         print(f"WordPress studies saved to independent silver tables: {result}")

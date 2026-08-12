@@ -13,6 +13,12 @@
 {% endfor %}
 </nav>
 
+<div class="search-field study-search-field">
+<svg class="icon" aria-hidden="true"><use href="#icon-search"></use></svg>
+<input class="search-input" id="study-search" type="search" placeholder="Buscar estudos por t&iacute;tulo..." autocomplete="off" aria-label="Buscar estudos">
+</div>
+<p class="study-search-status" id="study-search-status" aria-live="polite" hidden></p>
+
 {% for section in catalog %}
 <section class="study-type-section" id="{{ section.study_type }}">
 <div class="study-type-heading">
@@ -28,7 +34,7 @@
 <h3>{{ year_group.year }}</h3>
 <div class="study-grid">
 {% for study in year_group.studies %}
-<a class="study-card" href="/studies/{{ study.study_id | urlencode }}">
+<a class="study-card" href="/studies/{{ study.study_id | urlencode }}" data-study-search="{{ study.title }} {{ section.label }} {{ year_group.year }}">
 <span class="study-card-date">{% if study.study_date_display %}{{ study.study_date_display }}{% else %}Data n&atilde;o informada{% endif %}</span>
 <strong>{{ study.title }}</strong>
 {% if study.collection_title %}<small>{{ study.collection_title }}</small>{% endif %}
@@ -43,4 +49,48 @@
 </section>
 {% endfor %}
 </section>
+
+<script>
+const studySearch = document.getElementById("study-search")
+const studySearchStatus = document.getElementById("study-search-status")
+const studySections = [...document.querySelectorAll(".study-type-section")]
+
+const normalizeSearchText = value => String(value ?? "")
+  .normalize("NFD")
+  .replace(/[\u0300-\u036f]/g, "")
+  .toLocaleLowerCase("pt-BR")
+
+studySearch.addEventListener("input", () => {
+  const query = normalizeSearchText(studySearch.value.trim())
+  const searching = query.length >= 2
+  let resultCount = 0
+
+  studySections.forEach(section => {
+    let sectionCount = 0
+
+    section.querySelectorAll(".study-year-group").forEach(yearGroup => {
+      let yearCount = 0
+
+      yearGroup.querySelectorAll(".study-card").forEach(card => {
+        const matches = !searching
+          || normalizeSearchText(card.dataset.studySearch).includes(query)
+        card.hidden = !matches
+
+        if (matches) yearCount += 1
+      })
+
+      yearGroup.hidden = searching && yearCount === 0
+      sectionCount += yearCount
+    })
+
+    section.hidden = searching && sectionCount === 0
+    resultCount += sectionCount
+  })
+
+  studySearchStatus.hidden = !searching
+  studySearchStatus.textContent = resultCount
+    ? `${resultCount} estudo${resultCount === 1 ? "" : "s"} encontrado${resultCount === 1 ? "" : "s"}`
+    : "Nenhum estudo encontrado."
+})
+</script>
 {% endblock %}

@@ -6,6 +6,7 @@ import tempfile
 import unittest
 from collections import Counter
 from pathlib import Path
+from unittest.mock import patch
 
 from sqlalchemy import create_engine, text
 
@@ -15,6 +16,11 @@ from pipe.pipelines.studies.youtube_rules import (
     is_study_playlist,
 )
 from pipe.pipelines.studies.youtube_records import build_silver_records
+from pipe.pipelines.studies.youtube_resource_titles import (
+    enrich_youtube_resource_titles,
+    fetch_youtube_titles,
+    youtube_resource_reference,
+)
 from pipe.pipelines.studies.title_rules import clean_study_title, title_identity
 from pipe.pipelines.studies.wordpress_parser import parse_public_studies
 from shared.study_db import ensure_study_schema
@@ -97,7 +103,8 @@ def build_export() -> str:
             "Conference",
             "conference",
             '<p>Realizada em 02/11/14.</p>'
-            '<iframe src="https://youtu.be/abc123"></iframe>',
+            '<iframe src="https://youtu.be/abc123"></iframe>'
+            '<a href="https://www.youtube.com/playlist?list=PL123">Playlist</a>',
             parent=1298,
         ),
         item(7, "Weekly", "estudos-semanais"),
@@ -219,6 +226,85 @@ class PublicWordpressStudyParserTest(unittest.TestCase):
         self.assertEqual(
             title_identity("Hist\u00f3ria da Igreja"),
             title_identity("historia-da igreja"),
+        )
+
+    def test_wordpress_youtube_resources_receive_api_titles(self):
+        with tempfile.TemporaryDirectory() as directory:
+            xml_path = Path(directory) / "export.xml"
+            xml_path.write_text(build_export(), encoding="utf-8")
+            studies = parse_public_studies(xml_path)
+
+        requested_references = set()
+
+        def fake_title_fetcher(api_key, references):
+            self.assertEqual("test-key", api_key)
+            requested_references.update(references)
+            return {
+                ("video", "abc123"): "O que acontece com Beb\u00eas que morrem?",
+                ("playlist", "PL123"): "Hist\u00f3ria da Igreja",
+            }
+
+        enriched, count = enrich_youtube_resource_titles(
+            studies,
+            "test-key",
+            title_fetcher=fake_title_fetcher,
+        )
+        conference = next(
+            study for study in enriched if study.study_key == "wordpress:20"
+        )
+
+        self.assertEqual({
+            ("video", "abc123"),
+            ("playlist", "PL123"),
+        }, requested_references)
+        self.assertEqual(2, count)
+        self.assertEqual([
+            "O que acontece com Beb\u00eas que morrem?",
+            "Hist\u00f3ria da Igreja",
+        ], [resource.label for resource in conference.resources])
+        self.assertEqual(
+            ("video", "hGotSZSVjPo"),
+            youtube_resource_reference(
+                "http://www.youtube.com/watch?feature=player_embedded"
+                "&v=hGotSZSVjPo"
+            ),
+        )
+        self.assertEqual(
+            ("playlist", "PLqt8wXVRg36YyyRSnSjVLvdRjwpetzn8L"),
+            youtube_resource_reference(
+                "https://www.youtube.com/playlist?"
+                "list=PLqt8wXVRg36YyyRSnSjVLvdRjwpetzn8L"
+            ),
+        )
+
+    def test_youtube_title_lookup_uses_video_and_playlist_endpoints(self):
+        responses = [
+            {"items": [{
+                "id": "video-1",
+                "snippet": {"title": "Aula 1"},
+            }]},
+            {"items": [{
+                "id": "playlist-1",
+                "snippet": {"title": "Curso completo"},
+            }]},
+        ]
+
+        with patch(
+            "pipe.pipelines.studies.youtube_resource_titles.youtube_get",
+            side_effect=responses,
+        ) as youtube_get:
+            titles = fetch_youtube_titles("test-key", {
+                ("video", "video-1"),
+                ("playlist", "playlist-1"),
+            })
+
+        self.assertEqual({
+            ("video", "video-1"): "Aula 1",
+            ("playlist", "playlist-1"): "Curso completo",
+        }, titles)
+        self.assertEqual(
+            ["videos", "playlists"],
+            [call.args[1] for call in youtube_get.call_args_list],
         )
 
     def test_independent_study_schema_is_valid_sqlite(self):
@@ -345,7 +431,7 @@ class PublicWordpressStudyParserTest(unittest.TestCase):
             for study in studies
         }
         self.assertEqual(Counter({"audio": 1, "pdf": 1}), resources["wordpress:10"])
-        self.assertEqual(Counter({"youtube": 1}), resources["wordpress:20"])
+        self.assertEqual(Counter({"youtube": 2}), resources["wordpress:20"])
         self.assertEqual(
             Counter({"word": 1, "external_link": 1}),
             resources["wordpress:30"],

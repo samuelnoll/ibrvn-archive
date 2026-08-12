@@ -233,7 +233,7 @@ input {
   transform: translateY(-50%);
 }
 
-#search {
+.search-input {
   width: 100%;
   padding: 13px 15px 13px 43px;
   border: 1px solid var(--line);
@@ -243,12 +243,12 @@ input {
   color: var(--ink);
 }
 
-#search:focus {
+.search-input:focus {
   border-color: var(--green);
   box-shadow: 0 0 0 3px var(--green-soft);
 }
 
-#search::placeholder {
+.search-input::placeholder {
   color: #858b87;
 }
 
@@ -509,7 +509,30 @@ a.sermon-fact:hover {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
-  margin: 0 0 44px;
+  margin: 0 0 14px;
+}
+
+.study-search-field {
+  margin-bottom: 8px;
+}
+
+.study-search-status {
+  min-height: 16px;
+  margin: 0 0 28px;
+  color: var(--muted);
+  font-size: 10px;
+  text-align: right;
+}
+
+.study-search-status[hidden] {
+  display: block;
+  visibility: hidden;
+}
+
+.study-card[hidden],
+.study-year-group[hidden],
+.study-type-section[hidden] {
+  display: none;
 }
 
 .study-type-nav a {
