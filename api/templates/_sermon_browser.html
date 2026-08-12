@@ -79,7 +79,16 @@ const renderSermon = sermon => {
 
   const availableActions = actions.join("")
   const audioPlayer = sermon.download_link
-    ? `<audio class="sermon-audio-player" controls preload="none" src="${escapeHTML(sermon.download_link)}">Seu navegador n\u00e3o oferece suporte ao player de \u00e1udio.</audio>`
+    ? `<div class="sermon-player" data-audio-player>
+        <audio preload="metadata" src="${escapeHTML(sermon.download_link)}"></audio>
+        <button class="sermon-player-toggle" type="button" aria-label="Reproduzir \u00e1udio">${icon("play")}</button>
+        <input class="sermon-player-progress" type="range" min="0" max="100" step="0.1" value="0" aria-label="Posi\u00e7\u00e3o do \u00e1udio">
+        <div class="sermon-player-details">
+          <span class="sermon-player-time">0:00 / --:--</span>
+          <button class="sermon-player-mute" type="button" aria-label="Silenciar \u00e1udio">${icon("volume")}</button>
+          <input class="sermon-player-volume" type="range" min="0" max="1" step="0.05" value="1" aria-label="Volume">
+        </div>
+      </div>`
     : ""
 
   return `

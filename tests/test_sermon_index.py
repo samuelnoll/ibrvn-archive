@@ -36,19 +36,23 @@ class SermonIndexTest(unittest.TestCase):
         self.assertIn('href="/sermons" aria-current="page"', rendered)
         self.assertIn('<h1 class="archive-index-title">Prega&ccedil;&otilde;es</h1>', rendered)
         self.assertIn(
-            '<audio class="sermon-audio-player" controls preload="none" '
-            'src="/media/sample.mp3">',
+            '<div class="sermon-player" data-audio-player>',
             rendered,
         )
+        self.assertIn('<audio preload="metadata" src="/media/sample.mp3">', rendered)
+        self.assertIn('class="sermon-player-progress"', rendered)
+        self.assertIn('class="sermon-player-details"', rendered)
+        self.assertNotIn("sermon-audio-player", rendered)
         self.assertLess(
             rendered.index('class="sermon-facts"'),
-            rendered.index('class="sermon-audio-player"'),
+            rendered.index('class="sermon-player"'),
         )
         self.assertLess(
-            rendered.index('class="sermon-audio-player"'),
+            rendered.index('class="sermon-player"'),
             rendered.index('class="sermon-actions"'),
         )
         self.assertIn("const audioPlayer = sermon.download_link", rendered)
+        self.assertIn('<script src="/static/audio-player.js" defer></script>', rendered)
 
         for destination in ("/books", "/series", "/preachers", "/years"):
             self.assertIn(f'href="{destination}"', rendered)
