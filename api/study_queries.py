@@ -147,6 +147,26 @@ def get_study_home_stats() -> dict:
     }
 
 
+def get_recent_studies(limit: int = 3) -> list[dict]:
+    rows = fetch_all("""
+        SELECT
+            study_id,
+            study_type,
+            title,
+            study_date,
+            study_year,
+            source_system,
+            resource_count
+        FROM gold_studies
+        ORDER BY
+            CASE WHEN study_date IS NULL OR study_date = '' THEN 1 ELSE 0 END,
+            study_date DESC,
+            title
+        LIMIT :limit
+    """, {"limit": limit})
+    return [serialize_study(row) for row in rows]
+
+
 def resource_fallback_label(resource_url: str) -> str:
     path = unquote(urlsplit(resource_url or "").path)
     filename = PurePosixPath(path).name
