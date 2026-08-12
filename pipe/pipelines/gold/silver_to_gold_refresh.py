@@ -28,7 +28,6 @@ INSERT INTO gold_sermons (
     media_link,
     download_link,
     duration_seconds,
-    summary_short,
     transcript_available,
     last_aggregated_at
 )
@@ -44,22 +43,47 @@ VALUES (
     :media_link,
     :download_link,
     :duration_seconds,
-    :summary_short,
     :transcript_available,
     :last_aggregated_at
 )
 ON CONFLICT(canonical_sermon_id) DO UPDATE SET
     preaching_date = EXCLUDED.preaching_date,
-    title = EXCLUDED.title,
-    preacher_name = EXCLUDED.preacher_name,
-    text_reference = EXCLUDED.text_reference,
-    serie = EXCLUDED.serie,
-    youtube_link = EXCLUDED.youtube_link,
-    wordpress_link = EXCLUDED.wordpress_link,
-    media_link = EXCLUDED.media_link,
-    download_link = EXCLUDED.download_link,
-    duration_seconds = EXCLUDED.duration_seconds,
-    summary_short = EXCLUDED.summary_short,
+    title = COALESCE(
+        NULLIF(EXCLUDED.title, ''),
+        gold_sermons.title
+    ),
+    preacher_name = COALESCE(
+        NULLIF(EXCLUDED.preacher_name, ''),
+        gold_sermons.preacher_name
+    ),
+    text_reference = COALESCE(
+        NULLIF(EXCLUDED.text_reference, ''),
+        gold_sermons.text_reference
+    ),
+    serie = COALESCE(
+        NULLIF(EXCLUDED.serie, ''),
+        gold_sermons.serie
+    ),
+    youtube_link = COALESCE(
+        NULLIF(EXCLUDED.youtube_link, ''),
+        gold_sermons.youtube_link
+    ),
+    wordpress_link = COALESCE(
+        NULLIF(EXCLUDED.wordpress_link, ''),
+        gold_sermons.wordpress_link
+    ),
+    media_link = COALESCE(
+        NULLIF(EXCLUDED.media_link, ''),
+        gold_sermons.media_link
+    ),
+    download_link = COALESCE(
+        NULLIF(EXCLUDED.download_link, ''),
+        gold_sermons.download_link
+    ),
+    duration_seconds = COALESCE(
+        EXCLUDED.duration_seconds,
+        gold_sermons.duration_seconds
+    ),
     transcript_available = EXCLUDED.transcript_available,
     last_aggregated_at = EXCLUDED.last_aggregated_at
 """
@@ -75,12 +99,61 @@ def metadata_priority(row):
     return priorities.get(row.get("source_system", ""), 99)
 
 
-def choose_first_non_empty(rows, field_name):
+def is_placeholder_value(value):
 
-    for row in sorted(rows, key=metadata_priority):
+    normalized = str(value or "").strip().lower()
+
+    if not normalized:
+        return False
+
+    placeholders = {
+        "nome sobrenome",
+        "livro c:v-v",
+        "pregador dd mm aa",
+        "pregador_dd_mm_aa",
+    }
+
+    return normalized in placeholders
+
+
+def metadata_quality(row):
+
+    score = 0
+
+    for field_name in ("title", "preacher_name", "text_reference", "serie"):
         value = row.get(field_name)
 
-        if value not in (None, ""):
+        if value in (None, ""):
+            continue
+
+        if is_placeholder_value(value):
+            score -= 10
+            continue
+
+        score += 1
+
+    return score
+
+
+def sort_metadata_rows(rows):
+
+    return sorted(
+        rows,
+        key=lambda row: (
+            metadata_priority(row),
+            -metadata_quality(row),
+            row.get("processed_at", ""),
+            row.get("source_item_id", ""),
+        ),
+    )
+
+
+def choose_first_non_empty(rows, field_name):
+
+    for row in sort_metadata_rows(rows):
+        value = row.get(field_name)
+
+        if value not in (None, "") and not is_placeholder_value(value):
             return value
 
     return ""
@@ -144,20 +217,9 @@ def aggregate_gold_records():
         ORDER BY created_at DESC
     """)
 
-    summary_rows = fetch_all("""
-        SELECT
-            canonical_sermon_id,
-            summary_version,
-            summary_text,
-            created_at
-        FROM silver_summaries
-        ORDER BY created_at DESC
-    """)
-
     metadata_by_sermon = defaultdict(list)
     media_by_sermon = defaultdict(dict)
     transcripts_by_sermon = defaultdict(list)
-    summaries_by_sermon = defaultdict(list)
 
     for row in metadata_rows:
         metadata_by_sermon[row["canonical_sermon_id"]].append(row)
@@ -167,9 +229,6 @@ def aggregate_gold_records():
 
     for row in transcript_rows:
         transcripts_by_sermon[row["canonical_sermon_id"]].append(row)
-
-    for row in summary_rows:
-        summaries_by_sermon[row["canonical_sermon_id"]].append(row)
 
     aggregated_at = utc_now_iso()
     gold_records = []
@@ -182,7 +241,7 @@ def aggregate_gold_records():
             row for row in rows
             if row.get("source_system") == "wordpress"
         ]
-        latest_summary = summaries_by_sermon[canonical_sermon_id][0] if summaries_by_sermon[canonical_sermon_id] else {}
+        sorted_wordpress_rows = sort_metadata_rows(wordpress_rows)
 
         gold_records.append({
             "canonical_sermon_id": canonical_sermon_id,
@@ -193,13 +252,12 @@ def aggregate_gold_records():
             "serie": choose_first_non_empty(rows, "serie"),
             "youtube_link": youtube_media.get("source_url", ""),
             "wordpress_link": (
-                wordpress_rows[0]["source_item_id"]
-                if wordpress_rows else ""
+                sorted_wordpress_rows[0]["source_item_id"]
+                if sorted_wordpress_rows else ""
             ),
             "media_link": build_media_link(audio_media),
             "download_link": build_download_link(audio_media),
             "duration_seconds": audio_media.get("duration_seconds"),
-            "summary_short": latest_summary.get("summary_text", ""),
             "transcript_available": 1 if transcripts_by_sermon[canonical_sermon_id] else 0,
             "last_aggregated_at": aggregated_at,
         })

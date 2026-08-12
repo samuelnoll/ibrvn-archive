@@ -109,9 +109,18 @@ VALUES (
 )
 ON CONFLICT(canonical_sermon_id, asset_type) DO UPDATE SET
     source_url = EXCLUDED.source_url,
-    local_path = EXCLUDED.local_path,
-    duration_seconds = EXCLUDED.duration_seconds,
-    mime_type = EXCLUDED.mime_type
+    local_path = COALESCE(
+        NULLIF(EXCLUDED.local_path, ''),
+        silver_media_assets.local_path
+    ),
+    duration_seconds = COALESCE(
+        EXCLUDED.duration_seconds,
+        silver_media_assets.duration_seconds
+    ),
+    mime_type = COALESCE(
+        NULLIF(EXCLUDED.mime_type, ''),
+        silver_media_assets.mime_type
+    )
 """
 
 NS = {
@@ -343,6 +352,19 @@ def extract_preacher(content):
     return preacher
 
 
+def is_placeholder_sermon_content(content):
+
+    normalized_content = normalize_text(content)
+
+    placeholders = (
+        "nome sobrenome",
+        "livro c:v-v",
+        "pregador_dd_mm_aa",
+    )
+
+    return any(placeholder in normalized_content for placeholder in placeholders)
+
+
 def extract_file_info(mp3_url):
 
     if not mp3_url:
@@ -424,6 +446,12 @@ def choose_preacher(file_preacher_name, preacher_name):
     if key in PREACHER_MAP:
         return PREACHER_MAP[key]
 
+    if " " in key:
+        first_name = key.split()[0]
+
+        if first_name in PREACHER_MAP:
+            return PREACHER_MAP[first_name]
+
     return preacher.title()
 
 
@@ -484,8 +512,14 @@ def run():
             post_date = normalize_date(
                 item.findtext("wp:post_date", "", NS)
             )
+            post_status = normalize_text(
+                item.findtext("wp:status", "", NS)
+            )
 
             if post_date and post_date > MAX_DATE:
+                continue
+
+            if post_status and post_status != "publish":
                 continue
 
             source_link = item.findtext("link", "") or ""
@@ -516,6 +550,9 @@ def run():
             ]
 
             if "pregacoes" not in normalized_categories:
+                continue
+
+            if is_placeholder_sermon_content(content):
                 continue
 
             source_records.append({

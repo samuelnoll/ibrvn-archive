@@ -65,12 +65,13 @@ Current sources:
 
 Current orchestration shape in `homelab-airflow`:
 
-- `ibrvn_youtube_bronze_historic`
-- `ibrvn_youtube_bronze_weekly`
-- `ibrvn_wordpress_historic`
-- `ibrvn_metadata_silver`
-- `ibrvn_audio_enrichment`
-- `ibrvn_gold_refresh`
+- `ibrvn_sermon_youtube_bronze`
+- `ibrvn_sermon_youtube_weekly`
+- `ibrvn_sermon_wordpress_historic`
+- `ibrvn_sermon_metadata_silver`
+- `ibrvn_sermon_audio_enrichment`
+- `ibrvn_sermon_gold_refresh`
+- `ibrvn_sermon_critique`
 
 ## Data Model
 
@@ -85,14 +86,12 @@ is centered on:
 - `silver_sermon_metadata`
 - `silver_media_assets`
 - `silver_transcripts`
-- `silver_summaries`
 - `silver_critique`
 - `silver_processing_runs`
 
 Audio enrichment now calls the separate `homelab-ai` runtime for:
 
 - local transcription with `faster-whisper`
-- local summarization with Ollama
 
 The sermon critique flow is separate from that stack and calls the
 OpenAI API directly from `ibrvn-archive`, then reports through email and the
@@ -158,7 +157,7 @@ Start the homelab stack:
 docker compose up -d --build
 ```
 
-For local transcription and summary, start `homelab-ai` separately before
+For local transcription, start `homelab-ai` separately before
 running the audio enrichment pipeline.
 
 Run the API locally:
@@ -197,7 +196,7 @@ execution.
 - The pipeline container owns ingestion credentials and heavier dependencies.
 - Bronze stays on disk for source snapshots and raw files.
 - Silver and gold are stored in PostgreSQL in the homelab deployment.
-- Audio enrichment writes duration, transcript, and summary outputs into silver tables.
+- Audio enrichment writes duration and transcript outputs into silver tables.
 - Local AI inference for audio enrichment is expected to run in the separate `homelab-ai` stack.
 - Sermon critique generation uses the OpenAI API directly.
 

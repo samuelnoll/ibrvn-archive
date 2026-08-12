@@ -71,17 +71,6 @@ CREATE TABLE IF NOT EXISTS silver_transcripts (
 )
 """
 
-CREATE_SILVER_SUMMARIES_TABLE_SQL = """
-CREATE TABLE IF NOT EXISTS silver_summaries (
-    canonical_sermon_id TEXT NOT NULL,
-    summary_version INTEGER NOT NULL,
-    summary_text TEXT,
-    model_name TEXT,
-    created_at TEXT NOT NULL,
-    PRIMARY KEY (canonical_sermon_id, summary_version)
-)
-"""
-
 CREATE_SILVER_CRITIQUE_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS silver_critique (
     canonical_sermon_id TEXT NOT NULL,
@@ -118,7 +107,6 @@ CREATE TABLE IF NOT EXISTS gold_sermons (
     media_link TEXT,
     download_link TEXT,
     duration_seconds REAL,
-    summary_short TEXT,
     transcript_available INTEGER DEFAULT 0,
     last_aggregated_at TEXT NOT NULL
 )
@@ -185,7 +173,6 @@ def ensure_schema(conn):
     conn.execute(text(CREATE_SILVER_SERMON_METADATA_TABLE_SQL))
     conn.execute(text(CREATE_SILVER_MEDIA_ASSETS_TABLE_SQL))
     conn.execute(text(CREATE_SILVER_TRANSCRIPTS_TABLE_SQL))
-    conn.execute(text(CREATE_SILVER_SUMMARIES_TABLE_SQL))
     conn.execute(text(CREATE_SILVER_CRITIQUE_TABLE_SQL))
     conn.execute(text(CREATE_SILVER_PROCESSING_RUNS_TABLE_SQL))
     conn.execute(text(CREATE_GOLD_SERMONS_TABLE_SQL))

@@ -60,28 +60,11 @@ def run(loopback_days=None):
             {scope_sql}
         """, params)
 
-        summaries_missing = fetch_one(f"""
-            SELECT COUNT(DISTINCT sm.canonical_sermon_id) AS total
-            FROM silver_sermon_metadata sm
-            WHERE EXISTS (
-                SELECT 1
-                FROM silver_transcripts st
-                WHERE st.canonical_sermon_id = sm.canonical_sermon_id
-            )
-            AND NOT EXISTS (
-                SELECT 1
-                FROM silver_summaries ss
-                WHERE ss.canonical_sermon_id = sm.canonical_sermon_id
-            )
-            {scope_sql}
-        """, params)
-
         print("Audio data quality summary")
         print(f"loopback_days: {loopback_days if loopback_days is not None else 'all'}")
         print(f"downloads_missing: {downloads_missing['total'] if downloads_missing else 0}")
         print(f"durations_missing: {durations_missing['total'] if durations_missing else 0}")
         print(f"transcripts_missing: {transcripts_missing['total'] if transcripts_missing else 0}")
-        print(f"summaries_missing: {summaries_missing['total'] if summaries_missing else 0}")
 
         finish_processing_run(run_id, "success")
 
