@@ -5,7 +5,6 @@ from fastapi.staticfiles import StaticFiles
 from .db import initialize_database
 from .queries import *
 from .study_queries import (
-    get_recent_studies,
     get_study_catalog,
     get_study_detail,
     get_study_home_stats,
@@ -40,8 +39,6 @@ def render_template(request: Request, template_name: str, context: dict):
 @app.get("/")
 def home(request: Request):
 
-    sermons = get_recent_sermons(limit=3)
-    studies = get_recent_studies(limit=3)
     stats = get_home_stats()
     study_stats = get_study_home_stats()
 
@@ -50,8 +47,6 @@ def home(request: Request):
         "home.html",
         {
             "request": request,
-            "sermons": sermons,
-            "studies": studies,
             "stats": stats,
             "study_stats": study_stats,
             "last_update": get_last_update()

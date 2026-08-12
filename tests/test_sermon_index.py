@@ -22,16 +22,6 @@ SAMPLE_SERMON = {
     "transcript_available": 0,
 }
 
-SAMPLE_STUDY = {
-    "study_id": "study-sample",
-    "study_type": "ctb",
-    "study_type_label": "Centro de Treinamento Biblico",
-    "title": "Historia da Igreja",
-    "study_date_display": "09/08/2026",
-    "resource_count": 3,
-}
-
-
 class SermonIndexTest(unittest.TestCase):
     def test_sermon_index_route_and_navigation_are_available(self):
         self.assertIn("/sermons", {route.path for route in app.routes})
@@ -48,12 +38,10 @@ class SermonIndexTest(unittest.TestCase):
         for destination in ("/books", "/series", "/preachers", "/years"):
             self.assertIn(f'href="{destination}"', rendered)
 
-    def test_home_presents_recent_sermons_and_studies_without_search(self):
+    def test_home_presents_only_sermon_and_study_buttons(self):
         request = SimpleNamespace(url=SimpleNamespace(path="/"))
         rendered = templates.env.get_template("home.html").render(
             request=request,
-            sermons=[SAMPLE_SERMON],
-            studies=[SAMPLE_STUDY],
             stats={"sermons": 1, "preachers": 1, "series": 1},
             study_stats={"studies": 1, "resources": 1},
             last_update="agora",
@@ -61,10 +49,9 @@ class SermonIndexTest(unittest.TestCase):
 
         self.assertNotIn('id="search"', rendered)
         self.assertIn('class="home-library-grid"', rendered)
-        self.assertIn('class="home-library-heading" href="/sermons"', rendered)
-        self.assertIn('class="home-library-heading" href="/studies"', rendered)
-        self.assertIn("Pregacao de teste", rendered)
-        self.assertIn("Historia da Igreja", rendered)
+        self.assertEqual(2, rendered.count('class="home-library-button"'))
+        self.assertIn('class="home-library-button" href="/sermons"', rendered)
+        self.assertIn('class="home-library-button" href="/studies"', rendered)
 
 
 if __name__ == "__main__":

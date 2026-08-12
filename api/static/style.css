@@ -224,48 +224,30 @@ input {
   gap: 12px;
 }
 
-.home-library-panel {
-  overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  background: var(--surface);
-}
-
-.home-library-heading {
+.home-library-button {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  padding: 16px 18px;
-  border-bottom: 1px solid var(--line);
-  background: var(--page);
+  min-height: 108px;
+  padding: 24px 26px;
+  border: 1px solid #c8d5ce;
+  border-radius: 9px;
+  background: var(--surface);
   text-decoration: none;
-  transition: background-color 140ms ease, color 140ms ease;
+  transition: border-color 140ms ease, background-color 140ms ease, color 140ms ease;
 }
 
-.home-library-heading:hover {
+.home-library-button:hover {
+  border-color: var(--green);
   background: var(--green-soft);
   color: var(--green);
 }
 
-.home-library-heading small,
-.home-library-heading strong {
-  display: block;
-}
-
-.home-library-heading small {
-  margin-bottom: 2px;
-  color: var(--muted);
-  font-size: 9px;
+.home-library-button strong {
+  font-size: clamp(25px, 4vw, 32px);
   font-weight: 500;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.home-library-heading strong {
-  font-size: 20px;
-  font-weight: 500;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.045em;
 }
 
 .home-library-arrow {
@@ -282,63 +264,9 @@ input {
   transition: border-color 140ms ease, transform 140ms ease;
 }
 
-.home-library-heading:hover .home-library-arrow {
+.home-library-button:hover .home-library-arrow {
   border-color: var(--green);
   transform: translateX(2px);
-}
-
-.home-recent-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.home-recent-list li + li {
-  border-top: 1px solid var(--line);
-}
-
-.home-recent-item {
-  display: grid;
-  gap: 3px;
-  min-height: 100px;
-  padding: 14px 18px;
-  text-decoration: none;
-  transition: background-color 140ms ease;
-}
-
-.home-recent-item:hover {
-  background: #fbfcfb;
-}
-
-.home-recent-item time {
-  color: var(--green);
-  font-size: 9px;
-  font-weight: 500;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.home-recent-item strong {
-  align-self: center;
-  font-size: 14px;
-  font-weight: 500;
-  letter-spacing: -0.015em;
-  line-height: 1.3;
-  overflow-wrap: anywhere;
-}
-
-.home-recent-item span {
-  align-self: end;
-  color: var(--muted);
-  font-size: 10px;
-  line-height: 1.35;
-}
-
-.home-recent-empty {
-  padding: 24px 18px;
-  color: var(--muted);
-  font-size: 12px;
-  text-align: center;
 }
 
 .search-field {

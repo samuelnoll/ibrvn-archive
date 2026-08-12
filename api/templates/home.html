@@ -23,66 +23,14 @@
 </div>
 </section>
 
-<section class="home-library-grid" aria-label="Conte&uacute;dos recentes">
-<article class="home-library-panel">
-<a class="home-library-heading" href="/sermons">
-<span>
-<small>Acervo de mensagens</small>
+<section class="home-library-grid" aria-label="Acessar o acervo">
+<a class="home-library-button" href="/sermons">
 <strong>Prega&ccedil;&otilde;es</strong>
-</span>
 <span class="home-library-arrow" aria-hidden="true">&rarr;</span>
 </a>
-
-<ol class="home-recent-list">
-{% for sermon in sermons %}
-{% if sermon.transcript_available %}
-{% set sermon_url = '/transcripts/' ~ (sermon.canonical_sermon_id | urlencode) %}
-{% elif sermon.youtube_link %}
-{% set sermon_url = sermon.youtube_link %}
-{% elif sermon.wordpress_link %}
-{% set sermon_url = sermon.wordpress_link %}
-{% elif sermon.media_link %}
-{% set sermon_url = sermon.media_link %}
-{% elif sermon.download_link %}
-{% set sermon_url = sermon.download_link %}
-{% else %}
-{% set sermon_url = '/sermons' %}
-{% endif %}
-<li>
-<a class="home-recent-item" href="{{ sermon_url }}">
-<time>{{ sermon.preaching_date }}</time>
-<strong>{% if sermon.title %}{{ sermon.title }}{% elif sermon.text_reference %}{{ sermon.text_reference }}{% else %}Prega&ccedil;&atilde;o sem t&iacute;tulo{% endif %}</strong>
-<span>{% if sermon.preacher_name %}{{ sermon.preacher_name }}{% else %}Pregador n&atilde;o informado{% endif %}</span>
-</a>
-</li>
-{% else %}
-<li class="home-recent-empty">Nenhuma prega&ccedil;&atilde;o encontrada.</li>
-{% endfor %}
-</ol>
-</article>
-
-<article class="home-library-panel">
-<a class="home-library-heading" href="/studies">
-<span>
-<small>Biblioteca de forma&ccedil;&atilde;o</small>
+<a class="home-library-button" href="/studies">
 <strong>Estudos</strong>
-</span>
 <span class="home-library-arrow" aria-hidden="true">&rarr;</span>
 </a>
-
-<ol class="home-recent-list">
-{% for study in studies %}
-<li>
-<a class="home-recent-item" href="/studies/{{ study.study_id | urlencode }}">
-<time>{% if study.study_date_display %}{{ study.study_date_display }}{% else %}Sem data{% endif %}</time>
-<strong>{{ study.title }}</strong>
-<span>{{ study.study_type_label }} &middot; {{ study.resource_count }} recurso{% if study.resource_count != 1 %}s{% endif %}</span>
-</a>
-</li>
-{% else %}
-<li class="home-recent-empty">Nenhum estudo encontrado.</li>
-{% endfor %}
-</ol>
-</article>
 </section>
 {% endblock %}
