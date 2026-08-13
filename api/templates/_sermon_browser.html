@@ -45,6 +45,33 @@ const action = (name, label, href) => href
   ? `<a href="${escapeHTML(href)}">${icon(name)}<span>${label}</span></a>`
   : ""
 
+const renderAudioPlayer = source => `<div class="sermon-player" data-audio-player>
+  <audio preload="metadata" src="${escapeHTML(source)}"></audio>
+  <button class="sermon-player-toggle" type="button" aria-label="Reproduzir \u00e1udio">${icon("play")}</button>
+  <input class="sermon-player-progress" type="range" min="0" max="100" step="0.1" value="0" aria-label="Posi\u00e7\u00e3o do \u00e1udio">
+  <div class="sermon-player-details">
+    <span class="sermon-player-time">0:00 / --:--</span>
+    <div class="sermon-player-volume-control">
+      <button class="sermon-player-mute" type="button" aria-label="Silenciar \u00e1udio">${icon("volume")}</button>
+      <div class="sermon-player-volume-popover">
+        <input class="sermon-player-volume" type="range" min="0" max="1" step="0.05" value="1" aria-label="Volume">
+      </div>
+    </div>
+    <div class="sermon-player-speed-control">
+      <button class="sermon-player-speed-toggle" type="button" aria-haspopup="menu" aria-expanded="false">
+        <span class="sermon-player-speed-label">1x</span>
+      </button>
+      <div class="sermon-player-speed-menu" role="menu" hidden>
+        <button type="button" role="menuitemradio" aria-checked="false" data-playback-rate="2">2x</button>
+        <button type="button" role="menuitemradio" aria-checked="false" data-playback-rate="1.75">1,75x</button>
+        <button type="button" role="menuitemradio" aria-checked="false" data-playback-rate="1.5">1,5x</button>
+        <button type="button" role="menuitemradio" aria-checked="false" data-playback-rate="1.25">1,25x</button>
+        <button type="button" role="menuitemradio" aria-checked="true" data-playback-rate="1">1x</button>
+      </div>
+    </div>
+  </div>
+</div>`
+
 const renderSermon = sermon => {
   const hasTitle = Boolean(sermon.title)
   const title = sermon.title || sermon.text_reference || `Prega\u00e7\u00e3o de ${sermon.preaching_date || "data n\u00e3o informada"}`
@@ -79,16 +106,7 @@ const renderSermon = sermon => {
 
   const availableActions = actions.join("")
   const audioPlayer = sermon.download_link
-    ? `<div class="sermon-player" data-audio-player>
-        <audio preload="metadata" src="${escapeHTML(sermon.download_link)}"></audio>
-        <button class="sermon-player-toggle" type="button" aria-label="Reproduzir \u00e1udio">${icon("play")}</button>
-        <input class="sermon-player-progress" type="range" min="0" max="100" step="0.1" value="0" aria-label="Posi\u00e7\u00e3o do \u00e1udio">
-        <div class="sermon-player-details">
-          <span class="sermon-player-time">0:00 / --:--</span>
-          <button class="sermon-player-mute" type="button" aria-label="Silenciar \u00e1udio">${icon("volume")}</button>
-          <input class="sermon-player-volume" type="range" min="0" max="1" step="0.05" value="1" aria-label="Volume">
-        </div>
-      </div>`
+    ? renderAudioPlayer(sermon.download_link)
     : ""
 
   return `

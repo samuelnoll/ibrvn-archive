@@ -671,6 +671,94 @@ a.sermon-fact:hover {
   height: 15px;
 }
 
+.sermon-player-volume-control,
+.sermon-player-speed-control {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.sermon-player-volume-control {
+  width: 28px;
+  height: 28px;
+}
+
+.sermon-player-volume-popover {
+  position: absolute;
+  z-index: 4;
+  bottom: 24px;
+  left: 50%;
+  width: 34px;
+  height: 88px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+  box-shadow: 0 7px 20px rgb(18 36 26 / 12%);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 5px);
+  transition: opacity 120ms ease, transform 120ms ease, visibility 120ms ease;
+  visibility: hidden;
+}
+
+.sermon-player-volume-control:hover .sermon-player-volume-popover,
+.sermon-player-volume-control:focus-within .sermon-player-volume-popover {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, 0);
+  visibility: visible;
+}
+
+.sermon-player-volume {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 66px;
+  height: 18px;
+  margin: 0;
+  transform: translate(-50%, -50%) rotate(-90deg);
+}
+
+.sermon-player-speed-toggle {
+  min-width: 34px;
+  width: auto !important;
+  padding: 0 5px !important;
+  border-radius: 5px !important;
+  color: var(--muted) !important;
+  font-family: inherit;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.sermon-player-speed-menu {
+  position: absolute;
+  z-index: 5;
+  right: 0;
+  bottom: calc(100% + 4px);
+  display: grid;
+  width: 58px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+  box-shadow: 0 7px 20px rgb(18 36 26 / 12%);
+}
+
+.sermon-player .sermon-player-speed-menu button {
+  width: 100%;
+  height: 27px;
+  border-radius: 4px;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.sermon-player .sermon-player-speed-menu button[aria-checked="true"] {
+  background: var(--green-soft);
+  color: var(--green);
+  font-weight: 600;
+}
+
 .sermon-player + .sermon-actions {
   margin-top: 7px;
 }

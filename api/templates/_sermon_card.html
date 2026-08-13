@@ -2,6 +2,39 @@
 <svg class="icon" aria-hidden="true"><use href="#icon-{{ name }}"></use></svg>
 {%- endmacro %}
 
+{% macro audio_player(source, extra_class="") %}
+<div class="sermon-player{% if extra_class %} {{ extra_class }}{% endif %}" data-audio-player>
+<audio preload="metadata" src="{{ source }}"></audio>
+<button class="sermon-player-toggle" type="button" aria-label="Reproduzir &aacute;udio">
+{{ icon('play') }}
+</button>
+<input class="sermon-player-progress" type="range" min="0" max="100" step="0.1" value="0" aria-label="Posi&ccedil;&atilde;o do &aacute;udio">
+<div class="sermon-player-details">
+<span class="sermon-player-time">0:00 / --:--</span>
+<div class="sermon-player-volume-control">
+<button class="sermon-player-mute" type="button" aria-label="Silenciar &aacute;udio">
+{{ icon('volume') }}
+</button>
+<div class="sermon-player-volume-popover">
+<input class="sermon-player-volume" type="range" min="0" max="1" step="0.05" value="1" aria-label="Volume">
+</div>
+</div>
+<div class="sermon-player-speed-control">
+<button class="sermon-player-speed-toggle" type="button" aria-haspopup="menu" aria-expanded="false">
+<span class="sermon-player-speed-label">1x</span>
+</button>
+<div class="sermon-player-speed-menu" role="menu" hidden>
+<button type="button" role="menuitemradio" aria-checked="false" data-playback-rate="2">2x</button>
+<button type="button" role="menuitemradio" aria-checked="false" data-playback-rate="1.75">1,75x</button>
+<button type="button" role="menuitemradio" aria-checked="false" data-playback-rate="1.5">1,5x</button>
+<button type="button" role="menuitemradio" aria-checked="false" data-playback-rate="1.25">1,25x</button>
+<button type="button" role="menuitemradio" aria-checked="true" data-playback-rate="1">1x</button>
+</div>
+</div>
+</div>
+</div>
+{% endmacro %}
+
 {% macro sermon_card(s) %}
 <article class="sermon-card">
 <time class="sermon-date">{{ s.preaching_date }}</time>
@@ -41,20 +74,7 @@
 </div>
 
 {% if s.download_link %}
-<div class="sermon-player" data-audio-player>
-<audio preload="metadata" src="{{ s.download_link }}"></audio>
-<button class="sermon-player-toggle" type="button" aria-label="Reproduzir &aacute;udio">
-{{ icon('play') }}
-</button>
-<input class="sermon-player-progress" type="range" min="0" max="100" step="0.1" value="0" aria-label="Posi&ccedil;&atilde;o do &aacute;udio">
-<div class="sermon-player-details">
-<span class="sermon-player-time">0:00 / --:--</span>
-<button class="sermon-player-mute" type="button" aria-label="Silenciar &aacute;udio">
-{{ icon('volume') }}
-</button>
-<input class="sermon-player-volume" type="range" min="0" max="1" step="0.05" value="1" aria-label="Volume">
-</div>
-</div>
+{{ audio_player(s.download_link) }}
 {% endif %}
 
 {% if s.media_link or s.download_link or s.youtube_link or s.wordpress_link or s.transcript_available %}

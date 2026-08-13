@@ -31,6 +31,16 @@
     const time = player.querySelector(".sermon-player-time")
     const mute = player.querySelector(".sermon-player-mute")
     const volume = player.querySelector(".sermon-player-volume")
+    const speedControl = player.querySelector(".sermon-player-speed-control")
+    const speedToggle = player.querySelector(".sermon-player-speed-toggle")
+    const speedLabel = player.querySelector(".sermon-player-speed-label")
+    const speedMenu = player.querySelector(".sermon-player-speed-menu")
+    const speedOptions = player.querySelectorAll("[data-playback-rate]")
+
+    const closeSpeedMenu = () => {
+      speedMenu.hidden = true
+      speedToggle.setAttribute("aria-expanded", "false")
+    }
 
     const updateTime = () => {
       time.textContent = `${formatTime(audio.currentTime)} / ${formatTime(audio.duration)}`
@@ -84,6 +94,40 @@
       updateVolume()
     })
 
+    speedToggle.addEventListener("click", () => {
+      const willOpen = speedMenu.hidden
+
+      document.querySelectorAll(".sermon-player-speed-menu").forEach(menu => {
+        menu.hidden = true
+        menu.parentElement
+          ?.querySelector(".sermon-player-speed-toggle")
+          ?.setAttribute("aria-expanded", "false")
+      })
+
+      speedMenu.hidden = !willOpen
+      speedToggle.setAttribute("aria-expanded", String(willOpen))
+    })
+
+    speedOptions.forEach(option => {
+      option.addEventListener("click", () => {
+        const playbackRate = Number(option.dataset.playbackRate)
+        audio.playbackRate = playbackRate
+        speedLabel.textContent = option.textContent
+        speedOptions.forEach(item => {
+          item.setAttribute("aria-checked", String(item === option))
+        })
+        closeSpeedMenu()
+        speedToggle.focus()
+      })
+    })
+
+    speedControl.addEventListener("keydown", event => {
+      if (event.key === "Escape") {
+        closeSpeedMenu()
+        speedToggle.focus()
+      }
+    })
+
     audio.addEventListener("play", () => {
       player.classList.add("is-started", "is-playing")
       toggle.setAttribute("aria-label", "Pausar \u00e1udio")
@@ -116,6 +160,17 @@
 
   document.addEventListener("DOMContentLoaded", () => {
     initializeWithin(document)
+
+    document.addEventListener("click", event => {
+      document.querySelectorAll(".sermon-player-speed-control").forEach(control => {
+        if (control.contains(event.target)) return
+
+        const menu = control.querySelector(".sermon-player-speed-menu")
+        const toggle = control.querySelector(".sermon-player-speed-toggle")
+        menu.hidden = true
+        toggle.setAttribute("aria-expanded", "false")
+      })
+    })
 
     new MutationObserver(mutations => {
       mutations.forEach(mutation => {

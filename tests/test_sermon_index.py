@@ -45,6 +45,10 @@ class SermonIndexTest(unittest.TestCase):
         self.assertIn('<audio preload="metadata" src="/media/sample.mp3">', rendered)
         self.assertIn('class="sermon-player-progress"', rendered)
         self.assertIn('class="sermon-player-details"', rendered)
+        self.assertIn('class="sermon-player-volume-popover"', rendered)
+        self.assertIn('class="sermon-player-speed-toggle"', rendered)
+        self.assertIn('data-playback-rate="1.25">1,25x', rendered)
+        self.assertIn('data-playback-rate="2">2x', rendered)
         self.assertNotIn("sermon-audio-player", rendered)
         self.assertLess(
             rendered.index('class="sermon-facts"'),
@@ -55,6 +59,9 @@ class SermonIndexTest(unittest.TestCase):
             rendered.index('class="sermon-actions"'),
         )
         self.assertIn("const audioPlayer = sermon.download_link", rendered)
+        self.assertIn("const renderAudioPlayer = source", rendered)
+        self.assertGreaterEqual(rendered.count('class="sermon-player-volume-popover"'), 2)
+        self.assertGreaterEqual(rendered.count('class="sermon-player-speed-menu"'), 2)
         self.assertIn('<script src="/static/audio-player.js" defer></script>', rendered)
         self.assertEqual(2, rendered.count('class="site-nav-divider"'))
         self.assertNotIn('class="archive-nav-group', rendered)
