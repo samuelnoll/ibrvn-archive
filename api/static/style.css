@@ -1123,6 +1123,140 @@ a.sermon-fact:hover {
   color: var(--green);
 }
 
+.study-resource-groups {
+  gap: 34px;
+}
+
+.study-resource-group .resource-group-heading {
+  margin-bottom: 0;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--ink);
+}
+
+.study-audio-list {
+  display: grid;
+}
+
+.study-audio-resource {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(250px, 0.82fr);
+  align-items: center;
+  gap: 26px;
+  min-height: 104px;
+  padding: 15px 2px;
+  border-bottom: 1px solid var(--line);
+}
+
+.study-resource-summary {
+  min-width: 0;
+}
+
+.study-resource-name {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.study-resource-name > .icon {
+  width: 17px;
+  height: 17px;
+  margin-top: 1px;
+  flex: 0 0 auto;
+  color: var(--green);
+}
+
+.study-resource-name > div {
+  min-width: 0;
+}
+
+.study-resource-name h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.study-resource-name span {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.study-resource-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+  padding-left: 27px;
+}
+
+.study-resource-actions a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 29px;
+  padding: 5px 9px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 10px;
+  text-decoration: none;
+  transition: border-color 140ms ease, background-color 140ms ease,
+    color 140ms ease;
+}
+
+.study-resource-actions a:hover {
+  border-color: #b9c9c0;
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.study-resource-actions .study-resource-download {
+  border-color: #c8d5ce;
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.study-resource-actions .icon {
+  width: 14px;
+  height: 14px;
+}
+
+.study-resource-player {
+  width: 100%;
+  min-width: 0;
+  margin-top: 0;
+}
+
+.study-resource-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.study-resource-tile {
+  display: flex;
+  min-width: 0;
+  min-height: 112px;
+  padding: 14px;
+  flex-direction: column;
+  justify-content: space-between;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+}
+
+.study-resource-tile .study-resource-actions {
+  margin-top: 14px;
+}
+
 .site-footer {
   padding-top: 16px;
   color: var(--muted);
@@ -1182,8 +1316,18 @@ a.sermon-fact:hover {
   }
 
   .study-grid,
-  .resource-list {
+  .resource-list,
+  .study-resource-grid {
     grid-template-columns: 1fr;
+  }
+
+  .study-audio-resource {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .study-resource-player {
+    padding-left: 27px;
   }
 }
 
@@ -1228,6 +1372,11 @@ a.sermon-fact:hover {
 
   .study-type-nav {
     grid-template-columns: 1fr;
+  }
+
+  .study-resource-actions,
+  .study-resource-player {
+    padding-left: 0;
   }
 }
 

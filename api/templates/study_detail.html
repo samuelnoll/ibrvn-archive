@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_sermon_card.html" import icon %}
 
 {% block title %}{{ study.title }} | Estudos | Arquivo IBRVN{% endblock %}
 
@@ -26,25 +27,93 @@
 {% endif %}
 </header>
 
-<div class="resource-groups">
+<div class="resource-groups study-resource-groups">
 {% for group in study.resource_groups %}
-<section class="resource-group">
+<section class="resource-group study-resource-group study-resource-group-{{ group.layout }}">
 <div class="resource-group-heading">
-<svg class="icon" aria-hidden="true"><use href="#icon-{{ group.icon }}"></use></svg>
+{{ icon(group.icon) }}
 <h2>{{ group.label }}</h2>
 <span>{{ group.resources | length }}</span>
 </div>
 
-<ul class="resource-list">
+{% if group.layout == "audio" %}
+<div class="study-audio-list">
 {% for resource in group.resources %}
-<li>
+<article class="study-audio-resource">
+<div class="study-resource-summary">
+<div class="study-resource-name">
+{{ icon('headphones') }}
+<div>
+<h3>{{ resource.display_label }}</h3>
+{% if resource.duration_display %}<span>{{ resource.duration_display }}</span>{% endif %}
+</div>
+</div>
+<div class="study-resource-actions">
 <a href="{{ resource.source_url }}" target="_blank" rel="noopener noreferrer">
-<span>{{ resource.display_label }}</span>
-<svg class="icon" aria-hidden="true"><use href="#icon-external-link"></use></svg>
+{{ icon('external-link') }}<span>Original</span>
 </a>
+{% if resource.download_link %}
+<a class="study-resource-download" href="{{ resource.download_link }}" download>
+{{ icon('download') }}<span>Download</span>
+</a>
+{% endif %}
+{% if resource.transcript_available %}
+<a href="/study-transcripts/{{ resource.resource_id | urlencode }}">
+{{ icon('file-text') }}<span>Transcri&ccedil;&atilde;o</span>
+</a>
+{% endif %}
+</div>
+</div>
+
+{% if resource.has_local_audio %}
+<div class="sermon-player study-resource-player" data-audio-player>
+<audio preload="metadata" src="{{ resource.download_link }}"></audio>
+<button class="sermon-player-toggle" type="button" aria-label="Reproduzir &aacute;udio">
+{{ icon('play') }}
+</button>
+<input class="sermon-player-progress" type="range" min="0" max="100" step="0.1" value="0" aria-label="Posi&ccedil;&atilde;o do &aacute;udio">
+<div class="sermon-player-details">
+<span class="sermon-player-time">0:00 / --:--</span>
+<button class="sermon-player-mute" type="button" aria-label="Silenciar &aacute;udio">
+{{ icon('volume') }}
+</button>
+<input class="sermon-player-volume" type="range" min="0" max="1" step="0.05" value="1" aria-label="Volume">
+</div>
+</div>
+{% endif %}
+</article>
+{% endfor %}
+</div>
+{% else %}
+<ul class="study-resource-grid">
+{% for resource in group.resources %}
+<li class="study-resource-tile">
+<div class="study-resource-name">
+{{ icon(group.icon) }}
+<div>
+<h3>{{ resource.display_label }}</h3>
+{% if resource.duration_display %}<span>{{ resource.duration_display }}</span>{% endif %}
+</div>
+</div>
+<div class="study-resource-actions">
+<a href="{{ resource.source_url }}" target="_blank" rel="noopener noreferrer">
+{{ icon('external-link') }}<span>Original</span>
+</a>
+{% if resource.download_link %}
+<a class="study-resource-download" href="{{ resource.download_link }}" download>
+{{ icon('download') }}<span>Download</span>
+</a>
+{% endif %}
+{% if resource.transcript_available %}
+<a href="/study-transcripts/{{ resource.resource_id | urlencode }}">
+{{ icon('file-text') }}<span>Transcri&ccedil;&atilde;o</span>
+</a>
+{% endif %}
+</div>
 </li>
 {% endfor %}
 </ul>
+{% endif %}
 </section>
 {% else %}
 <p class="empty-state">Nenhum recurso foi encontrado para este estudo.</p>

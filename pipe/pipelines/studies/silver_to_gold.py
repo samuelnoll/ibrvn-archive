@@ -5,6 +5,9 @@ from collections import Counter
 
 from sqlalchemy import text
 
+from pipe.pipelines.studies.resource_enrichment.silver_to_gold import (
+    apply_enrichments,
+)
 from pipe.pipelines.studies.title_rules import clean_study_title, title_identity
 from shared.db import get_engine, utc_now_iso
 from shared.study_db import (
@@ -252,6 +255,8 @@ def run() -> dict[str, int]:
 
             if origin_rows:
                 conn.execute(text(INSERT_GOLD_ORIGIN_SQL), origin_rows)
+
+            apply_enrichments(conn)
 
         finish_study_processing_run(run_id, "success")
         result = {

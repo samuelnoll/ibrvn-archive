@@ -324,6 +324,8 @@ class PublicWordpressStudyParserTest(unittest.TestCase):
             "silver_study_wordpress_resources",
             "silver_study_youtube",
             "silver_study_youtube_resources",
+            "silver_study_resource_assets",
+            "silver_study_resource_transcripts",
             "gold_studies",
             "gold_study_resources",
             "gold_study_origins",
@@ -341,6 +343,7 @@ class PublicWordpressStudyParserTest(unittest.TestCase):
             }
 
         self.assertTrue(expected_tables.issubset(actual_tables))
+        self.assertNotIn("gold_study_resource_enrichments", actual_tables)
 
     def test_gold_merges_equal_titles_and_keeps_every_origin(self):
         engine = create_engine("sqlite:///:memory:")

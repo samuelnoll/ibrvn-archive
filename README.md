@@ -120,9 +120,16 @@ Study tables:
 - `silver_study_wordpress_resources`
 - `silver_study_youtube`
 - `silver_study_youtube_resources`
+- `silver_study_resource_assets`
+- `silver_study_resource_transcripts`
 - `silver_study_processing_runs`
 - `gold_studies`
 - `gold_study_resources`
+
+Like `gold_sermons`, `gold_study_resources` carries the API-facing enrichment
+fields directly: local filename/path, download link, local MIME type, duration,
+and transcript availability. Detailed assets and transcript text remain in the
+separate study silver tables.
 
 WordPress ingestion uses only published pages directly reachable from the
 `ctb`, `palestras-conferencias`, and `materiais-de-estudo` public roots. The
@@ -140,6 +147,11 @@ python -m pipe.pipelines.studies.youtube_source_to_bronze
 python -m pipe.pipelines.studies.youtube_source_to_bronze --loopback-days 30
 python -m pipe.pipelines.studies.youtube_bronze_to_silver
 python -m pipe.pipelines.studies.silver_to_gold
+python -m pipe.pipelines.studies.resource_enrichment.download_resources
+python -m pipe.pipelines.studies.resource_enrichment.measure_audio_duration
+python -m pipe.pipelines.studies.resource_enrichment.transcribe_audio
+python -m pipe.pipelines.studies.resource_enrichment.data_quality
+python -m pipe.pipelines.studies.resource_enrichment.silver_to_gold
 ```
 
 Study orchestration is isolated in these DAGs:
@@ -148,6 +160,14 @@ Study orchestration is isolated in these DAGs:
 - `ibrvn_study_youtube_bronze`
 - `ibrvn_study_metadata_silver`
 - `ibrvn_study_gold_refresh`
+- `ibrvn_study_resource_enrichment`
+
+`ibrvn_study_resource_enrichment` accepts optional `loopback_days` and
+`skip_transcription` DAG configuration parameters. Files are stored separately
+from sermon audio under `ARCHIVE_STUDY_RESOURCE_RAW_DIR`, which defaults to
+`/app/data/resource/raw` in the container. Direct audio and documents preserve
+their original filename. YouTube videos are converted to MP3 only for studies
+that do not already contain a direct audio resource.
 
 ## Running
 

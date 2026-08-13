@@ -31,6 +31,25 @@ RESOURCE_TYPES = OrderedDict([
     ("internal_link", ("Links da IBRVN", "external-link")),
 ])
 
+DOCUMENT_RESOURCE_TYPES = {
+    "pdf",
+    "word",
+    "document",
+    "presentation",
+    "spreadsheet",
+    "archive",
+}
+
+RESOURCE_GROUPS = OrderedDict([
+    ("audio", ("\u00c1udios", "headphones", "audio")),
+    ("documents", ("Documentos", "file-text", "grid")),
+    ("youtube", ("YouTube", "youtube", "grid")),
+    ("video_platform", ("V\u00eddeos", "youtube", "grid")),
+    ("video_file", ("Arquivos de v\u00eddeo", "youtube", "grid")),
+    ("external_link", ("Links externos", "external-link", "grid")),
+    ("internal_link", ("Links da IBRVN", "external-link", "grid")),
+])
+
 
 def format_date(value) -> str:
     if not value:
@@ -185,6 +204,50 @@ def resource_fallback_label(resource_url: str) -> str:
     return filename or resource_url or "Abrir recurso"
 
 
+def format_resource_duration(value) -> str:
+    if value in (None, ""):
+        return ""
+
+    try:
+        total_seconds = max(0, int(float(value)))
+    except (TypeError, ValueError):
+        return ""
+
+    hours, remainder = divmod(total_seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+
+    if hours:
+        return f"{hours}h {minutes:02d}min"
+
+    if minutes:
+        return f"{minutes} min"
+
+    return f"{seconds}s"
+
+
+def is_local_mp3(resource: dict) -> bool:
+    download_path = unquote(urlsplit(resource.get("download_link") or "").path)
+    local_mime_type = str(resource.get("local_mime_type") or "").lower()
+    return bool(resource.get("download_link")) and (
+        local_mime_type in {"audio/mpeg", "audio/mp3"}
+        or download_path.lower().endswith(".mp3")
+    )
+
+
+def resource_group_key(resource: dict) -> str:
+
+    if (
+        resource.get("resource_type") == "audio"
+        or is_local_mp3(resource)
+    ):
+        return "audio"
+
+    if resource.get("resource_type") in DOCUMENT_RESOURCE_TYPES:
+        return "documents"
+
+    return resource.get("resource_type") or "external_link"
+
+
 def get_study_detail(study_id: str) -> dict | None:
     row = fetch_one("""
         SELECT *
@@ -221,7 +284,13 @@ def get_study_detail(study_id: str) -> dict | None:
             source_url,
             mime_type,
             source_system,
-            position
+            position,
+            original_filename,
+            local_path,
+            download_link,
+            local_mime_type,
+            duration_seconds,
+            transcript_available
         FROM gold_study_resources
         WHERE study_id = :study_id
         ORDER BY position, resource_type, label
@@ -229,30 +298,84 @@ def get_study_detail(study_id: str) -> dict | None:
     grouped = OrderedDict()
 
     for resource in resources:
-        resource_type = resource.get("resource_type") or "external_link"
-        label, icon = RESOURCE_TYPES.get(
-            resource_type,
-            (resource_type.replace("_", " ").title(), "external-link"),
+        group_key = resource_group_key(resource)
+        default_label, default_icon = RESOURCE_TYPES.get(
+            group_key,
+            (group_key.replace("_", " ").title(), "external-link"),
         )
-        group = grouped.setdefault(resource_type, {
-            "resource_type": resource_type,
+        label, icon, layout = RESOURCE_GROUPS.get(
+            group_key,
+            (default_label, default_icon, "grid"),
+        )
+        group = grouped.setdefault(group_key, {
+            "resource_type": group_key,
             "label": label,
             "icon": icon,
+            "layout": layout,
             "resources": [],
         })
         serialized = dict(resource)
         serialized["display_label"] = (
-            str(resource.get("label") or "").strip()
+            str(resource.get("original_filename") or "").strip()
+            or str(resource.get("label") or "").strip()
             or resource_fallback_label(resource.get("source_url", ""))
         )
+        serialized["duration_display"] = format_resource_duration(
+            resource.get("duration_seconds")
+        )
+        serialized["has_local_audio"] = is_local_mp3(resource)
         group["resources"].append(serialized)
 
     ordered_groups = []
 
-    for resource_type in RESOURCE_TYPES:
-        if resource_type in grouped:
-            ordered_groups.append(grouped.pop(resource_type))
+    for group_key in RESOURCE_GROUPS:
+        if group_key in grouped:
+            ordered_groups.append(grouped.pop(group_key))
 
     ordered_groups.extend(grouped.values())
     study["resource_groups"] = ordered_groups
     return study
+
+
+def get_study_resource_transcript(resource_id: str) -> dict | None:
+    row = fetch_one("""
+        SELECT
+            resources.resource_id,
+            resources.study_id,
+            COALESCE(
+                resources.original_filename,
+                resources.label,
+                assets.original_filename
+            ) AS resource_label,
+            studies.title AS study_title,
+            studies.study_type,
+            studies.study_date,
+            transcripts.transcript_version,
+            transcripts.language,
+            transcripts.transcript_text,
+            transcripts.model_name,
+            transcripts.created_at
+        FROM gold_study_resources AS resources
+        JOIN gold_studies AS studies
+            ON studies.study_id = resources.study_id
+        JOIN silver_study_resource_assets AS assets
+            ON assets.resource_id = resources.resource_id
+        JOIN silver_study_resource_transcripts AS transcripts
+            ON transcripts.asset_id = assets.asset_id
+        WHERE resources.resource_id = :resource_id
+        ORDER BY
+            transcripts.transcript_version DESC,
+            transcripts.created_at DESC
+        LIMIT 1
+    """, {"resource_id": resource_id})
+
+    if not row:
+        return None
+
+    transcript = dict(row)
+    transcript["study_date_display"] = format_date(transcript.get("study_date"))
+    transcript["study_type_label"] = STUDY_TYPES.get(
+        transcript.get("study_type"),
+        transcript.get("study_type", ""),
+    )
+    return transcript

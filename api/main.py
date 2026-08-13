@@ -8,18 +8,25 @@ from .study_queries import (
     get_study_catalog,
     get_study_detail,
     get_study_home_stats,
+    get_study_resource_transcript,
     get_study_type_composition,
 )
-from shared.settings import AUDIO_RAW_DIR
+from shared.settings import AUDIO_RAW_DIR, STUDY_RESOURCE_RAW_DIR
 
 app = FastAPI()
 
 templates = Jinja2Templates(directory="api/templates")
 
 AUDIO_RAW_DIR.mkdir(parents=True, exist_ok=True)
+STUDY_RESOURCE_RAW_DIR.mkdir(parents=True, exist_ok=True)
 
 app.mount("/static", StaticFiles(directory="api/static"), name="static")
 app.mount("/media", StaticFiles(directory=str(AUDIO_RAW_DIR)), name="media")
+app.mount(
+    "/study-media",
+    StaticFiles(directory=str(STUDY_RESOURCE_RAW_DIR)),
+    name="study-media",
+)
 
 
 @app.on_event("startup")
@@ -267,6 +274,25 @@ def studies(request: Request):
         {
             "request": request,
             "catalog": get_study_catalog(),
+            "last_update": get_last_update(),
+        },
+    )
+
+
+@app.get("/study-transcripts/{resource_id}")
+def study_resource_transcript(request: Request, resource_id: str):
+
+    transcript = get_study_resource_transcript(resource_id)
+
+    if not transcript:
+        raise HTTPException(status_code=404, detail="Study transcript not found")
+
+    return render_template(
+        request,
+        "study_resource_transcript.html",
+        {
+            "request": request,
+            "transcript": transcript,
             "last_update": get_last_update(),
         },
     )

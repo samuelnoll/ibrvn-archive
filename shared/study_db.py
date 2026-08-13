@@ -72,6 +72,36 @@ CREATE TABLE IF NOT EXISTS silver_study_youtube_resources (
 )
 """
 
+CREATE_SILVER_STUDY_RESOURCE_ASSETS_SQL = """
+CREATE TABLE IF NOT EXISTS silver_study_resource_assets (
+    asset_id TEXT PRIMARY KEY,
+    resource_id TEXT NOT NULL,
+    study_id TEXT NOT NULL,
+    asset_type TEXT NOT NULL,
+    source_kind TEXT NOT NULL,
+    source_url TEXT NOT NULL,
+    original_filename TEXT NOT NULL,
+    local_path TEXT NOT NULL,
+    mime_type TEXT,
+    duration_seconds REAL,
+    downloaded_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    UNIQUE (resource_id, local_path)
+)
+"""
+
+CREATE_SILVER_STUDY_RESOURCE_TRANSCRIPTS_SQL = """
+CREATE TABLE IF NOT EXISTS silver_study_resource_transcripts (
+    asset_id TEXT NOT NULL,
+    transcript_version INTEGER NOT NULL,
+    language TEXT,
+    transcript_text TEXT NOT NULL,
+    model_name TEXT,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (asset_id, transcript_version)
+)
+"""
+
 CREATE_GOLD_STUDIES_SQL = """
 CREATE TABLE IF NOT EXISTS gold_studies (
     study_id TEXT PRIMARY KEY,
@@ -98,6 +128,13 @@ CREATE TABLE IF NOT EXISTS gold_study_resources (
     mime_type TEXT,
     source_system TEXT NOT NULL,
     position INTEGER NOT NULL,
+    original_filename TEXT,
+    local_path TEXT,
+    download_link TEXT,
+    local_mime_type TEXT,
+    duration_seconds REAL,
+    transcript_available INTEGER NOT NULL DEFAULT 0,
+    resource_enriched_at TEXT,
     UNIQUE (study_id, canonical_url)
 )
 """
@@ -113,7 +150,6 @@ CREATE TABLE IF NOT EXISTS gold_study_origins (
 )
 """
 
-
 def ensure_study_schema(conn) -> None:
     conn.execute(text(CREATE_SILVER_STUDY_PROCESSING_RUNS_SQL))
     conn.execute(text(CREATE_SILVER_STUDY_WORDPRESS_SQL))
@@ -121,8 +157,11 @@ def ensure_study_schema(conn) -> None:
     migrate_youtube_playlist_schema(conn)
     conn.execute(text(CREATE_SILVER_STUDY_YOUTUBE_SQL))
     conn.execute(text(CREATE_SILVER_STUDY_YOUTUBE_RESOURCES_SQL))
+    conn.execute(text(CREATE_SILVER_STUDY_RESOURCE_ASSETS_SQL))
+    conn.execute(text(CREATE_SILVER_STUDY_RESOURCE_TRANSCRIPTS_SQL))
     conn.execute(text(CREATE_GOLD_STUDIES_SQL))
     conn.execute(text(CREATE_GOLD_STUDY_RESOURCES_SQL))
+    migrate_gold_study_resource_enrichment_schema(conn)
     conn.execute(text(CREATE_GOLD_STUDY_ORIGINS_SQL))
 
 
@@ -146,6 +185,86 @@ def migrate_youtube_playlist_schema(conn) -> None:
     conn.execute(text("DROP TABLE IF EXISTS silver_study_youtube"))
 
 
+def migrate_gold_study_resource_enrichment_schema(conn) -> None:
+    database = inspect(conn)
+    columns = {
+        column["name"]
+        for column in database.get_columns("gold_study_resources")
+    }
+    additions = {
+        "original_filename": "TEXT",
+        "local_path": "TEXT",
+        "download_link": "TEXT",
+        "local_mime_type": "TEXT",
+        "duration_seconds": "REAL",
+        "transcript_available": "INTEGER NOT NULL DEFAULT 0",
+        "resource_enriched_at": "TEXT",
+    }
+
+    for column_name, column_type in additions.items():
+        if column_name not in columns:
+            conn.execute(text(
+                f"ALTER TABLE gold_study_resources "
+                f"ADD COLUMN {column_name} {column_type}"
+            ))
+
+    if not database.has_table("gold_study_resource_enrichments"):
+        return
+
+    conn.execute(text("""
+        UPDATE gold_study_resources
+        SET original_filename = COALESCE((
+                SELECT legacy.original_filename
+                FROM gold_study_resource_enrichments legacy
+                WHERE legacy.resource_id = gold_study_resources.resource_id
+                  AND legacy.study_id = gold_study_resources.study_id
+                LIMIT 1
+            ), original_filename),
+            local_path = COALESCE((
+                SELECT legacy.local_path
+                FROM gold_study_resource_enrichments legacy
+                WHERE legacy.resource_id = gold_study_resources.resource_id
+                  AND legacy.study_id = gold_study_resources.study_id
+                LIMIT 1
+            ), local_path),
+            local_mime_type = COALESCE((
+                SELECT legacy.mime_type
+                FROM gold_study_resource_enrichments legacy
+                WHERE legacy.resource_id = gold_study_resources.resource_id
+                  AND legacy.study_id = gold_study_resources.study_id
+                LIMIT 1
+            ), local_mime_type),
+            duration_seconds = COALESCE((
+                SELECT legacy.duration_seconds
+                FROM gold_study_resource_enrichments legacy
+                WHERE legacy.resource_id = gold_study_resources.resource_id
+                  AND legacy.study_id = gold_study_resources.study_id
+                LIMIT 1
+            ), duration_seconds),
+            transcript_available = COALESCE((
+                SELECT legacy.transcript_available
+                FROM gold_study_resource_enrichments legacy
+                WHERE legacy.resource_id = gold_study_resources.resource_id
+                  AND legacy.study_id = gold_study_resources.study_id
+                LIMIT 1
+            ), transcript_available),
+            resource_enriched_at = COALESCE((
+                SELECT legacy.last_aggregated_at
+                FROM gold_study_resource_enrichments legacy
+                WHERE legacy.resource_id = gold_study_resources.resource_id
+                  AND legacy.study_id = gold_study_resources.study_id
+                LIMIT 1
+            ), resource_enriched_at)
+        WHERE EXISTS (
+            SELECT 1
+            FROM gold_study_resource_enrichments legacy
+            WHERE legacy.resource_id = gold_study_resources.resource_id
+              AND legacy.study_id = gold_study_resources.study_id
+        )
+    """))
+    conn.execute(text("DROP TABLE gold_study_resource_enrichments"))
+
+
 def create_study_indexes(conn) -> None:
     statements = [
         """
@@ -163,6 +282,18 @@ def create_study_indexes(conn) -> None:
         """
         CREATE INDEX IF NOT EXISTS idx_silver_study_youtube_resource_study
         ON silver_study_youtube_resources(study_key, resource_type)
+        """,
+        """
+        CREATE INDEX IF NOT EXISTS idx_silver_study_resource_assets_study
+        ON silver_study_resource_assets(study_id, asset_type)
+        """,
+        """
+        CREATE INDEX IF NOT EXISTS idx_silver_study_resource_assets_resource
+        ON silver_study_resource_assets(resource_id)
+        """,
+        """
+        CREATE INDEX IF NOT EXISTS idx_silver_study_resource_transcripts_asset
+        ON silver_study_resource_transcripts(asset_id, transcript_version)
         """,
         """
         CREATE INDEX IF NOT EXISTS idx_gold_studies_type_year_date

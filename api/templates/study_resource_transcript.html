@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% from "_sermon_card.html" import icon %}
+
+{% block title %}{{ transcript.resource_label }} | Transcri&ccedil;&atilde;o | Arquivo IBRVN{% endblock %}
+
+{% block content %}
+<article class="transcript-page">
+<a class="study-back-link" href="/studies/{{ transcript.study_id | urlencode }}">&larr; Voltar ao estudo</a>
+
+{% if transcript.study_date_display %}<time class="sermon-date">{{ transcript.study_date_display }}</time>{% endif %}
+<h1 class="transcript-title">{{ transcript.resource_label }}</h1>
+
+<div class="transcript-meta">
+<div>{{ icon('library') }} <span>{{ transcript.study_title }}</span></div>
+{% if transcript.study_type_label %}
+<div>{{ icon('file-text') }} <span>{{ transcript.study_type_label }}</span></div>
+{% endif %}
+{% if transcript.model_name %}
+<div>{{ icon('settings') }} <span>Modelo: {{ transcript.model_name }}</span></div>
+{% endif %}
+</div>
+
+<pre class="transcript-content">{{ transcript.transcript_text }}</pre>
+</article>
+{% endblock %}
