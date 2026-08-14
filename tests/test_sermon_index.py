@@ -68,6 +68,11 @@ class SermonIndexTest(unittest.TestCase):
         self.assertGreaterEqual(rendered.count('class="sermon-player-volume-popover"'), 2)
         self.assertGreaterEqual(rendered.count('class="sermon-player-speed-menu"'), 2)
         self.assertIn('<script src="/static/audio-player.js" defer></script>', rendered)
+        self.assertIn(
+            '<link rel="icon" href="/static/favicon.svg" '
+            'type="image/svg+xml" sizes="any">',
+            rendered,
+        )
         self.assertEqual(2, rendered.count('class="site-nav-divider"'))
         self.assertNotIn('class="archive-nav-group', rendered)
 
