@@ -5,7 +5,12 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from api.main import app, templates
-from api.queries import classify_testament, get_sermon_testament_composition
+from api.queries import (
+    classify_testament,
+    get_books,
+    get_preachers,
+    get_sermon_testament_composition,
+)
 from api.study_queries import get_study_type_composition
 
 
@@ -134,6 +139,31 @@ class SermonIndexTest(unittest.TestCase):
         )
         self.assertEqual(100, composition[0]["percentage"])
         self.assertEqual(50, composition[3]["percentage"])
+
+    def test_books_follow_biblical_order(self):
+        with patch("api.queries.fetch_all", return_value=[
+            {"text_reference": "Apocalipse 1"},
+            {"text_reference": "Jo\u00e3o 3:16"},
+            {"text_reference": "G\u00eanesis 1"},
+            {"text_reference": "Salmo 23"},
+            {"text_reference": "Mateus 5"},
+            {"text_reference": "Refer\u00eancia desconhecida"},
+        ]):
+            books = get_books()
+
+        self.assertEqual(
+            ["G\u00eanesis", "Salmo", "Mateus", "Jo\u00e3o", "Apocalipse",
+             "Refer\u00eancia"],
+            [book["book"] for book in books],
+        )
+
+    def test_preachers_are_ordered_by_sermon_count(self):
+        with patch("api.queries.fetch_all", return_value=[]) as fetch:
+            get_preachers()
+
+        query = fetch.call_args.args[0]
+        self.assertIn("ORDER BY COUNT(*) DESC", query)
+        self.assertIn("LOWER(preacher_name)", query)
 
     def test_study_index_has_title_and_active_header_link(self):
         request = SimpleNamespace(url=SimpleNamespace(path="/studies"))

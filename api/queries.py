@@ -39,6 +39,33 @@ BOOK_ALIASES = {
     "ts": "tessalonicenses",
 }
 
+BIBLICAL_BOOK_ORDER = [
+    "genesis", "exodo", "levitico", "numeros", "deuteronomio",
+    "josue", "juizes", "rute", "1 samuel", "2 samuel", "1 reis",
+    "2 reis", "1 cronicas", "2 cronicas", "esdras", "neemias",
+    "ester", "jo", "salmos", "proverbios", "eclesiastes",
+    "canticos", "isaias", "jeremias", "lamentacoes", "ezequiel",
+    "daniel", "oseias", "joel", "amos", "obadias", "jonas",
+    "miqueias", "naum", "habacuque", "sofonias", "ageu",
+    "zacarias", "malaquias", "mateus", "marcos", "lucas", "joao",
+    "atos", "romanos", "1 corintios", "2 corintios", "galatas",
+    "efesios", "filipenses", "colossenses", "1 tessalonicenses",
+    "2 tessalonicenses", "1 timoteo", "2 timoteo", "tito", "filemom",
+    "hebreus", "tiago", "1 pedro", "2 pedro", "1 joao", "2 joao",
+    "3 joao", "judas", "apocalipse",
+]
+
+BIBLICAL_BOOK_POSITION = {
+    book: position
+    for position, book in enumerate(BIBLICAL_BOOK_ORDER)
+}
+
+BIBLICAL_BOOK_VARIANTS = {
+    "cantico": "canticos",
+    "cantares": "canticos",
+    "salmo": "salmos",
+}
+
 
 def format_brazilian_date(value):
 
@@ -144,6 +171,16 @@ def classify_testament(text_reference):
     return ""
 
 
+def biblical_book_sort_key(book_name):
+    normalized = normalize_book_name(book_name)
+    normalized = BIBLICAL_BOOK_VARIANTS.get(normalized, normalized)
+    return (
+        BIBLICAL_BOOK_POSITION.get(normalized, len(BIBLICAL_BOOK_ORDER)),
+        normalized,
+        str(book_name).casefold(),
+    )
+
+
 def serialize_sermon(row):
 
     sermon = dict(row)
@@ -227,7 +264,7 @@ def get_books():
             "book": book,
             "n": counts[book],
         }
-        for book in sorted(counts)
+        for book in sorted(counts, key=biblical_book_sort_key)
     ]
 
 
@@ -291,7 +328,7 @@ def get_preachers():
         WHERE preacher_name IS NOT NULL
         AND preacher_name != ''
         GROUP BY preacher_name
-        ORDER BY preacher_name
+        ORDER BY COUNT(*) DESC, LOWER(preacher_name), preacher_name
     """.format(table=GOLD_TABLE))
 
 
