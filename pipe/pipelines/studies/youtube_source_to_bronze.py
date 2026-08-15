@@ -6,10 +6,12 @@ import os
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import requests
 import yaml
 
+from pipe.pipelines.studies.date_rules import extract_text_date
 from pipe.pipelines.studies.youtube_rules import (
     infer_study_type,
     is_study_playlist,
@@ -23,6 +25,7 @@ API_BASE_URL = "https://www.googleapis.com/youtube/v3"
 REQUEST_TIMEOUT_SECONDS = 30
 MAX_API_ATTEMPTS = 4
 TRANSIENT_STATUS_CODES = {429, 500, 502, 503, 504}
+LOCAL_TIMEZONE = ZoneInfo("America/Sao_Paulo")
 
 
 class YoutubeStudyApiError(RuntimeError):
@@ -218,6 +221,24 @@ def parse_timestamp(value: str) -> datetime | None:
         return None
 
 
+def resolve_video_study_date(video: dict) -> tuple[str, str, str]:
+    description_date = extract_text_date(video.get("description", ""))
+
+    if description_date:
+        return description_date, "description", description_date
+
+    published_at = parse_timestamp(video.get("published_at", ""))
+
+    if published_at:
+        return (
+            published_at.astimezone(LOCAL_TIMEZONE).date().isoformat(),
+            "published_at",
+            "",
+        )
+
+    return "", "", ""
+
+
 def build_bronze_payload(
     api_key: str,
     channel_id: str,
@@ -251,6 +272,7 @@ def build_bronze_payload(
     for playlist in playlists:
         videos = []
         all_published_dates = []
+        all_effective_dates = []
 
         for membership in memberships_by_playlist[playlist["playlist_id"]]:
             video = details.get(membership["video_id"])
@@ -259,15 +281,24 @@ def build_bronze_payload(
                 continue
 
             published_at = parse_timestamp(video.get("published_at", ""))
+            effective_date, date_source, description_date = (
+                resolve_video_study_date(video)
+            )
 
             if published_at:
                 all_published_dates.append(published_at)
+
+            if effective_date:
+                all_effective_dates.append(effective_date)
 
             if cutoff and (not published_at or published_at < cutoff):
                 continue
 
             videos.append({
                 **video,
+                "description_date": description_date,
+                "effective_date": effective_date,
+                "effective_date_source": date_source,
                 "position": membership["position"],
             })
 
@@ -277,6 +308,11 @@ def build_bronze_payload(
         study_playlists.append({
             **playlist,
             "study_type": infer_study_type([playlist["title"]]),
+            "oldest_video_date": (
+                min(all_effective_dates)
+                if all_effective_dates
+                else ""
+            ),
             "oldest_video_published_at": (
                 min(all_published_dates).isoformat()
                 if all_published_dates

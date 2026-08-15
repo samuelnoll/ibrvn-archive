@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import hashlib
+import re
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
+from pipe.pipelines.studies.date_rules import extract_text_date
 from pipe.pipelines.studies.title_rules import clean_study_title
 
 
@@ -22,14 +24,48 @@ def stable_key(*parts: str) -> str:
 
 
 def study_date(value: str) -> str:
+    normalized = str(value or "").strip()
+
+    if re.fullmatch(r"(?:19|20)\d{2}(?:-\d{2}-\d{2})?", normalized):
+        return normalized
+
     try:
-        timestamp = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        timestamp = datetime.fromisoformat(normalized.replace("Z", "+00:00"))
         return timestamp.astimezone(LOCAL_TIMEZONE).date().isoformat()
     except (TypeError, ValueError):
         return ""
 
 
+def video_study_date(video: dict) -> str:
+    description_date = (
+        study_date(video.get("description_date", ""))
+        or extract_text_date(video.get("description", ""))
+    )
+
+    if description_date:
+        return description_date
+
+    return (
+        study_date(video.get("effective_date", ""))
+        or study_date(video.get("published_at", ""))
+    )
+
+
 def playlist_study_date(playlist: dict) -> str:
+    oldest_video_date = study_date(playlist.get("oldest_video_date", ""))
+
+    if oldest_video_date:
+        return oldest_video_date
+
+    video_dates = sorted(
+        resolved
+        for video in playlist.get("videos", [])
+        if (resolved := video_study_date(video))
+    )
+
+    if video_dates:
+        return video_dates[0]
+
     oldest_published_at = str(
         playlist.get("oldest_video_published_at") or ""
     ).strip()
@@ -39,15 +75,6 @@ def playlist_study_date(playlist: dict) -> str:
 
         if resolved:
             return resolved
-
-    video_dates = sorted(
-        resolved
-        for video in playlist.get("videos", [])
-        if (resolved := study_date(video.get("published_at", "")))
-    )
-
-    if video_dates:
-        return video_dates[0]
 
     playlist_year = str(playlist.get("published_at") or "")[:4]
     return playlist_year if playlist_year.isdigit() else ""

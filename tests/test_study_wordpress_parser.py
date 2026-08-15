@@ -11,11 +11,19 @@ from unittest.mock import patch
 from sqlalchemy import create_engine, text
 
 from pipe.pipelines.studies.silver_to_gold import aggregate_records
+from pipe.pipelines.studies.date_rules import extract_text_date
+from pipe.pipelines.studies.youtube_source_to_bronze import (
+    build_bronze_payload,
+    resolve_video_study_date,
+)
 from pipe.pipelines.studies.youtube_rules import (
     infer_study_type,
     is_study_playlist,
 )
-from pipe.pipelines.studies.youtube_records import build_silver_records
+from pipe.pipelines.studies.youtube_records import (
+    build_silver_records,
+    playlist_study_date,
+)
 from pipe.pipelines.studies.youtube_resource_titles import (
     enrich_youtube_resource_titles,
     fetch_youtube_titles,
@@ -142,6 +150,81 @@ def build_export() -> str:
 
 
 class PublicWordpressStudyParserTest(unittest.TestCase):
+    def test_youtube_description_date_precedes_published_at(self):
+        video = {
+            "description": "Estudo realizado em 02/11/14.",
+            "published_at": "2026-08-13T12:00:00Z",
+        }
+
+        self.assertEqual("2014-11-02", extract_text_date(video["description"]))
+        self.assertEqual(
+            ("2014-11-02", "description", "2014-11-02"),
+            resolve_video_study_date(video),
+        )
+        self.assertEqual("2014-11-02", playlist_study_date({
+            "videos": [video],
+            "oldest_video_published_at": "2026-08-13T12:00:00Z",
+        }))
+
+    def test_youtube_published_at_is_the_description_date_fallback(self):
+        self.assertEqual(
+            ("2026-08-13", "published_at", ""),
+            resolve_video_study_date({
+                "description": "Sem data informada.",
+                "published_at": "2026-08-13T12:00:00Z",
+            }),
+        )
+
+    def test_youtube_bronze_records_effective_video_dates(self):
+        playlists = [{
+            "playlist_id": "PL123",
+            "title": "Estudo Romanos",
+            "published_at": "2026-08-01T12:00:00Z",
+            "url": "https://www.youtube.com/playlist?list=PL123",
+        }]
+        memberships = [{
+            "video_id": "video-1",
+            "playlist_id": "PL123",
+            "playlist_title": "Estudo Romanos",
+            "position": 1,
+        }]
+        details = {
+            "video-1": {
+                "video_id": "video-1",
+                "title": "Aula 1",
+                "description": "Gravado em 10/05/2008.",
+                "published_at": "2026-08-01T12:00:00Z",
+                "duration": "PT1H",
+                "url": "https://www.youtube.com/watch?v=video-1",
+            },
+        }
+
+        with (
+            patch(
+                "pipe.pipelines.studies.youtube_source_to_bronze."
+                "list_study_playlists",
+                return_value=playlists,
+            ),
+            patch(
+                "pipe.pipelines.studies.youtube_source_to_bronze."
+                "list_playlist_memberships",
+                return_value=memberships,
+            ),
+            patch(
+                "pipe.pipelines.studies.youtube_source_to_bronze."
+                "fetch_video_details",
+                return_value=details,
+            ),
+        ):
+            payload = build_bronze_payload("api-key", "channel", None)
+
+        playlist = payload["playlists"][0]
+        bronze_video = playlist["videos"][0]
+        self.assertEqual("2008-05-10", playlist["oldest_video_date"])
+        self.assertEqual("2008-05-10", bronze_video["description_date"])
+        self.assertEqual("2008-05-10", bronze_video["effective_date"])
+        self.assertEqual("description", bronze_video["effective_date_source"])
+
     def test_youtube_playlist_becomes_one_study_with_video_resources(self):
         payload = {
             "schema_version": 2,

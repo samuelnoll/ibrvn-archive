@@ -13,6 +13,10 @@ from urllib.parse import parse_qs, unquote, urljoin, urlsplit, urlunsplit
 from lxml import html
 from lxml.etree import ParserError
 
+from pipe.pipelines.studies.date_rules import (
+    extract_content_years,
+    extract_explicit_dates,
+)
 from pipe.pipelines.studies.title_rules import clean_study_title
 
 
@@ -473,38 +477,6 @@ def normalize_date(value: str) -> str:
         return datetime.strptime(value[:19], "%Y-%m-%d %H:%M:%S").date().isoformat()
     except (TypeError, ValueError):
         return ""
-
-
-def extract_explicit_dates(value: str) -> list[str]:
-    dates = set()
-    text_value = html_lib.unescape(value or "")
-    day_first_pattern = re.compile(
-        r"(?<!\d)(\d{1,2})[./_-](\d{1,2})[./_-](\d{2}|19\d{2}|20\d{2})(?!\d)"
-    )
-    year_first_pattern = re.compile(
-        r"(?<!\d)(19\d{2}|20\d{2})[./_-](\d{1,2})[./_-](\d{1,2})(?!\d)"
-    )
-
-    for day, month, year in day_first_pattern.findall(text_value):
-        try:
-            resolved_year = 2000 + int(year) if len(year) == 2 else int(year)
-            dates.add(
-                datetime(resolved_year, int(month), int(day)).date().isoformat()
-            )
-        except ValueError:
-            continue
-
-    for year, month, day in year_first_pattern.findall(text_value):
-        try:
-            dates.add(datetime(int(year), int(month), int(day)).date().isoformat())
-        except ValueError:
-            continue
-
-    return sorted(dates)
-
-
-def extract_content_years(value: str) -> list[str]:
-    return sorted(set(re.findall(r"(?<!\d)(19\d{2}|20\d{2})(?!\d)", value or "")))
 
 
 def infer_study_date(item: WordpressItem) -> str:
