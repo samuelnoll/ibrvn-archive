@@ -346,15 +346,33 @@ def parse_published_at(date_str):
         return None
 
 
+def has_positive_duration(video):
+
+    duration_seconds = video.get("duration_seconds")
+
+    if duration_seconds not in (None, ""):
+        try:
+            return float(duration_seconds) > 0
+        except (TypeError, ValueError):
+            pass
+
+    duration = str(
+        video.get("duration", "")
+        or video.get("duration_iso", "")
+        or ""
+    ).strip()
+
+    return bool(duration and duration != "P0D")
+
+
 def sermon_candidate_sort_key(candidate):
 
     video = candidate["video"]
     published_at = parse_published_at(video.get("published_at"))
-    duration = str(video.get("duration", "") or "").strip()
 
     return (
+        1 if has_positive_duration(video) else 0,
         published_at or datetime.min,
-        1 if duration and duration != "P0D" else 0,
         1 if bool(video.get("playlists")) else 0,
         str(video.get("video_id", "") or ""),
     )
