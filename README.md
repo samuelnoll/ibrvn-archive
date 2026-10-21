@@ -194,6 +194,18 @@ make job-youtube-historic
 make job-wordpress-historic
 ```
 
+The Airflow `ibrvn_sermon_youtube_weekly` DAG can also recover a specific
+already-cut sermon. Trigger it manually with the following `dag_run.conf`:
+
+```json
+{
+  "preaching_date": "2026-10-18"
+}
+```
+
+This bypasses the cut wait and scopes YouTube ingestion, audio enrichment,
+and critique reporting to the supplied date.
+
 Utility commands:
 
 ```bash

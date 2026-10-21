@@ -16,7 +16,7 @@ from shared.db import (
 from .common import build_preaching_date_scope, normalize_force_reprocess
 
 
-def run(loopback_days=None, force_reprocess=False):
+def run(loopback_days=None, force_reprocess=False, preaching_date=""):
 
     run_id = begin_processing_run(
         "measure_audio_duration",
@@ -25,7 +25,11 @@ def run(loopback_days=None, force_reprocess=False):
 
     try:
         force_reprocess = normalize_force_reprocess(force_reprocess)
-        scope_sql, params = build_preaching_date_scope("sm", loopback_days)
+        scope_sql, params = build_preaching_date_scope(
+            "sm",
+            loopback_days,
+            preaching_date,
+        )
         duration_filter = "" if force_reprocess else "AND sma.duration_seconds IS NULL"
 
         rows = fetch_all(f"""
@@ -96,10 +100,12 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--loopback-days", type=int, default=None)
+    parser.add_argument("--preaching-date", default="")
     parser.add_argument("--force-reprocess", action="store_true")
     args = parser.parse_args()
 
     run(
         loopback_days=args.loopback_days,
         force_reprocess=args.force_reprocess,
+        preaching_date=args.preaching_date,
     )

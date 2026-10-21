@@ -7,7 +7,7 @@ from shared.db import begin_processing_run, fetch_one, finish_processing_run
 from .common import build_preaching_date_scope
 
 
-def run(loopback_days=None):
+def run(loopback_days=None, preaching_date=""):
 
     run_id = begin_processing_run(
         "audio_data_quality",
@@ -15,7 +15,11 @@ def run(loopback_days=None):
     )
 
     try:
-        scope_sql, params = build_preaching_date_scope("sm", loopback_days)
+        scope_sql, params = build_preaching_date_scope(
+            "sm",
+            loopback_days,
+            preaching_date,
+        )
 
         downloads_missing = fetch_one(f"""
             SELECT COUNT(DISTINCT sm.canonical_sermon_id) AS total
@@ -77,6 +81,10 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--loopback-days", type=int, default=None)
+    parser.add_argument("--preaching-date", default="")
     args = parser.parse_args()
 
-    run(loopback_days=args.loopback_days)
+    run(
+        loopback_days=args.loopback_days,
+        preaching_date=args.preaching_date,
+    )
