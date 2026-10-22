@@ -68,11 +68,52 @@
 .quality-empty { padding: 3rem; text-align: center; }
 .quality-alert { background: #fff1ee; border: 1px solid #e5b5ad; border-radius: .8rem; color: #79372f; display: grid; gap: .25rem; padding: .9rem 1rem; }
 
+/* Internal access analytics dashboard */
+.analytics-page { display: grid; gap: 1.5rem; }
+.analytics-header { align-items: start; display: flex; gap: 2rem; justify-content: space-between; }
+.analytics-header h1 { font-size: clamp(2rem, 5vw, 3.5rem); margin: .15rem 0 .5rem; }
+.analytics-header > div > p:last-child { color: var(--muted); margin: 0; }
+.analytics-filters { align-items: end; background: #f3f5ef; border: 1px solid #dfe5d8; border-radius: 1rem; display: flex; flex-wrap: wrap; gap: .7rem; padding: 1rem; }
+.analytics-filters label { color: var(--muted); display: grid; font-size: .75rem; gap: .25rem; }
+.analytics-filters input, .analytics-filters select { background: #fff; border: 1px solid #ccd2c9; border-radius: .5rem; font: inherit; padding: .55rem; }
+.analytics-filters button { background: #526b40; border: 0; border-radius: .5rem; color: #fff; cursor: pointer; font: inherit; padding: .62rem .85rem; }
+.analytics-kpi-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); }
+.analytics-kpi-grid article { background: #fff; border: 1px solid #e1e4df; border-radius: 1rem; display: grid; gap: .4rem; min-height: 8rem; padding: 1rem; }
+.analytics-kpi-grid span { color: #616a62; font-size: .8rem; font-weight: 650; }
+.analytics-kpi-grid strong { font-size: 2rem; line-height: 1; }
+.analytics-kpi-grid small { align-self: end; color: #7a817a; }
+.analytics-panel { background: #fff; border: 1px solid #e1e4df; border-radius: 1.1rem; padding: 1.25rem; }
+.analytics-panel h2 { margin: 0 0 .35rem; }
+.analytics-chart-panel svg { height: auto; margin-top: .5rem; overflow: visible; width: 100%; }
+.analytics-chart-panel svg text { fill: #717971; font-size: 11px; }
+.analytics-chart-panel .chart-grid { stroke: #e7eae5; stroke-width: 1; }
+.analytics-chart-panel .chart-line { fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-width: 3; }
+.analytics-chart-panel circle { fill: #fff; stroke-width: 2; }
+.analytics-chart-legend { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 1rem; }
+.analytics-chart-legend span { align-items: center; color: #687068; display: inline-flex; font-size: .78rem; gap: .4rem; }
+.analytics-chart-legend span::before { background: currentColor; border-radius: 50%; content: ""; height: .55rem; width: .55rem; }
+.analytics-chart-legend .is-views { color: #526b40; }
+.analytics-chart-legend .is-plays { color: #a66f35; }
+.analytics-chart-legend .is-downloads { color: #627f96; }
+.analytics-two-column { display: grid; gap: 1rem; grid-template-columns: 1fr 1fr; }
+.analytics-three-column { display: grid; gap: 1rem; grid-template-columns: repeat(3, 1fr); }
+.analytics-ranking { list-style: none; margin: 1rem 0 0; padding: 0; }
+.analytics-ranking li { align-items: baseline; border-bottom: 1px solid #e7e9e5; display: flex; gap: 1rem; justify-content: space-between; padding: .7rem 0; }
+.analytics-ranking li:last-child { border-bottom: 0; }
+.analytics-ranking span { overflow-wrap: anywhere; }
+.analytics-ranking strong { font-size: .82rem; white-space: nowrap; }
+.analytics-ranking .is-empty { color: var(--muted); }
+.analytics-content-table td:not(:first-child), .analytics-content-table th:not(:first-child) { text-align: right; }
+.analytics-privacy-note { color: var(--muted); font-size: .78rem; margin: 0; text-align: center; }
+
 @media (max-width: 760px) {
   .quality-header, .quality-panel-heading { display: grid; }
   .quality-run-summary { width: 100%; }
   .quality-chart-controls, .quality-filters { align-items: stretch; display: grid; }
   .quality-chart-controls select, .quality-filters select { width: 100%; }
+  .analytics-header, .analytics-filters { display: grid; }
+  .analytics-filters input, .analytics-filters select { width: 100%; }
+  .analytics-two-column, .analytics-three-column { grid-template-columns: 1fr; }
 }
 
 * {

@@ -1,6 +1,8 @@
 import csv
 import io
+import json
 import re
+from urllib.parse import urlparse
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import StreamingResponse
@@ -17,6 +19,7 @@ from .study_queries import (
     get_study_type_composition,
 )
 from .quality_queries import get_quality_dashboard, get_quality_issues, get_quality_run
+from .analytics import get_analytics_dashboard, record_events
 from shared.settings import AUDIO_RAW_DIR, STUDY_RESOURCE_RAW_DIR
 
 app = FastAPI()
@@ -333,6 +336,51 @@ def api_search(q: str):
         dict(s)
         for s in sermons[:20]
     ]
+
+
+@app.post("/api/analytics/events")
+async def analytics_events(request: Request):
+    try:
+        content_length = int(request.headers.get("content-length", "0") or 0)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Invalid Content-Length") from exc
+    if content_length > 65536:
+        raise HTTPException(status_code=413, detail="Analytics payload too large")
+    origin = request.headers.get("origin", "")
+    if origin:
+        if urlparse(origin).hostname != request.url.hostname:
+            raise HTTPException(status_code=403, detail="Invalid analytics origin")
+    user_agent = request.headers.get("user-agent", "").lower()
+    if any(marker in user_agent for marker in ("bot", "crawler", "spider", "slurp")):
+        return {"accepted": 0}
+    try:
+        body = await request.body()
+        if len(body) > 65536:
+            raise HTTPException(status_code=413, detail="Analytics payload too large")
+        payload = json.loads(body)
+    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+        raise HTTPException(status_code=400, detail="Invalid JSON") from exc
+    return {"accepted": record_events(payload)}
+
+
+@app.get("/analytics")
+def analytics_dashboard(
+    request: Request,
+    start: str = "",
+    end: str = "",
+    days: int = 30,
+    content_type: str = "",
+):
+    dashboard = get_analytics_dashboard(start, end, days, content_type)
+    return render_template(
+        request,
+        "analytics.html",
+        {
+            "request": request,
+            **dashboard,
+            "last_update": get_last_update(),
+        },
+    )
 
 
 @app.get("/quality")

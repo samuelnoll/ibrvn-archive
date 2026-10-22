@@ -211,6 +211,38 @@ Intentional Sundays without a sermon can be excluded from the error count by
 inserting their ISO date and reason into `data_quality_sunday_exceptions`. They
 remain visible under the informational “Domingos ausentes justificados” metric.
 
+## Access analytics
+
+The private-by-discovery dashboard is available at `/analytics`; it is omitted
+from public navigation and marked `noindex, nofollow`. Like `/quality`, this is
+not an authentication boundary. The browser sends first-party events to
+`POST /api/analytics/events` without storing raw IP addresses, cookies, or
+fingerprints. Random visitor and session identifiers are hashed before they are
+stored. Do Not Track and Global Privacy Control are honored.
+
+Tracked events cover page views, outbound source/YouTube/transcript clicks,
+downloads, qualified audio plays, listening heartbeats, completion, and
+playback speed. A play qualifies after three seconds of actual playback;
+completion means reaching 90% or the media `ended` event. Download counts mean
+download starts. Estimated transfer combines full local file size for downloads
+with the proportion of the file represented by listening heartbeats.
+
+Analytics data is stored in:
+
+- `analytics_visitors`
+- `analytics_events`
+
+The dashboard supports custom dates and sermon/study filters, daily, weekly,
+and monthly trends, top pages and content, unique plays, listening hours,
+completion, downloads, transfer volume, playback speeds, and sermon rankings by
+preacher, series, and biblical book.
+
+Configuration:
+
+- `ARCHIVE_ANALYTICS_ENABLED`: enable event collection (default true)
+- `ARCHIVE_ANALYTICS_RETENTION_DAYS`: raw event and inactive visitor retention
+  (default 180)
+
 ## Running
 
 Start the homelab stack:

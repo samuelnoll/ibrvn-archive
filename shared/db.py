@@ -166,6 +166,34 @@ CREATE TABLE IF NOT EXISTS data_quality_sunday_exceptions (
 )
 """
 
+CREATE_ANALYTICS_VISITORS_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS analytics_visitors (
+    visitor_id_hash TEXT PRIMARY KEY,
+    first_seen_at TEXT NOT NULL,
+    last_seen_at TEXT NOT NULL
+)
+"""
+
+CREATE_ANALYTICS_EVENTS_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS analytics_events (
+    event_id TEXT PRIMARY KEY,
+    occurred_at TEXT NOT NULL,
+    event_type TEXT NOT NULL,
+    visitor_id_hash TEXT NOT NULL,
+    session_id_hash TEXT NOT NULL,
+    page_path TEXT,
+    content_type TEXT,
+    content_id TEXT,
+    resource_id TEXT,
+    position_seconds REAL,
+    duration_seconds REAL,
+    listened_seconds REAL,
+    playback_rate REAL,
+    bytes_estimated INTEGER NOT NULL DEFAULT 0,
+    referrer_domain TEXT
+)
+"""
+
 
 def utc_now_iso() -> str:
 
@@ -234,6 +262,8 @@ def ensure_schema(conn):
     conn.execute(text(CREATE_DATA_QUALITY_METRICS_TABLE_SQL))
     conn.execute(text(CREATE_DATA_QUALITY_ISSUES_TABLE_SQL))
     conn.execute(text(CREATE_DATA_QUALITY_SUNDAY_EXCEPTIONS_TABLE_SQL))
+    conn.execute(text(CREATE_ANALYTICS_VISITORS_TABLE_SQL))
+    conn.execute(text(CREATE_ANALYTICS_EVENTS_TABLE_SQL))
 
     gold_columns = {
         column["name"]
@@ -307,6 +337,31 @@ def create_indexes(conn):
     conn.execute(text("""
         CREATE INDEX IF NOT EXISTS idx_data_quality_issues_lookup
         ON data_quality_issues(run_id, metric_key, preaching_date)
+    """))
+
+    conn.execute(text("""
+        CREATE INDEX IF NOT EXISTS idx_analytics_events_time
+        ON analytics_events(occurred_at)
+    """))
+
+    conn.execute(text("""
+        CREATE INDEX IF NOT EXISTS idx_analytics_events_type_time
+        ON analytics_events(event_type, occurred_at)
+    """))
+
+    conn.execute(text("""
+        CREATE INDEX IF NOT EXISTS idx_analytics_events_content
+        ON analytics_events(content_type, content_id, occurred_at)
+    """))
+
+    conn.execute(text("""
+        CREATE INDEX IF NOT EXISTS idx_analytics_events_visitor
+        ON analytics_events(visitor_id_hash, occurred_at)
+    """))
+
+    conn.execute(text("""
+        CREATE INDEX IF NOT EXISTS idx_analytics_visitors_last_seen
+        ON analytics_visitors(last_seen_at)
     """))
 
     if is_postgres_backend():

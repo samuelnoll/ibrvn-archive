@@ -36,6 +36,50 @@
     const speedLabel = player.querySelector(".sermon-player-speed-label")
     const speedMenu = player.querySelector(".sermon-player-speed-menu")
     const speedOptions = player.querySelectorAll("[data-playback-rate]")
+    const analyticsContext = {
+      content_type: player.dataset.contentType || "",
+      content_id: player.dataset.contentId || "",
+      resource_id: player.dataset.resourceId || "",
+    }
+    let playQualified = false
+    let completionSent = false
+    let qualificationTimer
+    let heartbeatTimer
+    let lastListeningAt
+
+    const trackAudio = (eventType, extra = {}) => {
+      window.IBRVNAnalytics?.track({
+        event_type: eventType,
+        ...analyticsContext,
+        position_seconds: audio.currentTime || 0,
+        duration_seconds: Number.isFinite(audio.duration) ? audio.duration : null,
+        playback_rate: audio.playbackRate || 1,
+        ...extra,
+      })
+    }
+
+    const flushListening = () => {
+      if (!playQualified || !lastListeningAt) return
+      const now = performance.now()
+      const listenedSeconds = Math.min(30, Math.max(0, (now - lastListeningAt) / 1000))
+      lastListeningAt = now
+      if (listenedSeconds >= 1) {
+        trackAudio("audio_progress", {listened_seconds: listenedSeconds})
+      }
+    }
+
+    const startHeartbeat = () => {
+      clearInterval(heartbeatTimer)
+      lastListeningAt = performance.now()
+      heartbeatTimer = setInterval(flushListening, 30000)
+    }
+
+    const stopHeartbeat = () => {
+      flushListening()
+      clearInterval(heartbeatTimer)
+      heartbeatTimer = null
+      lastListeningAt = null
+    }
 
     const closeSpeedMenu = () => {
       speedMenu.hidden = true
@@ -116,6 +160,7 @@
         speedOptions.forEach(item => {
           item.setAttribute("aria-checked", String(item === option))
         })
+        trackAudio("audio_speed")
         closeSpeedMenu()
         speedToggle.focus()
       })
@@ -132,22 +177,54 @@
       player.classList.add("is-started", "is-playing")
       toggle.setAttribute("aria-label", "Pausar \u00e1udio")
       setIcon(toggle, "pause")
+      clearTimeout(qualificationTimer)
+      if (playQualified) {
+        startHeartbeat()
+      } else {
+        const initialPosition = audio.currentTime
+        qualificationTimer = setTimeout(() => {
+          if (!audio.paused && audio.currentTime > initialPosition) {
+            playQualified = true
+            trackAudio("audio_play")
+            startHeartbeat()
+          }
+        }, 3000)
+      }
     })
 
     audio.addEventListener("pause", () => {
+      clearTimeout(qualificationTimer)
+      stopHeartbeat()
       player.classList.remove("is-playing")
       toggle.setAttribute("aria-label", "Reproduzir \u00e1udio")
       setIcon(toggle, "play")
     })
 
     audio.addEventListener("ended", () => {
+      stopHeartbeat()
+      if (playQualified && !completionSent) trackAudio("audio_complete")
+      playQualified = false
+      completionSent = false
       audio.currentTime = 0
       updateTime()
     })
     audio.addEventListener("loadedmetadata", updateTime)
     audio.addEventListener("durationchange", updateTime)
-    audio.addEventListener("timeupdate", updateTime)
+    audio.addEventListener("timeupdate", () => {
+      updateTime()
+      if (
+        playQualified && !completionSent && !audio.paused &&
+        audio.duration && audio.currentTime / audio.duration >= .9
+      ) {
+        completionSent = true
+        trackAudio("audio_complete")
+      }
+    })
     audio.addEventListener("volumechange", updateVolume)
+    window.addEventListener("pagehide", () => {
+      flushListening()
+      window.IBRVNAnalytics?.flush(true)
+    })
 
     updateRangeFill(progress)
     updateVolume()

@@ -41,11 +41,11 @@ const fact = (name, content, href) => {
     : `<span class="sermon-fact">${inner}</span>`
 }
 
-const action = (name, label, href) => href
-  ? `<a href="${escapeHTML(href)}">${icon(name)}<span>${label}</span></a>`
+const action = (name, label, href, eventType, sermonId) => href
+  ? `<a href="${escapeHTML(href)}" data-analytics-event="${eventType}" data-content-type="sermon" data-content-id="${escapeHTML(sermonId)}">${icon(name)}<span>${label}</span></a>`
   : ""
 
-const renderAudioPlayer = source => `<div class="sermon-player" data-audio-player>
+const renderAudioPlayer = (source, sermonId) => `<div class="sermon-player" data-audio-player data-content-type="sermon" data-content-id="${escapeHTML(sermonId)}">
   <audio preload="metadata" src="${escapeHTML(source)}"></audio>
   <button class="sermon-player-toggle" type="button" aria-label="Reproduzir \u00e1udio">${icon("play")}</button>
   <input class="sermon-player-progress" type="range" min="0" max="100" step="0.1" value="0" aria-label="Posi\u00e7\u00e3o do \u00e1udio">
@@ -96,17 +96,17 @@ const renderSermon = sermon => {
 
   if (sermon.duration_minutes) facts.push(fact("clock", sermon.duration_minutes))
 
-  actions.push(action("headphones", "&Aacute;udio", sermon.media_link))
-  actions.push(action("download", "Arquivo", sermon.download_link))
-  actions.push(action("youtube", "YouTube", sermon.youtube_link))
-  actions.push(action("external-link", "P&aacute;gina", sermon.wordpress_link))
+  actions.push(action("headphones", "&Aacute;udio", sermon.media_link, "site_click", sermon.canonical_sermon_id))
+  actions.push(action("download", "Arquivo", sermon.download_link, "download", sermon.canonical_sermon_id))
+  actions.push(action("youtube", "YouTube", sermon.youtube_link, "youtube_click", sermon.canonical_sermon_id))
+  actions.push(action("external-link", "P&aacute;gina", sermon.wordpress_link, "site_click", sermon.canonical_sermon_id))
   if (sermon.transcript_available) {
-    actions.push(action("file-text", "Transcri&ccedil;&atilde;o", `/transcripts/${encodeURIComponent(sermon.canonical_sermon_id)}`))
+    actions.push(action("file-text", "Transcri&ccedil;&atilde;o", `/transcripts/${encodeURIComponent(sermon.canonical_sermon_id)}`, "transcript_click", sermon.canonical_sermon_id))
   }
 
   const availableActions = actions.join("")
   const audioPlayer = sermon.download_link
-    ? renderAudioPlayer(sermon.download_link)
+    ? renderAudioPlayer(sermon.download_link, sermon.canonical_sermon_id)
     : ""
 
   return `

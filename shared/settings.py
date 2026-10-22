@@ -100,6 +100,14 @@ QUALITY_LINK_TIMEOUT_SECONDS = int(
     os.getenv("ARCHIVE_QUALITY_LINK_TIMEOUT_SECONDS", "10")
 )
 
+ANALYTICS_ENABLED = os.getenv(
+    "ARCHIVE_ANALYTICS_ENABLED", "true"
+).strip().lower() in {"1", "true", "yes", "y", "on"}
+ANALYTICS_RETENTION_DAYS = max(
+    1,
+    int(os.getenv("ARCHIVE_ANALYTICS_RETENTION_DAYS", "180")),
+)
+
 WHATSAPP_SCHEDULER_BASE_URL = os.getenv(
     "ARCHIVE_WHATSAPP_SCHEDULER_BASE_URL",
     "",
