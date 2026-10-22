@@ -50,6 +50,11 @@ RESOURCE_GROUPS = OrderedDict([
     ("internal_link", ("Links da IBRVN", "external-link", "grid")),
 ])
 
+STORED_RESOURCE_ID_SUFFIX = re.compile(
+    r"\s+\[[0-9a-f]{12}\](?=(?:\.[^./\\]+)?$)",
+    re.I,
+)
+
 
 def format_date(value) -> str:
     if not value:
@@ -204,6 +209,10 @@ def resource_fallback_label(resource_url: str) -> str:
     return filename or resource_url or "Abrir recurso"
 
 
+def resource_display_filename(value: str) -> str:
+    return STORED_RESOURCE_ID_SUFFIX.sub("", str(value or "")).strip()
+
+
 def format_resource_duration(value) -> str:
     if value in (None, ""):
         return ""
@@ -316,7 +325,7 @@ def get_study_detail(study_id: str) -> dict | None:
         })
         serialized = dict(resource)
         serialized["display_label"] = (
-            str(resource.get("original_filename") or "").strip()
+            resource_display_filename(resource.get("original_filename") or "")
             or str(resource.get("label") or "").strip()
             or resource_fallback_label(resource.get("source_url", ""))
         )
@@ -373,6 +382,9 @@ def get_study_resource_transcript(resource_id: str) -> dict | None:
         return None
 
     transcript = dict(row)
+    transcript["resource_label"] = resource_display_filename(
+        transcript.get("resource_label") or ""
+    )
     transcript["study_date_display"] = format_date(transcript.get("study_date"))
     transcript["study_type_label"] = STUDY_TYPES.get(
         transcript.get("study_type"),

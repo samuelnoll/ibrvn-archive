@@ -33,9 +33,11 @@ class StudyResourcePagesTest(unittest.TestCase):
                 "mime_type": None,
                 "source_system": "youtube",
                 "position": 1,
-                "original_filename": "Aula 1.mp3",
-                "local_path": "historia/aula-1.mp3",
-                "download_link": "/study-media/historia/aula-1.mp3",
+                "original_filename": "Aula 1 [abcdef123456].mp3",
+                "local_path": "historia/Aula 1 [abcdef123456].mp3",
+                "download_link": (
+                    "/study-media/historia/Aula%201%20%5Babcdef123456%5D.mp3"
+                ),
                 "local_mime_type": "audio/mpeg",
                 "duration_seconds": 2667,
                 "transcript_available": 1,
@@ -48,9 +50,12 @@ class StudyResourcePagesTest(unittest.TestCase):
                 "mime_type": "application/pdf",
                 "source_system": "wordpress",
                 "position": 2,
-                "original_filename": "Apostila Historia.pdf",
-                "local_path": "historia/apostila.pdf",
-                "download_link": "/study-media/historia/apostila.pdf",
+                "original_filename": "Apostila Historia [123456abcdef].pdf",
+                "local_path": "historia/Apostila Historia [123456abcdef].pdf",
+                "download_link": (
+                    "/study-media/historia/"
+                    "Apostila%20Historia%20%5B123456abcdef%5D.pdf"
+                ),
                 "local_mime_type": "application/pdf",
                 "duration_seconds": None,
                 "transcript_available": 0,
@@ -81,13 +86,22 @@ class StudyResourcePagesTest(unittest.TestCase):
 
         self.assertIn('class="study-audio-resource"', rendered)
         self.assertIn('class="sermon-player study-resource-player" data-audio-player', rendered)
-        self.assertIn('<audio preload="metadata" src="/study-media/historia/aula-1.mp3">', rendered)
+        self.assertIn(
+            '<audio preload="metadata" '
+            'src="/study-media/historia/Aula%201%20%5Babcdef123456%5D.mp3">',
+            rendered,
+        )
         self.assertIn('class="sermon-player-volume-popover"', rendered)
         self.assertIn('class="sermon-player-speed-menu"', rendered)
         self.assertIn('href="https://youtube.com/watch?v=abc"', rendered)
-        self.assertIn('href="/study-media/historia/aula-1.mp3" download', rendered)
+        self.assertIn(
+            'href="/study-media/historia/'
+            'Aula%201%20%5Babcdef123456%5D.mp3" download',
+            rendered,
+        )
         self.assertIn('href="/study-transcripts/youtube-audio"', rendered)
         self.assertIn("Apostila Historia.pdf", rendered)
+        self.assertNotIn("Apostila Historia [123456abcdef].pdf", rendered)
         self.assertLess(
             rendered.index('class="study-resource-summary"'),
             rendered.index('class="sermon-player study-resource-player"'),
@@ -97,7 +111,7 @@ class StudyResourcePagesTest(unittest.TestCase):
         transcript_row = {
             "resource_id": "youtube-audio",
             "study_id": "historia-da-igreja",
-            "resource_label": "Aula 1.mp3",
+            "resource_label": "Aula 1 [abcdef123456].mp3",
             "study_title": "Historia da Igreja",
             "study_type": "ctb",
             "study_date": "2014-11-02",
