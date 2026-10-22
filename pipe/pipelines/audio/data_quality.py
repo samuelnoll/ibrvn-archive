@@ -27,6 +27,7 @@ from shared.settings import (
 
 
 RULE_VERSION = "1"
+MINIMUM_SUNDAY_SCOPE_START = date(2009, 1, 1)
 
 METRICS = [
     ("total_sermons", "Pregações no catálogo", "info", "Total publicado na camada gold."),
@@ -313,29 +314,28 @@ def calculate_snapshot(today: date | None = None):
     local_today = today or datetime.now(ZoneInfo(LOCAL_TIMEZONE)).date()
     cutoff = local_today - timedelta(days=QUALITY_SUNDAY_GRACE_DAYS)
     cutoff -= timedelta(days=(cutoff.weekday() - 6) % 7)
-    configured_start = parse_date(QUALITY_START_DATE)
-    scope_start = configured_start or (min(sermon_dates) if sermon_dates else None)
-    if scope_start:
-        first_sunday = scope_start + timedelta(days=(6 - scope_start.weekday()) % 7)
-        current = first_sunday
-        while current <= cutoff:
-            if current not in sermon_dates:
-                reason = exception_by_date.get(current)
-                metric_key = "justified_missing_sundays" if reason else "missing_sundays"
-                issues[metric_key].append({
-                    "issue_id": uuid4().hex,
-                    "metric_key": metric_key,
-                    "entity_type": "sunday",
-                    "entity_id": current.isoformat(),
-                    "preaching_date": current.isoformat(),
-                    "title": "Domingo sem pregação",
-                    "preacher_name": "",
-                    "source_system": "",
-                    "detail": reason or "Nenhuma pregação encontrada.",
-                    "link": "",
-                    "payload_json": "",
-                })
-            current += timedelta(days=7)
+    configured_start = parse_date(QUALITY_START_DATE) or MINIMUM_SUNDAY_SCOPE_START
+    scope_start = max(configured_start, MINIMUM_SUNDAY_SCOPE_START)
+    first_sunday = scope_start + timedelta(days=(6 - scope_start.weekday()) % 7)
+    current = first_sunday
+    while current <= cutoff:
+        if current not in sermon_dates:
+            reason = exception_by_date.get(current)
+            metric_key = "justified_missing_sundays" if reason else "missing_sundays"
+            issues[metric_key].append({
+                "issue_id": uuid4().hex,
+                "metric_key": metric_key,
+                "entity_type": "sunday",
+                "entity_id": current.isoformat(),
+                "preaching_date": current.isoformat(),
+                "title": "Domingo sem pregação",
+                "preacher_name": "",
+                "source_system": "",
+                "detail": reason or "Nenhuma pregação encontrada.",
+                "link": "",
+                "payload_json": "",
+            })
+        current += timedelta(days=7)
 
     seven_days_ago = datetime.now(ZoneInfo(LOCAL_TIMEZONE)) - timedelta(days=7)
     latest_success = None
@@ -401,7 +401,7 @@ def calculate_snapshot(today: date | None = None):
     return {
         "metrics": metric_rows,
         "issues": [item for rows in issues.values() for item in rows],
-        "scope_start": scope_start.isoformat() if scope_start else None,
+        "scope_start": scope_start.isoformat(),
         "scope_end": cutoff.isoformat(),
     }
 

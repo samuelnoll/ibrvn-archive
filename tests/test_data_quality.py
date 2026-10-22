@@ -11,10 +11,10 @@ from pipe.pipelines.audio.data_quality import calculate_snapshot, is_valid_link
 
 class DataQualityTest(unittest.TestCase):
     def test_quality_route_is_hidden_from_navigation_and_noindexed(self):
-        self.assertIn("/qualidade", {route.path for route in app.routes})
-        self.assertIn("/qualidade/export.csv", {route.path for route in app.routes})
+        self.assertIn("/quality", {route.path for route in app.routes})
+        self.assertIn("/quality/export.csv", {route.path for route in app.routes})
 
-        request = SimpleNamespace(url=SimpleNamespace(path="/qualidade"))
+        request = SimpleNamespace(url=SimpleNamespace(path="/quality"))
         rendered = templates.env.get_template("quality.html").render(
             request=request,
             run=None,
@@ -33,7 +33,7 @@ class DataQualityTest(unittest.TestCase):
             last_update="",
         )
         self.assertIn('<meta name="robots" content="noindex, nofollow">', rendered)
-        self.assertNotIn('href="/qualidade"', rendered)
+        self.assertNotIn('href="/quality"', rendered)
         self.assertIn("Ainda não há medições", rendered)
 
     def test_snapshot_calculates_coverage_and_sunday_exceptions(self):
@@ -90,6 +90,9 @@ class DataQualityTest(unittest.TestCase):
         ), patch("pathlib.Path.is_file", return_value=True), patch(
             "pipe.pipelines.audio.data_quality.check_external_link_health",
             return_value={},
+        ), patch(
+            "pipe.pipelines.audio.data_quality.QUALITY_START_DATE",
+            "2026-09-27",
         ):
             snapshot = calculate_snapshot(today=date(2026, 10, 22))
 

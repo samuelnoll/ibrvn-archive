@@ -45,7 +45,7 @@
 {% set section = "pipeline" if metric.metric_key in ("failed_pipeline_runs_7d", "stale_pipeline") else "sermons" %}
 <a
 class="quality-card is-{{ metric.severity }}{% if selected_metric and selected_metric.metric_key == metric.metric_key %} is-selected{% endif %}"
-href="/qualidade?run_id={{ run.run_id }}&metric={{ metric.metric_key }}"
+href="/quality?run_id={{ run.run_id }}&metric={{ metric.metric_key }}"
 data-quality-section="{{ section }}"
 {% if section != active_section %}hidden{% endif %}
 >
@@ -94,9 +94,9 @@ data-quality-section="{{ section }}"
 <h2>{{ selected_metric.label }}</h2>
 <p>{{ selected_metric.description }}</p>
 </div>
-<a class="quality-export" href="/qualidade/export.csv?run_id={{ run.run_id }}&metric={{ selected_metric.metric_key }}{% if selected_year %}&year={{ selected_year }}{% endif %}{% if selected_source %}&source={{ selected_source }}{% endif %}{% if selected_preacher %}&preacher={{ selected_preacher|urlencode }}{% endif %}">Exportar CSV</a>
+<a class="quality-export" href="/quality/export.csv?run_id={{ run.run_id }}&metric={{ selected_metric.metric_key }}{% if selected_year %}&year={{ selected_year }}{% endif %}{% if selected_source %}&source={{ selected_source }}{% endif %}{% if selected_preacher %}&preacher={{ selected_preacher|urlencode }}{% endif %}">Exportar CSV</a>
 </div>
-<form class="quality-filters" action="/qualidade" method="get">
+<form class="quality-filters" action="/quality" method="get">
 <input type="hidden" name="run_id" value="{{ run.run_id }}">
 <input type="hidden" name="metric" value="{{ selected_metric.metric_key }}">
 <label>Ano<select name="year"><option value="">Todos</option>{% for item in years %}<option value="{{ item }}"{% if item == selected_year %} selected{% endif %}>{{ item }}</option>{% endfor %}</select></label>

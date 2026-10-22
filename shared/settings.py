@@ -79,7 +79,7 @@ LOCAL_TIMEZONE = os.getenv(
 
 QUALITY_START_DATE = os.getenv(
     "ARCHIVE_QUALITY_START_DATE",
-    "",
+    "2009-01-01",
 ).strip()
 QUALITY_SUNDAY_GRACE_DAYS = int(
     os.getenv("ARCHIVE_QUALITY_SUNDAY_GRACE_DAYS", "7")

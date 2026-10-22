@@ -335,7 +335,7 @@ def api_search(q: str):
     ]
 
 
-@app.get("/qualidade")
+@app.get("/quality")
 def quality_dashboard(
     request: Request,
     run_id: str = "",
@@ -359,7 +359,7 @@ def quality_dashboard(
     )
 
 
-@app.get("/qualidade/export.csv")
+@app.get("/quality/export.csv")
 def quality_export_csv(
     run_id: str = "",
     metric: str = "",

@@ -181,7 +181,7 @@ studies that do not already contain a direct audio resource.
 
 ## Data-quality dashboard
 
-The internal dashboard is available directly at `/qualidade`. It is not linked
+The internal dashboard is available directly at `/quality`. It is not linked
 from public navigation and sends `noindex, nofollow`, but the route is not an
 authentication boundary. Each calculation persists both aggregate metrics and
 the item-level evidence behind them, so historical charts and drill-down lists
@@ -199,6 +199,7 @@ python -m pipe.pipelines.audio.data_quality --trigger-reason manual
 Optional configuration:
 
 - `ARCHIVE_QUALITY_START_DATE`: first date considered by the missing-Sunday rule
+  (never earlier than `2009-01-01`)
 - `ARCHIVE_QUALITY_SUNDAY_GRACE_DAYS`: grace period for recent Sundays (default 7)
 - `ARCHIVE_QUALITY_SHORT_TRANSCRIPT_WORDS`: short-transcript threshold (default 100)
 - `ARCHIVE_QUALITY_MIN_AUDIO_MINUTES`: suspicious lower duration (default 10)
