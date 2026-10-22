@@ -165,9 +165,11 @@ Study orchestration is isolated in these DAGs:
 `ibrvn_study_resource_enrichment` accepts optional `loopback_days` and
 `skip_transcription` DAG configuration parameters. Files are stored separately
 from sermon audio under `ARCHIVE_STUDY_RESOURCE_RAW_DIR`, which defaults to
-`/app/data/resource/raw` in the container. Direct audio and documents preserve
-their original filename. YouTube videos are converted to MP3 only for studies
-that do not already contain a direct audio resource.
+`/app/data/resource/raw` in the container. Resources use human-readable paths
+with short stable identifiers to prevent collisions, for example
+`Romanos [a1b2c3d4e5f6]/Aula 1 [9f8e7d6c5b4a].mp3`. File extensions come from
+the source file or MIME type. YouTube videos are converted to MP3 only for
+studies that do not already contain a direct audio resource.
 
 ## Running
 

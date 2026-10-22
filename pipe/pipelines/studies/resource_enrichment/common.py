@@ -19,6 +19,17 @@ DOCUMENT_RESOURCE_TYPES = {
     "spreadsheet",
     "word",
 }
+MAX_PATH_COMPONENT_BYTES = 180
+IDENTITY_SUFFIX_LENGTH = 12
+WINDOWS_RESERVED_NAMES = {
+    "aux",
+    "clock$",
+    "con",
+    "nul",
+    "prn",
+    *(f"com{number}" for number in range(1, 10)),
+    *(f"lpt{number}" for number in range(1, 10)),
+}
 
 
 def normalize_loopback_days(value) -> int | None:
@@ -121,6 +132,47 @@ def safe_filename(value: str, fallback: str) -> str:
     return filename or fallback
 
 
+def safe_path_component(value: str, fallback: str) -> str:
+    component = unquote(str(value or ""))
+    component = re.sub(r'[<>:"/\\|?*\x00-\x1f]', "_", component)
+    component = re.sub(r"\s+", " ", component).strip(" .")
+
+    if not component or component in {".", ".."}:
+        component = fallback
+
+    if component.casefold() in WINDOWS_RESERVED_NAMES:
+        component = f"_{component}"
+
+    return component
+
+
+def truncate_utf8(value: str, max_bytes: int) -> str:
+    encoded = value.encode("utf-8")
+
+    if len(encoded) <= max_bytes:
+        return value
+
+    return encoded[:max_bytes].decode("utf-8", errors="ignore").rstrip(" .")
+
+
+def friendly_component(
+    value: str,
+    stable_id: str,
+    fallback: str,
+    extension: str = "",
+) -> str:
+    identity = re.sub(r"[^a-zA-Z0-9]", "", str(stable_id or ""))
+    identity = identity[:IDENTITY_SUFFIX_LENGTH] or "unknown"
+    normalized_extension = (
+        f".{extension.lstrip('.')}" if extension else ""
+    )
+    suffix = f" [{identity}]{normalized_extension}"
+    available_bytes = MAX_PATH_COMPONENT_BYTES - len(suffix.encode("utf-8"))
+    readable_name = safe_path_component(value, fallback)
+    readable_name = truncate_utf8(readable_name, available_bytes)
+    return f"{readable_name or fallback}{suffix}"
+
+
 def direct_original_filename(row: dict) -> str:
     path_name = PurePosixPath(
         unquote(urlsplit(row.get("source_url") or "").path)
@@ -130,31 +182,50 @@ def direct_original_filename(row: dict) -> str:
     return safe_filename(preferred, f"resource-{row['resource_id'][:12]}")
 
 
-def youtube_audio_filename(row: dict) -> str:
-    video_id = youtube_video_id(
-        row.get("canonical_url") or row.get("source_url") or ""
-    )
-    title = str(row.get("label") or video_id).replace("/", "_").replace("\\", "_")
-    stem = safe_filename(title, video_id or "youtube-audio")
+def candidate_extension(row: dict) -> str:
+    if row["source_kind"] == "youtube":
+        return ".mp3"
 
-    if stem.casefold().endswith(".mp3"):
-        return stem
+    original_filename = direct_original_filename(row)
+    extension = Path(original_filename).suffix
 
-    return f"{stem}.mp3"
+    if extension:
+        return extension
+
+    guessed_extension = mimetypes.guess_extension(row.get("mime_type") or "")
+    return guessed_extension or ""
 
 
 def candidate_filename(row: dict) -> str:
-    if row["source_kind"] == "youtube":
-        return youtube_audio_filename(row)
+    extension = candidate_extension(row)
+    label = str(row.get("label") or "").strip()
 
-    return direct_original_filename(row)
+    if label and extension and label.casefold().endswith(extension.casefold()):
+        label = label[:-len(extension)]
+
+    if not label:
+        label = Path(direct_original_filename(row)).stem
+
+    return friendly_component(
+        label,
+        row["resource_id"],
+        "resource",
+        extension,
+    )
+
+
+def study_directory_name(row: dict) -> str:
+    return friendly_component(
+        row.get("study_title") or "",
+        row["study_id"],
+        "study",
+    )
 
 
 def build_local_path(row: dict, filename: str) -> Path:
     return (
         STUDY_RESOURCE_RAW_DIR
-        / row["study_id"][:16]
-        / row["resource_id"][:16]
+        / study_directory_name(row)
         / filename
     )
 

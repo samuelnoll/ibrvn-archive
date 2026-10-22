@@ -5,9 +5,11 @@ import unittest
 from sqlalchemy import create_engine, text
 
 from pipe.pipelines.studies.resource_enrichment.common import (
+    build_local_path,
     candidate_filename,
     normalize_loopback_days,
     select_download_candidates,
+    study_directory_name,
     youtube_video_id,
 )
 from pipe.pipelines.studies.resource_enrichment.silver_to_gold import (
@@ -63,7 +65,7 @@ class StudyResourceEnrichmentTest(unittest.TestCase):
         self.assertEqual("audio", youtube["asset_type"])
         self.assertEqual("youtube", youtube["source_kind"])
 
-    def test_original_direct_filename_and_youtube_mp3_name_are_preserved(self):
+    def test_resource_names_are_readable_unique_and_keep_the_extension(self):
         direct = {
             **resource(
                 "pdf-1",
@@ -85,10 +87,89 @@ class StudyResourceEnrichmentTest(unittest.TestCase):
             "source_kind": "youtube",
         }
 
-        self.assertEqual("Apostila do Curso.pdf", candidate_filename(direct))
-        self.assertEqual("Aula 1_ Introducao.mp3", candidate_filename(youtube))
+        self.assertEqual(
+            "Apostila do Curso [pdf1].pdf",
+            candidate_filename(direct),
+        )
+        self.assertEqual(
+            "Aula 1_ Introducao [youtube1].mp3",
+            candidate_filename(youtube),
+        )
         self.assertEqual("abc123", youtube_video_id(youtube["source_url"]))
         self.assertEqual("short123", youtube_video_id("https://youtube.com/shorts/short123"))
+
+    def test_study_directory_is_readable_and_unique(self):
+        row = {
+            "study_id": "abcdef1234567890",
+            "study_title": "Romanos: graça / fé",
+        }
+
+        self.assertEqual(
+            "Romanos_ graça _ fé [abcdef123456]",
+            study_directory_name(row),
+        )
+
+        path = build_local_path(
+            {**row, "resource_id": "9876543210abcdef"},
+            "Aula 1 [9876543210ab].mp3",
+        )
+        self.assertEqual(
+            STUDY_RESOURCE_RAW_DIR
+            / "Romanos_ graça _ fé [abcdef123456]"
+            / "Aula 1 [9876543210ab].mp3",
+            path,
+        )
+
+    def test_equal_study_titles_and_resource_labels_do_not_collide(self):
+        first_study = {
+            "study_id": "111111111111aaaa",
+            "study_title": "Doutrinas da Graça",
+        }
+        second_study = {
+            "study_id": "222222222222bbbb",
+            "study_title": "Doutrinas da Graça",
+        }
+        first_resource = {
+            **resource(
+                "aaaaaaaaaaaa1111",
+                first_study["study_id"],
+                "pdf",
+                "https://site/material.pdf",
+                "Material",
+            ),
+            "source_kind": "direct",
+        }
+        second_resource = {
+            **first_resource,
+            "resource_id": "bbbbbbbbbbbb2222",
+        }
+
+        self.assertNotEqual(
+            study_directory_name(first_study),
+            study_directory_name(second_study),
+        )
+        self.assertNotEqual(
+            candidate_filename(first_resource),
+            candidate_filename(second_resource),
+        )
+
+    def test_mime_type_supplies_extension_when_url_and_label_do_not(self):
+        row = {
+            **resource(
+                "cccccccccccc3333",
+                "study-1",
+                "document",
+                "https://site/download",
+                "Material do curso",
+            ),
+            "source_kind": "direct",
+            "mime_type": "application/pdf",
+        }
+
+        self.assertEqual(
+            "Material do curso [cccccccccccc].pdf",
+            candidate_filename(row),
+        )
 
     def test_loopback_days_rejects_non_positive_values(self):
         self.assertIsNone(normalize_loopback_days(None))
