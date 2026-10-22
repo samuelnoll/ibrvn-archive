@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}Qualidade dos dados | Arquivo IBRVN{% endblock %}
+{% block meta %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+
+{% block content %}
+<section class="quality-page">
+<header class="quality-header">
+<div>
+<p class="quality-eyebrow">Painel interno</p>
+<h1>Qualidade dos dados</h1>
+<p>Integridade, cobertura e evolução do acervo do Arquivo IBRVN.</p>
+</div>
+{% if run %}
+<dl class="quality-run-summary">
+<div><dt>Calculado em</dt><dd>{{ run.calculated_at_display }}</dd></div>
+<div><dt>Motivo</dt><dd>{{ run.trigger_reason }}</dd></div>
+<div><dt>Período dos domingos</dt><dd>{{ run.scope_start or "—" }} a {{ run.scope_end or "—" }}</dd></div>
+<div><dt>Última pipeline concluída</dt><dd>{{ last_pipeline_success or "—" }}</dd></div>
+</dl>
+{% endif %}
+</header>
+
+{% if latest_attempt and latest_attempt.status == "failed" %}
+<div class="quality-alert" role="alert">
+<strong>A medição mais recente falhou em {{ latest_attempt.calculated_at_display }}.</strong>
+<span>{{ latest_attempt.error_message or "Consulte os logs da DAG de qualidade." }}</span>
+</div>
+{% endif %}
+
+{% if not run %}
+<div class="quality-empty">
+<h2>Ainda não há medições</h2>
+<p>A primeira execução da DAG de qualidade criará o snapshot exibido nesta página.</p>
+</div>
+{% else %}
+{% set active_section = "pipeline" if selected_metric and selected_metric.metric_key in ("failed_pipeline_runs_7d", "stale_pipeline") else "sermons" %}
+<nav class="quality-tabs" aria-label="Seções de qualidade">
+<button type="button"{% if active_section == "sermons" %} class="is-active"{% endif %} data-quality-tab="sermons">Pregações</button>
+<button type="button"{% if active_section == "pipeline" %} class="is-active"{% endif %} data-quality-tab="pipeline">Pipeline</button>
+</nav>
+
+<section class="quality-card-grid" aria-label="Indicadores de qualidade">
+{% for metric in metrics %}
+{% set section = "pipeline" if metric.metric_key in ("failed_pipeline_runs_7d", "stale_pipeline") else "sermons" %}
+<a
+class="quality-card is-{{ metric.severity }}{% if selected_metric and selected_metric.metric_key == metric.metric_key %} is-selected{% endif %}"
+href="/qualidade?run_id={{ run.run_id }}&metric={{ metric.metric_key }}"
+data-quality-section="{{ section }}"
+{% if section != active_section %}hidden{% endif %}
+>
+<span class="quality-card-status" aria-hidden="true"></span>
+<span class="quality-card-label">{{ metric.label }}</span>
+<strong>{{ metric.value }}</strong>
+<span class="quality-card-meta">
+{% if metric.percentage is not none %}{{ metric.percentage }}% do acervo{% else %}quantidade absoluta{% endif %}
+{% if metric.delta is not none %}
+<span class="quality-delta{% if metric.delta < 0 %} is-down{% elif metric.delta > 0 %} is-up{% endif %}">
+{% if metric.delta > 0 %}+{% endif %}{{ metric.delta }} desde a medição anterior
+</span>
+{% endif %}
+</span>
+<small>{{ metric.description }}</small>
+</a>
+{% endfor %}
+</section>
+
+<section class="quality-chart-panel">
+<div class="quality-panel-heading">
+<div><h2>Evolução dos indicadores</h2><p>Últimas medições persistidas</p></div>
+<div class="quality-chart-controls">
+<label>Indicador
+<select id="quality-chart-metric">
+{% for metric in metrics %}<option value="{{ metric.metric_key }}"{% if selected_metric and selected_metric.metric_key == metric.metric_key %} selected{% endif %}>{{ metric.label }}</option>{% endfor %}
+</select>
+</label>
+<div class="quality-mode-toggle" role="group" aria-label="Unidade do gráfico">
+<button type="button" class="is-active" data-chart-mode="value">Quantidade</button>
+<button type="button" data-chart-mode="percentage">Percentual</button>
+</div>
+</div>
+</div>
+<div class="quality-chart-wrap">
+<svg id="quality-history-chart" viewBox="0 0 900 300" role="img" aria-label="Evolução histórica do indicador selecionado"></svg>
+<p id="quality-chart-empty" hidden>Não há histórico suficiente para este indicador.</p>
+</div>
+</section>
+
+{% if selected_metric %}
+<section class="quality-detail-panel" id="detalhes">
+<div class="quality-panel-heading">
+<div>
+<p class="quality-eyebrow">Detalhamento do snapshot</p>
+<h2>{{ selected_metric.label }}</h2>
+<p>{{ selected_metric.description }}</p>
+</div>
+<a class="quality-export" href="/qualidade/export.csv?run_id={{ run.run_id }}&metric={{ selected_metric.metric_key }}{% if selected_year %}&year={{ selected_year }}{% endif %}{% if selected_source %}&source={{ selected_source }}{% endif %}{% if selected_preacher %}&preacher={{ selected_preacher|urlencode }}{% endif %}">Exportar CSV</a>
+</div>
+<form class="quality-filters" action="/qualidade" method="get">
+<input type="hidden" name="run_id" value="{{ run.run_id }}">
+<input type="hidden" name="metric" value="{{ selected_metric.metric_key }}">
+<label>Ano<select name="year"><option value="">Todos</option>{% for item in years %}<option value="{{ item }}"{% if item == selected_year %} selected{% endif %}>{{ item }}</option>{% endfor %}</select></label>
+<label>Origem<select name="source"><option value="">Todas</option>{% for item in sources %}<option value="{{ item }}"{% if item == selected_source %} selected{% endif %}>{{ item }}</option>{% endfor %}</select></label>
+<label>Pregador<select name="preacher"><option value="">Todos</option>{% for item in preachers %}<option value="{{ item }}"{% if item == selected_preacher %} selected{% endif %}>{{ item }}</option>{% endfor %}</select></label>
+<button type="submit">Aplicar filtros</button>
+</form>
+
+<div class="quality-table-wrap">
+<table class="quality-table">
+<thead><tr><th>Data</th><th>Item</th><th>Pregador</th><th>Origem</th><th>Detalhe</th><th></th></tr></thead>
+<tbody>
+{% for issue in issues %}
+<tr>
+<td>{{ issue.preaching_date or "—" }}</td>
+<td><strong>{{ issue.title or issue.entity_id }}</strong><small>{{ issue.entity_type }} · {{ issue.entity_id }}</small></td>
+<td>{{ issue.preacher_name or "—" }}</td>
+<td>{{ issue.source_system or "—" }}</td>
+<td>{{ issue.detail or "—" }}</td>
+<td>{% if issue.link %}<a href="{{ issue.link }}">Abrir</a>{% endif %}</td>
+</tr>
+{% else %}
+<tr><td colspan="6" class="quality-no-results">Nenhum item encontrado com estes filtros.</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+</section>
+{% endif %}
+{% endif %}
+</section>
+
+{% if run %}
+<script type="application/json" id="quality-history-data">{{ history|tojson }}</script>
+<script>
+(() => {
+  const history = JSON.parse(document.getElementById("quality-history-data").textContent);
+  const svg = document.getElementById("quality-history-chart");
+  const empty = document.getElementById("quality-chart-empty");
+  const select = document.getElementById("quality-chart-metric");
+  let mode = "value";
+
+  const escapeXml = (value) => String(value).replace(/[&<>"']/g, character => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&apos;"})[character]);
+  function renderChart() {
+    const rows = history.filter(row => row.metric_key === select.value && (mode === "value" || row.percentage !== null));
+    if (!rows.length) { svg.innerHTML = ""; empty.hidden = false; return; }
+    empty.hidden = true;
+    const values = rows.map(row => mode === "value" ? row.value : row.percentage);
+    const maximum = Math.max(...values, 1);
+    const left = 58, right = 880, top = 22, bottom = 245;
+    const x = index => rows.length === 1 ? (left + right) / 2 : left + index * (right - left) / (rows.length - 1);
+    const y = value => bottom - value * (bottom - top) / maximum;
+    const path = values.map((value, index) => `${index ? "L" : "M"}${x(index).toFixed(1)},${y(value).toFixed(1)}`).join(" ");
+    const unit = mode === "percentage" ? "%" : "";
+    const grid = [0, .25, .5, .75, 1].map(fraction => {
+      const value = maximum * fraction;
+      const py = y(value);
+      return `<line x1="${left}" y1="${py}" x2="${right}" y2="${py}" class="chart-grid"/><text x="${left - 10}" y="${py + 4}" text-anchor="end">${escapeXml(Number.isInteger(value) ? value : value.toFixed(1))}${unit}</text>`;
+    }).join("");
+    const points = values.map((value, index) => `<circle cx="${x(index)}" cy="${y(value)}" r="4"><title>${escapeXml(rows[index].calculated_at.slice(0, 10))}: ${value}${unit}</title></circle>`).join("");
+    const firstDate = escapeXml(rows[0].calculated_at.slice(0, 10));
+    const lastDate = escapeXml(rows[rows.length - 1].calculated_at.slice(0, 10));
+    svg.innerHTML = `${grid}<path d="${path}" class="chart-line"/>${points}<text x="${left}" y="280">${firstDate}</text><text x="${right}" y="280" text-anchor="end">${lastDate}</text>`;
+  }
+  select.addEventListener("change", renderChart);
+  document.querySelectorAll("[data-chart-mode]").forEach(button => button.addEventListener("click", () => {
+    mode = button.dataset.chartMode;
+    document.querySelectorAll("[data-chart-mode]").forEach(item => item.classList.toggle("is-active", item === button));
+    renderChart();
+  }));
+  document.querySelectorAll("[data-quality-tab]").forEach(button => button.addEventListener("click", () => {
+    const section = button.dataset.qualityTab;
+    document.querySelectorAll("[data-quality-tab]").forEach(item => item.classList.toggle("is-active", item === button));
+    document.querySelectorAll("[data-quality-section]").forEach(card => { card.hidden = card.dataset.qualitySection !== section; });
+  }));
+  renderChart();
+  if (window.location.search.includes("metric=")) document.getElementById("detalhes")?.scrollIntoView({behavior: "smooth", block: "start"});
+})();
+</script>
+{% endif %}
+{% endblock %}

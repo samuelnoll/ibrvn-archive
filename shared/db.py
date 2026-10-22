@@ -112,6 +112,60 @@ CREATE TABLE IF NOT EXISTS gold_sermons (
 )
 """
 
+CREATE_DATA_QUALITY_RUNS_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS data_quality_runs (
+    run_id TEXT PRIMARY KEY,
+    calculated_at TEXT NOT NULL,
+    finished_at TEXT,
+    status TEXT NOT NULL,
+    trigger_reason TEXT NOT NULL,
+    scope_start TEXT,
+    scope_end TEXT,
+    rule_version TEXT NOT NULL,
+    error_message TEXT
+)
+"""
+
+CREATE_DATA_QUALITY_METRICS_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS data_quality_metrics (
+    run_id TEXT NOT NULL,
+    section TEXT NOT NULL,
+    metric_key TEXT NOT NULL,
+    label TEXT NOT NULL,
+    value INTEGER NOT NULL,
+    denominator INTEGER,
+    severity TEXT NOT NULL,
+    sort_order INTEGER NOT NULL,
+    description TEXT,
+    PRIMARY KEY (run_id, metric_key)
+)
+"""
+
+CREATE_DATA_QUALITY_ISSUES_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS data_quality_issues (
+    issue_id TEXT PRIMARY KEY,
+    run_id TEXT NOT NULL,
+    metric_key TEXT NOT NULL,
+    entity_type TEXT NOT NULL,
+    entity_id TEXT NOT NULL,
+    preaching_date TEXT,
+    title TEXT,
+    preacher_name TEXT,
+    source_system TEXT,
+    detail TEXT,
+    link TEXT,
+    payload_json TEXT
+)
+"""
+
+CREATE_DATA_QUALITY_SUNDAY_EXCEPTIONS_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS data_quality_sunday_exceptions (
+    preaching_date TEXT PRIMARY KEY,
+    reason TEXT NOT NULL,
+    created_at TEXT NOT NULL
+)
+"""
+
 
 def utc_now_iso() -> str:
 
@@ -176,6 +230,10 @@ def ensure_schema(conn):
     conn.execute(text(CREATE_SILVER_CRITIQUE_TABLE_SQL))
     conn.execute(text(CREATE_SILVER_PROCESSING_RUNS_TABLE_SQL))
     conn.execute(text(CREATE_GOLD_SERMONS_TABLE_SQL))
+    conn.execute(text(CREATE_DATA_QUALITY_RUNS_TABLE_SQL))
+    conn.execute(text(CREATE_DATA_QUALITY_METRICS_TABLE_SQL))
+    conn.execute(text(CREATE_DATA_QUALITY_ISSUES_TABLE_SQL))
+    conn.execute(text(CREATE_DATA_QUALITY_SUNDAY_EXCEPTIONS_TABLE_SQL))
 
     gold_columns = {
         column["name"]
@@ -234,6 +292,21 @@ def create_indexes(conn):
     conn.execute(text("""
         CREATE INDEX IF NOT EXISTS idx_gold_sermons_serie
         ON gold_sermons(serie)
+    """))
+
+    conn.execute(text("""
+        CREATE INDEX IF NOT EXISTS idx_data_quality_runs_calculated
+        ON data_quality_runs(status, calculated_at)
+    """))
+
+    conn.execute(text("""
+        CREATE INDEX IF NOT EXISTS idx_data_quality_metrics_key
+        ON data_quality_metrics(metric_key, run_id)
+    """))
+
+    conn.execute(text("""
+        CREATE INDEX IF NOT EXISTS idx_data_quality_issues_lookup
+        ON data_quality_issues(run_id, metric_key, preaching_date)
     """))
 
     if is_postgres_backend():

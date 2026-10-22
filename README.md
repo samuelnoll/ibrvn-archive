@@ -10,7 +10,7 @@ PostgreSQL, and serves the final archive through a FastAPI web app.
 
 The homelab runtime is intentionally split:
 
-- `api/` serves the web interface and reads gold data only
+- `api/` serves the web interface and reads gold plus persisted quality snapshots
 - `pipe/` owns ingestion, transformation, enrichment, and operational jobs
 - `shared/` contains the common database and settings modules
 
@@ -71,6 +71,7 @@ Current orchestration shape in `homelab-airflow`:
 - `ibrvn_sermon_metadata_silver`
 - `ibrvn_sermon_audio_enrichment`
 - `ibrvn_sermon_gold_refresh`
+- `ibrvn_sermon_data_quality`
 - `ibrvn_sermon_critique`
 
 ## Data Model
@@ -88,6 +89,13 @@ is centered on:
 - `silver_transcripts`
 - `silver_critique`
 - `silver_processing_runs`
+
+Quality history is stored separately in:
+
+- `data_quality_runs`
+- `data_quality_metrics`
+- `data_quality_issues`
+- `data_quality_sunday_exceptions`
 
 Audio enrichment now calls the separate `homelab-ai` runtime for:
 
@@ -170,6 +178,37 @@ with short stable identifiers to prevent collisions, for example
 `Romanos [a1b2c3d4e5f6]/Aula 1 [9f8e7d6c5b4a].mp3`. File extensions come from
 the source file or MIME type. YouTube videos are converted to MP3 only for
 studies that do not already contain a direct audio resource.
+
+## Data-quality dashboard
+
+The internal dashboard is available directly at `/qualidade`. It is not linked
+from public navigation and sends `noindex, nofollow`, but the route is not an
+authentication boundary. Each calculation persists both aggregate metrics and
+the item-level evidence behind them, so historical charts and drill-down lists
+always describe the same snapshot. Item lists can be filtered and exported as
+CSV.
+
+`ibrvn_sermon_data_quality` runs at 09:00 every Saturday in
+`America/Sao_Paulo`. The YouTube weekly DAG also triggers it after gold refresh,
+audio enrichment, and critique reporting have completed. Run it manually with:
+
+```bash
+python -m pipe.pipelines.audio.data_quality --trigger-reason manual
+```
+
+Optional configuration:
+
+- `ARCHIVE_QUALITY_START_DATE`: first date considered by the missing-Sunday rule
+- `ARCHIVE_QUALITY_SUNDAY_GRACE_DAYS`: grace period for recent Sundays (default 7)
+- `ARCHIVE_QUALITY_SHORT_TRANSCRIPT_WORDS`: short-transcript threshold (default 100)
+- `ARCHIVE_QUALITY_MIN_AUDIO_MINUTES`: suspicious lower duration (default 10)
+- `ARCHIVE_QUALITY_MAX_AUDIO_MINUTES`: suspicious upper duration (default 150)
+- `ARCHIVE_QUALITY_CHECK_EXTERNAL_LINKS`: enable live link checks (default true)
+- `ARCHIVE_QUALITY_LINK_TIMEOUT_SECONDS`: timeout per external link (default 10)
+
+Intentional Sundays without a sermon can be excluded from the error count by
+inserting their ISO date and reason into `data_quality_sunday_exceptions`. They
+remain visible under the informational “Domingos ausentes justificados” metric.
 
 ## Running
 

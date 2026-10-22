@@ -1,4 +1,9 @@
+import csv
+import io
+import re
+
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import StreamingResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 
@@ -11,6 +16,7 @@ from .study_queries import (
     get_study_resource_transcript,
     get_study_type_composition,
 )
+from .quality_queries import get_quality_dashboard, get_quality_issues, get_quality_run
 from shared.settings import AUDIO_RAW_DIR, STUDY_RESOURCE_RAW_DIR
 
 app = FastAPI()
@@ -327,3 +333,66 @@ def api_search(q: str):
         dict(s)
         for s in sermons[:20]
     ]
+
+
+@app.get("/qualidade")
+def quality_dashboard(
+    request: Request,
+    run_id: str = "",
+    metric: str = "",
+    year: str = "",
+    source: str = "",
+    preacher: str = "",
+):
+    dashboard = get_quality_dashboard(run_id, metric, year, source, preacher)
+    return render_template(
+        request,
+        "quality.html",
+        {
+            "request": request,
+            **dashboard,
+            "selected_year": year,
+            "selected_source": source,
+            "selected_preacher": preacher,
+            "last_update": get_last_update(),
+        },
+    )
+
+
+@app.get("/qualidade/export.csv")
+def quality_export_csv(
+    run_id: str = "",
+    metric: str = "",
+    year: str = "",
+    source: str = "",
+    preacher: str = "",
+):
+    selected_run = get_quality_run(run_id)
+    if not selected_run or not metric:
+        raise HTTPException(status_code=404, detail="Quality snapshot not found")
+    rows = get_quality_issues(
+        selected_run["run_id"], metric, year, source, preacher,
+    )
+    output = io.StringIO()
+    writer = csv.writer(output)
+    def csv_cell(value):
+        value = str(value or "")
+        return f"'{value}" if value.startswith(("=", "+", "-", "@")) else value
+
+    writer.writerow([
+        "data", "tipo", "id", "titulo", "pregador", "origem", "detalhe", "link",
+    ])
+    for row in rows:
+        writer.writerow([
+            csv_cell(row.get("preaching_date")), csv_cell(row.get("entity_type")),
+            csv_cell(row.get("entity_id")), csv_cell(row.get("title")),
+            csv_cell(row.get("preacher_name")), csv_cell(row.get("source_system")),
+            csv_cell(row.get("detail")), csv_cell(row.get("link")),
+        ])
+    safe_metric = re.sub(r"[^a-z0-9_-]", "_", metric.lower())
+    headers = {
+        "Content-Disposition": f'attachment; filename="qualidade-{safe_metric}.csv"',
+    }
+    return StreamingResponse(
+        iter([output.getvalue()]), media_type="text/csv; charset=utf-8", headers=headers,
+    )
