@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% from "_sermon_card.html" import audio_player, icon %}
+
+{% block title %}{{ study.title }} | Estudos | Arquivo IBRVN{% endblock %}
+
+{% block content %}
+<article class="study-detail-page">
+<a class="study-back-link" href="/studies">&larr; Todos os estudos</a>
+
+<header class="study-detail-heading">
+<p>{{ study.study_type_label }}</p>
+<h1>{{ study.title }}</h1>
+<div class="study-detail-meta">
+{% if study.study_date_display %}<time>{{ study.study_date_display }}</time>{% endif %}
+<span>{{ study.resource_count }} recurso{% if study.resource_count != 1 %}s{% endif %}</span>
+{% if study.collection_title %}<span>{{ study.collection_title }}</span>{% endif %}
+</div>
+{% if study.origins %}
+<div class="study-origin-links">
+{% for origin in study.origins %}
+<a class="study-origin-link" href="{{ origin.source_url }}" target="_blank" rel="noopener noreferrer">
+<svg class="icon" aria-hidden="true"><use href="#icon-external-link"></use></svg>
+<span>{{ origin.label }}</span>
+</a>
+{% endfor %}
+</div>
+{% endif %}
+</header>
+
+<div class="resource-groups study-resource-groups">
+{% for group in study.resource_groups %}
+<section class="resource-group study-resource-group study-resource-group-{{ group.layout }}">
+<div class="resource-group-heading">
+{{ icon(group.icon) }}
+<h2>{{ group.label }}</h2>
+<span>{{ group.resources | length }}</span>
+</div>
+
+{% if group.layout == "audio" %}
+<div class="study-audio-list">
+{% for resource in group.resources %}
+<article class="study-audio-resource">
+<div class="study-resource-summary">
+<div class="study-resource-name">
+{{ icon('headphones') }}
+<div>
+<h3>{{ resource.display_label }}</h3>
+{% if resource.duration_display %}<span>{{ resource.duration_display }}</span>{% endif %}
+</div>
+</div>
+<div class="study-resource-actions">
+<a href="{{ resource.source_url }}" target="_blank" rel="noopener noreferrer">
+{{ icon('external-link') }}<span>Original</span>
+</a>
+{% if resource.download_link %}
+<a class="study-resource-download" href="{{ resource.download_link }}" download>
+{{ icon('download') }}<span>Download</span>
+</a>
+{% endif %}
+{% if resource.transcript_available %}
+<a href="/study-transcripts/{{ resource.resource_id | urlencode }}">
+{{ icon('file-text') }}<span>Transcri&ccedil;&atilde;o</span>
+</a>
+{% endif %}
+</div>
+</div>
+
+{% if resource.has_local_audio %}
+{{ audio_player(resource.download_link, 'study-resource-player') }}
+{% endif %}
+</article>
+{% endfor %}
+</div>
+{% else %}
+<ul class="study-resource-grid">
+{% for resource in group.resources %}
+<li class="study-resource-tile">
+<div class="study-resource-name">
+{{ icon(group.icon) }}
+<div>
+<h3>{{ resource.display_label }}</h3>
+{% if resource.duration_display %}<span>{{ resource.duration_display }}</span>{% endif %}
+</div>
+</div>
+<div class="study-resource-actions">
+<a href="{{ resource.source_url }}" target="_blank" rel="noopener noreferrer">
+{{ icon('external-link') }}<span>Original</span>
+</a>
+{% if resource.download_link %}
+<a class="study-resource-download" href="{{ resource.download_link }}" download>
+{{ icon('download') }}<span>Download</span>
+</a>
+{% endif %}
+{% if resource.transcript_available %}
+<a href="/study-transcripts/{{ resource.resource_id | urlencode }}">
+{{ icon('file-text') }}<span>Transcri&ccedil;&atilde;o</span>
+</a>
+{% endif %}
+</div>
+</li>
+{% endfor %}
+</ul>
+{% endif %}
+</section>
+{% else %}
+<p class="empty-state">Nenhum recurso foi encontrado para este estudo.</p>
+{% endfor %}
+</div>
+</article>
+{% endblock %}

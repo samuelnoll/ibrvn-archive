@@ -70,9 +70,17 @@ def request_transcription(local_path: str):
     return response.json()
 
 
-def build_pending_rows(loopback_days=None, force_reprocess=False):
+def build_pending_rows(
+    loopback_days=None,
+    force_reprocess=False,
+    preaching_date="",
+):
 
-    scope_sql, params = build_preaching_date_scope("sm", loopback_days)
+    scope_sql, params = build_preaching_date_scope(
+        "sm",
+        loopback_days,
+        preaching_date,
+    )
     transcript_filter = ""
 
     if not normalize_force_reprocess(force_reprocess):
@@ -125,7 +133,7 @@ def insert_transcript(record):
     return payload["transcript_version"]
 
 
-def run(loopback_days=None, force_reprocess=False):
+def run(loopback_days=None, force_reprocess=False, preaching_date=""):
 
     run_id = begin_processing_run(
         "transcribe_audio",
@@ -136,6 +144,7 @@ def run(loopback_days=None, force_reprocess=False):
         rows = build_pending_rows(
             loopback_days=loopback_days,
             force_reprocess=force_reprocess,
+            preaching_date=preaching_date,
         )
         total = len(rows)
 
@@ -202,10 +211,12 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--loopback-days", type=int, default=None)
+    parser.add_argument("--preaching-date", default="")
     parser.add_argument("--force-reprocess", action="store_true")
     args = parser.parse_args()
 
     run(
         loopback_days=args.loopback_days,
         force_reprocess=args.force_reprocess,
+        preaching_date=args.preaching_date,
     )

@@ -130,7 +130,7 @@ def normalize_target_date(value):
     if isinstance(value, date) and not isinstance(value, datetime):
         return value
 
-    return date.fromisoformat(str(value))
+    return date.fromisoformat(str(value).strip())
 
 
 def load_channel():
@@ -388,7 +388,7 @@ def filter_recent_videos(videos, days):
     return filtered
 
 
-def run(mode, loopback_days=None):
+def run(mode, loopback_days=None, preaching_date=""):
 
     channel_id = load_channel()
 
@@ -396,9 +396,21 @@ def run(mode, loopback_days=None):
 
     print("Downloading uploads playlist...")
 
-    videos = fetch_playlist_items(uploads_playlist)
+    if preaching_date:
 
-    if loopback_days:
+        target_date = normalize_target_date(preaching_date)
+        print(
+            "Filtering videos for preaching_date "
+            f"{target_date.isoformat()}..."
+        )
+        videos = fetch_playlist_items_for_date(
+            uploads_playlist,
+            target_date,
+        )
+    else:
+        videos = fetch_playlist_items(uploads_playlist)
+
+    if loopback_days and not preaching_date:
 
         print(f"Filtering last {loopback_days} days videos...")
 
@@ -472,7 +484,16 @@ if __name__ == "__main__":
         type=int,
         default=None,
     )
+    parser.add_argument(
+        "--preaching-date",
+        default="",
+        help="Process only videos published on this local date (YYYY-MM-DD).",
+    )
 
     args = parser.parse_args()
 
-    run(args.mode, loopback_days=args.loopback_days)
+    run(
+        args.mode,
+        loopback_days=args.loopback_days,
+        preaching_date=args.preaching_date,
+    )

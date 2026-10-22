@@ -4,16 +4,29 @@ from fastapi.staticfiles import StaticFiles
 
 from .db import initialize_database
 from .queries import *
-from shared.settings import AUDIO_RAW_DIR
+from .study_queries import (
+    get_study_catalog,
+    get_study_detail,
+    get_study_home_stats,
+    get_study_resource_transcript,
+    get_study_type_composition,
+)
+from shared.settings import AUDIO_RAW_DIR, STUDY_RESOURCE_RAW_DIR
 
 app = FastAPI()
 
 templates = Jinja2Templates(directory="api/templates")
 
 AUDIO_RAW_DIR.mkdir(parents=True, exist_ok=True)
+STUDY_RESOURCE_RAW_DIR.mkdir(parents=True, exist_ok=True)
 
 app.mount("/static", StaticFiles(directory="api/static"), name="static")
 app.mount("/media", StaticFiles(directory=str(AUDIO_RAW_DIR)), name="media")
+app.mount(
+    "/study-media",
+    StaticFiles(directory=str(STUDY_RESOURCE_RAW_DIR)),
+    name="study-media",
+)
 
 
 @app.on_event("startup")
@@ -34,18 +47,36 @@ def render_template(request: Request, template_name: str, context: dict):
 @app.get("/")
 def home(request: Request):
 
-    sermons = get_recent_sermons()
     stats = get_home_stats()
+    study_stats = get_study_home_stats()
+    sermon_composition = get_sermon_testament_composition()
+    study_composition = get_study_type_composition()
 
     return render_template(
         request,
         "home.html",
         {
             "request": request,
-            "sermons": sermons,
             "stats": stats,
+            "study_stats": study_stats,
+            "sermon_composition": sermon_composition,
+            "study_composition": study_composition,
             "last_update": get_last_update()
         }
+    )
+
+
+@app.get("/sermons")
+def sermons(request: Request):
+
+    return render_template(
+        request,
+        "sermon_index.html",
+        {
+            "request": request,
+            "sermons": get_recent_sermons(),
+            "last_update": get_last_update(),
+        },
     )
 
 
@@ -231,6 +262,58 @@ def transcript(request: Request, canonical_sermon_id: str):
             "transcript": row,
             "last_update": get_last_update()
         }
+    )
+
+
+@app.get("/studies")
+def studies(request: Request):
+
+    return render_template(
+        request,
+        "studies.html",
+        {
+            "request": request,
+            "catalog": get_study_catalog(),
+            "last_update": get_last_update(),
+        },
+    )
+
+
+@app.get("/study-transcripts/{resource_id}")
+def study_resource_transcript(request: Request, resource_id: str):
+
+    transcript = get_study_resource_transcript(resource_id)
+
+    if not transcript:
+        raise HTTPException(status_code=404, detail="Study transcript not found")
+
+    return render_template(
+        request,
+        "study_resource_transcript.html",
+        {
+            "request": request,
+            "transcript": transcript,
+            "last_update": get_last_update(),
+        },
+    )
+
+
+@app.get("/studies/{study_id}")
+def study_detail(request: Request, study_id: str):
+
+    study = get_study_detail(study_id)
+
+    if not study:
+        raise HTTPException(status_code=404, detail="Study not found")
+
+    return render_template(
+        request,
+        "study_detail.html",
+        {
+            "request": request,
+            "study": study,
+            "last_update": get_last_update(),
+        },
     )
 
 

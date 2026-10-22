@@ -7,6 +7,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_GOLD_DB_PATH = PROJECT_ROOT / "data" / "gold" / "archive.db"
 DEFAULT_EXPORT_DIR = PROJECT_ROOT / "data" / "exports"
 DEFAULT_AUDIO_RAW_DIR = PROJECT_ROOT / "data" / "audio" / "raw"
+DEFAULT_STUDY_RESOURCE_RAW_DIR = PROJECT_ROOT / "data" / "resource" / "raw"
 
 API_HOST = os.getenv("ARCHIVE_API_HOST", "0.0.0.0")
 API_PORT = int(os.getenv("ARCHIVE_API_PORT", "8000"))
@@ -33,6 +34,13 @@ EXPORT_DIR = Path(
 
 AUDIO_RAW_DIR = Path(
     os.getenv("ARCHIVE_AUDIO_RAW_DIR", str(DEFAULT_AUDIO_RAW_DIR))
+)
+
+STUDY_RESOURCE_RAW_DIR = Path(
+    os.getenv(
+        "ARCHIVE_STUDY_RESOURCE_RAW_DIR",
+        str(DEFAULT_STUDY_RESOURCE_RAW_DIR),
+    ) or str(DEFAULT_STUDY_RESOURCE_RAW_DIR)
 )
 
 AI_BASE_URL = os.getenv(

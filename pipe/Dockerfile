@@ -15,6 +15,6 @@ RUN pip install --no-cache-dir -r pipe/requirements.txt
 COPY pipe ./pipe
 COPY shared ./shared
 
-RUN mkdir -p /app/data/audio/raw /app/data/bronze /app/data/gold /app/logs/jobs
+RUN mkdir -p /app/data/audio/raw /app/data/resource/raw /app/data/bronze /app/data/gold /app/logs/jobs
 
 CMD ["sleep", "infinity"]

@@ -3,7 +3,18 @@ from __future__ import annotations
 from datetime import date, timedelta
 
 
-def build_preaching_date_scope(alias: str, loopback_days):
+def build_preaching_date_scope(
+    alias: str,
+    loopback_days=None,
+    preaching_date="",
+):
+
+    normalized_preaching_date = normalize_preaching_date(preaching_date)
+
+    if normalized_preaching_date:
+        return f"AND {alias}.preaching_date = :preaching_date", {
+            "preaching_date": normalized_preaching_date,
+        }
 
     cutoff_date = loopback_cutoff_date(loopback_days)
 
@@ -13,6 +24,14 @@ def build_preaching_date_scope(alias: str, loopback_days):
     return f"AND {alias}.preaching_date >= :cutoff_date", {
         "cutoff_date": cutoff_date,
     }
+
+
+def normalize_preaching_date(value) -> str:
+
+    if value in (None, ""):
+        return ""
+
+    return date.fromisoformat(str(value).strip()).isoformat()
 
 
 def format_duration_minutes(duration_seconds) -> str:
@@ -33,7 +52,7 @@ def format_elapsed_seconds(elapsed_seconds: float) -> str:
     return f"{minutes}m {seconds:.1f}s"
 
 
-def normalize_force_reprocess(value) -> bool:
+def normalize_bool(value) -> bool:
 
     if isinstance(value, bool):
         return value
@@ -42,6 +61,11 @@ def normalize_force_reprocess(value) -> bool:
         return False
 
     return str(value).strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
+def normalize_force_reprocess(value) -> bool:
+
+    return normalize_bool(value)
 
 
 def normalize_loopback_days(value):
