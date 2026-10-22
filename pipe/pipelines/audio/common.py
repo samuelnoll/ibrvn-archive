@@ -52,7 +52,7 @@ def format_elapsed_seconds(elapsed_seconds: float) -> str:
     return f"{minutes}m {seconds:.1f}s"
 
 
-def normalize_force_reprocess(value) -> bool:
+def normalize_bool(value) -> bool:
 
     if isinstance(value, bool):
         return value
@@ -61,6 +61,11 @@ def normalize_force_reprocess(value) -> bool:
         return False
 
     return str(value).strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
+def normalize_force_reprocess(value) -> bool:
+
+    return normalize_bool(value)
 
 
 def normalize_loopback_days(value):

@@ -18,7 +18,11 @@ from shared.db import (
 )
 from shared.settings import AUDIO_RAW_DIR
 
-from .common import build_preaching_date_scope, normalize_force_reprocess
+from .common import (
+    build_preaching_date_scope,
+    normalize_bool,
+    normalize_force_reprocess,
+)
 
 
 UPSERT_AUDIO_ASSET_SQL = """
@@ -43,6 +47,28 @@ ON CONFLICT(canonical_sermon_id, asset_type) DO UPDATE SET
     local_path = EXCLUDED.local_path,
     mime_type = EXCLUDED.mime_type
 """
+
+
+class AudioDownloadError(RuntimeError):
+    """Raised after one or more audio assets fail to download."""
+
+
+def ensure_downloaded_file(target_path: Path) -> None:
+
+    if not target_path.is_file() or target_path.stat().st_size == 0:
+        raise FileNotFoundError(
+            f"Audio download did not create a non-empty file at {target_path}"
+        )
+
+
+def raise_for_download_failures(failures: list[dict]) -> None:
+
+    failure_ids = ", ".join(
+        failure["canonical_sermon_id"] for failure in failures
+    )
+    raise AudioDownloadError(
+        f"Failed to download {len(failures)} audio asset(s): {failure_ids}"
+    )
 
 
 def guess_extension(source_url: str, mime_type: str) -> str:
@@ -102,7 +128,11 @@ def download_direct_audio(
     force_reprocess: bool,
 ):
 
-    if target_path.exists() and not force_reprocess:
+    if (
+        target_path.is_file()
+        and target_path.stat().st_size > 0
+        and not force_reprocess
+    ):
         return
 
     if target_path.suffix == ".mp3" and (
@@ -110,6 +140,7 @@ def download_direct_audio(
         or mime_type == "audio/mpeg"
     ):
         download_file(source_url, target_path)
+        ensure_downloaded_file(target_path)
         return
 
     extension = guess_extension(source_url, mime_type)
@@ -124,6 +155,7 @@ def download_direct_audio(
     try:
         download_file(source_url, temp_path)
         convert_to_mp3(temp_path, target_path)
+        ensure_downloaded_file(target_path)
     finally:
         temp_path.unlink(missing_ok=True)
 
@@ -134,7 +166,11 @@ def download_youtube_audio(
     force_reprocess: bool,
 ):
 
-    if target_path.exists() and not force_reprocess:
+    if (
+        target_path.is_file()
+        and target_path.stat().st_size > 0
+        and not force_reprocess
+    ):
         return
 
     ydl_opts = {
@@ -170,8 +206,15 @@ def download_youtube_audio(
     with YoutubeDL(ydl_opts) as ydl:
         ydl.download([youtube_url])
 
+    ensure_downloaded_file(target_path)
 
-def run(loopback_days=None, force_reprocess=False, preaching_date=""):
+
+def run(
+    loopback_days=None,
+    force_reprocess=False,
+    preaching_date="",
+    ignore_download_error=False,
+):
 
     run_id = begin_processing_run(
         "download_audio_assets",
@@ -180,6 +223,7 @@ def run(loopback_days=None, force_reprocess=False, preaching_date=""):
 
     try:
         force_reprocess = normalize_force_reprocess(force_reprocess)
+        ignore_download_error = normalize_bool(ignore_download_error)
         scope_sql, params = build_preaching_date_scope(
             "sm",
             loopback_days,
@@ -266,11 +310,16 @@ def run(loopback_days=None, force_reprocess=False, preaching_date=""):
             if upserts:
                 conn.execute(text(UPSERT_AUDIO_ASSET_SQL), upserts)
 
-        finish_processing_run(run_id, "success")
-        print("Audio assets downloaded into silver media assets")
-
         if failures:
             print(f"Audio download failures: {len(failures)}")
+
+            if not ignore_download_error:
+                raise_for_download_failures(failures)
+
+            print("Ignoring audio download failures as requested")
+
+        finish_processing_run(run_id, "success")
+        print("Audio assets downloaded into silver media assets")
 
     except Exception:
         finish_processing_run(run_id, "failed")
@@ -283,10 +332,12 @@ if __name__ == "__main__":
     parser.add_argument("--loopback-days", type=int, default=None)
     parser.add_argument("--preaching-date", default="")
     parser.add_argument("--force-reprocess", action="store_true")
+    parser.add_argument("--ignore-download-error", action="store_true")
     args = parser.parse_args()
 
     run(
         loopback_days=args.loopback_days,
         force_reprocess=args.force_reprocess,
         preaching_date=args.preaching_date,
+        ignore_download_error=args.ignore_download_error,
     )
