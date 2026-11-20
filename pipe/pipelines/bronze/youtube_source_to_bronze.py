@@ -17,6 +17,7 @@ REQUEST_TIMEOUT_SECONDS = 30
 MAX_API_ATTEMPTS = 4
 INITIAL_RETRY_DELAY_SECONDS = 2
 DEFAULT_CHANNEL_TIMEZONE = "America/Sao_Paulo"
+PREACHING_DATE_MARGIN_DAYS = 5
 TRANSIENT_STATUS_CODES = {429, 500, 502, 503, 504}
 TRANSIENT_ERROR_REASONS = {
     "backendError",
@@ -245,6 +246,7 @@ def fetch_playlist_items(playlist_id):
                 "title": snippet["title"],
                 "description": snippet["description"],
                 "published_at": snippet["publishedAt"],
+                "playlist_added_at": snippet["publishedAt"],
                 "url": f"https://www.youtube.com/watch?v={snippet['resourceId']['videoId']}"
             })
 
@@ -260,68 +262,30 @@ def fetch_playlist_items_for_date(
     playlist_id,
     target_date,
     timezone_name=DEFAULT_CHANNEL_TIMEZONE,
+    margin_days=0,
 ):
-
-    url = "https://www.googleapis.com/youtube/v3/playlistItems"
-
-    videos = []
-    next_page = None
     target_local_date = normalize_target_date(target_date)
+    start_date = target_local_date - timedelta(days=margin_days)
+    end_date = target_local_date + timedelta(days=margin_days)
     channel_timezone = ZoneInfo(timezone_name)
+    # Publication order cannot bound the date of a live broadcast. Inspect all
+    # pages and enrich before filtering, including lives published much later.
+    videos = fetch_playlist_items(playlist_id)
+    details_map = enrich_video_details([video["video_id"] for video in videos])
+    candidates = {}
 
-    while True:
-
-        params = {
-            "part": "snippet",
-            "playlistId": playlist_id,
-            "maxResults": 50,
-            "pageToken": next_page,
-            "key": API_KEY
-        }
-
-        r = youtube_api_get(
-            url,
-            params,
-            operation=(
-                "listing playlist items for "
-                f"playlist_id={playlist_id}, "
-                f"target_date={target_local_date.isoformat()}, "
-                f"page_token={next_page or '<first>'}"
-            ),
-            require_items=True,
-        )
-
-        for item in r["items"]:
-
-            snippet = item["snippet"]
-            published_at = parse_published_at(snippet["publishedAt"])
-            published_local_date = published_at.astimezone(
-                channel_timezone
-            ).date()
-
-            if published_local_date > target_local_date:
+    for video in videos:
+        video.update(details_map.get(video["video_id"], {}))
+        for field in ("published_at", "live_start_time"):
+            value = video.get(field)
+            if not value:
                 continue
+            local_date = parse_published_at(value).astimezone(channel_timezone).date()
+            if start_date <= local_date <= end_date:
+                candidates[video["video_id"]] = video
+                break
 
-            if published_local_date < target_local_date:
-                return videos
-
-            videos.append({
-                "video_id": snippet["resourceId"]["videoId"],
-                "title": snippet["title"],
-                "description": snippet["description"],
-                "published_at": snippet["publishedAt"],
-                "url": (
-                    "https://www.youtube.com/watch?v="
-                    f"{snippet['resourceId']['videoId']}"
-                )
-            })
-
-        next_page = r.get("nextPageToken")
-
-        if not next_page:
-            break
-
-    return videos
+    return list(candidates.values())
 
 
 def enrich_video_details(video_ids):
@@ -335,7 +299,7 @@ def enrich_video_details(video_ids):
         batch = video_ids[i:i+50]
 
         params = {
-            "part": "liveStreamingDetails,contentDetails,statistics",
+            "part": "snippet,liveStreamingDetails,contentDetails,statistics",
             "id": ",".join(batch),
             "key": API_KEY
         }
@@ -361,6 +325,9 @@ def enrich_video_details(video_ids):
                 "duration": item.get("contentDetails", {}).get("duration", ""),
                 "view_count": item.get("statistics", {}).get("viewCount", "")
             }
+            published_at = item.get("snippet", {}).get("publishedAt")
+            if published_at:
+                enriched[vid]["published_at"] = published_at
 
     return enriched
 
@@ -401,11 +368,13 @@ def run(mode, loopback_days=None, preaching_date=""):
         target_date = normalize_target_date(preaching_date)
         print(
             "Filtering videos for preaching_date "
-            f"{target_date.isoformat()}..."
+            f"{target_date.isoformat()} with +/-{PREACHING_DATE_MARGIN_DAYS} "
+            "days by publication or live start (America/Sao_Paulo)..."
         )
         videos = fetch_playlist_items_for_date(
             uploads_playlist,
             target_date,
+            margin_days=PREACHING_DATE_MARGIN_DAYS,
         )
     else:
         videos = fetch_playlist_items(uploads_playlist)
@@ -423,16 +392,15 @@ def run(mode, loopback_days=None, preaching_date=""):
 
     print("Downloading video details...")
 
-    details_map = enrich_video_details(list(video_map.keys()))
+    details_map = (
+        {} if preaching_date else enrich_video_details(list(video_map.keys()))
+    )
 
     for vid, details in details_map.items():
 
         if vid in video_map:
 
-            video_map[vid]["is_live"] = details["is_live"]
-            video_map[vid]["live_start_time"] = details["live_start_time"]
-            video_map[vid]["duration"] = details["duration"]
-            video_map[vid]["view_count"] = details["view_count"]
+            video_map[vid].update(details)
 
     print("Downloading playlists...")
 
@@ -487,7 +455,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--preaching-date",
         default="",
-        help="Process only videos published on this local date (YYYY-MM-DD).",
+        help="Fetch videos published or broadcast within +/-5 local days of this date (YYYY-MM-DD).",
     )
 
     args = parser.parse_args()

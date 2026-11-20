@@ -401,8 +401,12 @@ def coalesce_metadata_from_candidates(selected_candidate, candidates):
     return metadata
 
 
-def run(mode):
+def run(mode, preaching_date=""):
 
+    target_date = (
+        datetime.strptime(str(preaching_date).strip(), "%Y-%m-%d").date().isoformat()
+        if str(preaching_date).strip() else ""
+    )
     input_path = HISTORIC_INPUT if mode == "historic" else WEEKLY_INPUT
     pipeline_name = f"youtube_bronze_to_silver:{mode}"
     run_id = begin_processing_run(pipeline_name, input_path)
@@ -444,6 +448,13 @@ def run(mode):
             preaching_date = choose_preaching_date(video, description)
 
             if not preaching_date:
+                continue
+
+            if target_date and preaching_date != target_date:
+                print(
+                    f"Skipping video_id={video_id}: resolved preaching_date="
+                    f"{preaching_date}, requested={target_date}"
+                )
                 continue
 
             preacher_title = extract_preacher_title(title)
@@ -541,6 +552,8 @@ if __name__ == "__main__":
         default="historic"
     )
 
+    parser.add_argument("--preaching-date", default="")
+
     args = parser.parse_args()
 
-    run(args.mode)
+    run(args.mode, preaching_date=args.preaching_date)

@@ -277,8 +277,14 @@ already-cut sermon. Trigger it manually with the following `dag_run.conf`:
 }
 ```
 
-This bypasses the cut wait and scopes YouTube ingestion, audio enrichment,
-and critique reporting to the supplied date.
+This bypasses the cut wait. Bronze includes candidates whose video publication
+or actual live start falls within five days before or after the supplied date
+(inclusive, in America/Sao_Paulo). All upload pages are inspected before the
+date filter, since publication order does not determine a live's start date.
+The payload preserves playlist addition time separately as `playlist_added_at`.
+Silver keeps sermons for the exact requested date, resolved from description,
+then live start, then publication. Audio enrichment and critique reporting also
+remain scoped to that exact date.
 
 Utility commands:
 
