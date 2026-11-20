@@ -44,7 +44,8 @@ class SermonIndexTest(unittest.TestCase):
         self.assertIn('href="/sermons" aria-current="page"', rendered)
         self.assertIn('<h1 class="archive-index-title">Prega&ccedil;&otilde;es</h1>', rendered)
         self.assertIn(
-            '<div class="sermon-player" data-audio-player>',
+            '<div class="sermon-player" data-audio-player '
+            'data-content-type="sermon" data-content-id="sample"',
             rendered,
         )
         self.assertIn('<audio preload="metadata" src="/media/sample.mp3">', rendered)
@@ -64,7 +65,7 @@ class SermonIndexTest(unittest.TestCase):
             rendered.index('class="sermon-actions"'),
         )
         self.assertIn("const audioPlayer = sermon.download_link", rendered)
-        self.assertIn("const renderAudioPlayer = source", rendered)
+        self.assertIn("const renderAudioPlayer = (source, sermonId)", rendered)
         self.assertGreaterEqual(rendered.count('class="sermon-player-volume-popover"'), 2)
         self.assertGreaterEqual(rendered.count('class="sermon-player-speed-menu"'), 2)
         self.assertIn('<script src="/static/audio-player.js" defer></script>', rendered)

@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}Estatísticas de acesso | Arquivo IBRVN{% endblock %}
+{% block meta %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+
+{% block content %}
+<section class="analytics-page">
+<header class="analytics-header">
+<div>
+<p class="quality-eyebrow">Painel interno</p>
+<h1>Estatísticas de acesso</h1>
+<p>Uso do acervo com dados anônimos e first-party.</p>
+</div>
+<form class="analytics-filters" method="get" action="/analytics">
+<label>Início<input type="date" name="start" value="{{ start_date }}"></label>
+<label>Fim<input type="date" name="end" value="{{ end_date }}"></label>
+<label>Conteúdo
+<select name="content_type">
+<option value=""{% if not content_type %} selected{% endif %}>Pregações e estudos</option>
+<option value="sermon"{% if content_type == "sermon" %} selected{% endif %}>Pregações</option>
+<option value="study"{% if content_type == "study" %} selected{% endif %}>Estudos</option>
+</select>
+</label>
+<button type="submit">Atualizar</button>
+</form>
+</header>
+
+{% if not enabled %}<div class="quality-alert"><strong>Analytics está desativado.</strong><span>Ative ARCHIVE_ANALYTICS_ENABLED para receber eventos.</span></div>{% endif %}
+
+<section class="analytics-kpi-grid" aria-label="Resumo de acessos">
+<article><span>Visualizações</span><strong>{{ kpis.page_views }}</strong></article>
+<article><span>Visitantes</span><strong>{{ kpis.visitors }}</strong><small>{{ kpis.new_visitors }} novos · {{ kpis.returning_visitors }} recorrentes</small></article>
+<article><span>Plays</span><strong>{{ kpis.plays }}</strong><small>{{ kpis.unique_plays }} únicos por conteúdo</small></article>
+<article><span>Horas ouvidas</span><strong>{{ kpis.listening_hours }}</strong></article>
+<article><span>Conclusão</span><strong>{{ kpis.completion_rate }}%</strong><small>{{ kpis.completions }} reproduções concluídas</small></article>
+<article><span>Downloads</span><strong>{{ kpis.downloads }}</strong></article>
+<article><span>Tráfego estimado</span><strong>{{ kpis.bytes_display }}</strong></article>
+<article><span>Cliques externos</span><strong>{{ kpis.youtube_clicks + kpis.site_clicks }}</strong><small>{{ kpis.youtube_clicks }} YouTube · {{ kpis.site_clicks }} site</small></article>
+<article><span>Transcrições abertas</span><strong>{{ kpis.transcript_clicks }}</strong></article>
+</section>
+
+<section class="analytics-panel analytics-chart-panel">
+<div class="quality-panel-heading">
+<div><h2>Evolução do acesso</h2><p>Visualizações, plays e downloads no período</p></div>
+<div class="quality-mode-toggle" role="group" aria-label="Agrupamento do gráfico">
+<button type="button" class="is-active" data-analytics-period="day">Dia</button>
+<button type="button" data-analytics-period="week">Semana</button>
+<button type="button" data-analytics-period="month">Mês</button>
+</div>
+</div>
+<div class="analytics-chart-legend"><span class="is-views">Visualizações</span><span class="is-plays">Plays</span><span class="is-downloads">Downloads</span></div>
+<svg id="analytics-history-chart" viewBox="0 0 900 310" role="img" aria-label="Evolução das estatísticas de acesso"></svg>
+</section>
+
+<div class="analytics-three-column">
+<section class="analytics-panel">
+<div class="quality-panel-heading"><div><h2>Páginas mais acessadas</h2><p>Visualizações no período</p></div></div>
+<ol class="analytics-ranking">
+{% for item in top_pages %}<li><span>{{ item.path }}</span><strong>{{ item.views }}</strong></li>{% else %}<li class="is-empty">Ainda não há visualizações.</li>{% endfor %}
+</ol>
+</section>
+<section class="analytics-panel">
+<div class="quality-panel-heading"><div><h2>Conteúdos mais baixados</h2><p>Downloads iniciados no período</p></div></div>
+<ol class="analytics-ranking">
+{% for item in top_downloads %}<li><span>{{ item.title }} <small>{{ item.content_type_label }}</small></span><strong>{{ item.downloads }}</strong></li>{% else %}<li class="is-empty">Ainda não há downloads.</li>{% endfor %}
+</ol>
+</section>
+<section class="analytics-panel">
+<div class="quality-panel-heading"><div><h2>Velocidades utilizadas</h2><p>Tempo ouvido em cada velocidade</p></div></div>
+<ol class="analytics-ranking">
+{% for item in speeds %}<li><span>{{ item.label }}</span><strong>{{ item.minutes }} min</strong></li>{% else %}<li class="is-empty">Ainda não há tempo de reprodução registrado.</li>{% endfor %}
+</ol>
+</section>
+</div>
+
+<section class="analytics-panel">
+<div class="quality-panel-heading"><div><h2>Conteúdos mais consumidos</h2><p>Pregações e estudos por plays, conclusão e downloads</p></div></div>
+<div class="quality-table-wrap">
+<table class="quality-table analytics-content-table">
+<thead><tr><th>Conteúdo</th><th>Plays</th><th>Únicos</th><th>Conclusão</th><th>Downloads</th><th>Horas</th></tr></thead>
+<tbody>
+{% for item in top_content %}
+<tr><td><strong>{{ item.title }}</strong><small>{{ item.content_type_label }}</small></td><td>{{ item.plays }}</td><td>{{ item.unique_plays }}</td><td>{{ item.completion_rate }}%</td><td>{{ item.downloads }}</td><td>{{ item.listening_hours }}</td></tr>
+{% else %}<tr><td colspan="6" class="quality-no-results">Ainda não há consumo registrado.</td></tr>{% endfor %}
+</tbody>
+</table>
+</div>
+</section>
+
+<div class="analytics-three-column">
+{% for title, rows in (("Pregadores mais ouvidos", preachers), ("Séries mais ouvidas", series_ranking), ("Livros mais ouvidos", books)) %}
+<section class="analytics-panel">
+<h2>{{ title }}</h2>
+<ol class="analytics-ranking">
+{% for item in rows %}<li><span>{{ item.label }}</span><strong>{{ item.plays }} plays</strong></li>{% else %}<li class="is-empty">Sem dados no período.</li>{% endfor %}
+</ol>
+</section>
+{% endfor %}
+</div>
+
+<p class="analytics-privacy-note">Nenhum IP bruto é armazenado. Visitantes e sessões recebem identificadores anônimos com hash; eventos detalhados são mantidos por até {{ retention_days }} dias.</p>
+</section>
+
+<script type="application/json" id="analytics-series-data">{{ series|tojson }}</script>
+<script>
+(() => {
+  const datasets = JSON.parse(document.getElementById("analytics-series-data").textContent)
+  const svg = document.getElementById("analytics-history-chart")
+  let period = "day"
+  const colors = {views: "#526b40", plays: "#a66f35", downloads: "#627f96"}
+  const escapeXml = value => String(value).replace(/[&<>"']/g, character => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&apos;"})[character])
+
+  function render() {
+    const rows = datasets[period] || []
+    const left = 55, right = 880, top = 20, bottom = 250
+    const maximum = Math.max(1, ...rows.flatMap(row => [row.views, row.plays, row.downloads]))
+    const x = index => rows.length <= 1 ? (left + right) / 2 : left + index * (right - left) / (rows.length - 1)
+    const y = value => bottom - value * (bottom - top) / maximum
+    const grid = [0, .25, .5, .75, 1].map(fraction => {
+      const value = Math.round(maximum * fraction)
+      const py = y(value)
+      return `<line x1="${left}" y1="${py}" x2="${right}" y2="${py}" class="chart-grid"/><text x="${left - 9}" y="${py + 4}" text-anchor="end">${value}</text>`
+    }).join("")
+    const lines = ["views", "plays", "downloads"].map(metric => {
+      const path = rows.map((row, index) => `${index ? "L" : "M"}${x(index).toFixed(1)},${y(row[metric]).toFixed(1)}`).join(" ")
+      const points = rows.map((row, index) => `<circle cx="${x(index)}" cy="${y(row[metric])}" r="3" style="stroke:${colors[metric]}"><title>${escapeXml(row.label)}: ${row[metric]}</title></circle>`).join("")
+      return `<path d="${path}" class="chart-line" style="stroke:${colors[metric]}"/>${points}`
+    }).join("")
+    const first = rows.length ? escapeXml(rows[0].label) : ""
+    const last = rows.length ? escapeXml(rows[rows.length - 1].label) : ""
+    svg.innerHTML = `${grid}${lines}<text x="${left}" y="286">${first}</text><text x="${right}" y="286" text-anchor="end">${last}</text>`
+  }
+
+  document.querySelectorAll("[data-analytics-period]").forEach(button => button.addEventListener("click", () => {
+    period = button.dataset.analyticsPeriod
+    document.querySelectorAll("[data-analytics-period]").forEach(item => item.classList.toggle("is-active", item === button))
+    render()
+  }))
+  render()
+})()
+</script>
+{% endblock %}

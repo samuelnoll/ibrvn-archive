@@ -18,7 +18,7 @@
 {% if study.origins %}
 <div class="study-origin-links">
 {% for origin in study.origins %}
-<a class="study-origin-link" href="{{ origin.source_url }}" target="_blank" rel="noopener noreferrer">
+<a class="study-origin-link" href="{{ origin.source_url }}" target="_blank" rel="noopener noreferrer" data-analytics-event="{% if 'youtu' in origin.source_url|lower %}youtube_click{% else %}site_click{% endif %}" data-content-type="study" data-content-id="{{ study.study_id }}">
 <svg class="icon" aria-hidden="true"><use href="#icon-external-link"></use></svg>
 <span>{{ origin.label }}</span>
 </a>
@@ -49,16 +49,16 @@
 </div>
 </div>
 <div class="study-resource-actions">
-<a href="{{ resource.source_url }}" target="_blank" rel="noopener noreferrer">
+<a href="{{ resource.source_url }}" target="_blank" rel="noopener noreferrer" data-analytics-event="{% if 'youtu' in resource.source_url|lower %}youtube_click{% else %}site_click{% endif %}" data-content-type="study" data-content-id="{{ study.study_id }}" data-resource-id="{{ resource.resource_id }}">
 {{ icon('external-link') }}<span>Original</span>
 </a>
 {% if resource.download_link %}
-<a class="study-resource-download" href="{{ resource.download_link }}" download>
+<a class="study-resource-download" href="{{ resource.download_link }}" download data-analytics-event="download" data-content-type="study" data-content-id="{{ study.study_id }}" data-resource-id="{{ resource.resource_id }}">
 {{ icon('download') }}<span>Download</span>
 </a>
 {% endif %}
 {% if resource.transcript_available %}
-<a href="/study-transcripts/{{ resource.resource_id | urlencode }}">
+<a href="/study-transcripts/{{ resource.resource_id | urlencode }}" data-analytics-event="transcript_click" data-content-type="study" data-content-id="{{ study.study_id }}" data-resource-id="{{ resource.resource_id }}">
 {{ icon('file-text') }}<span>Transcri&ccedil;&atilde;o</span>
 </a>
 {% endif %}
@@ -66,7 +66,7 @@
 </div>
 
 {% if resource.has_local_audio %}
-{{ audio_player(resource.download_link, 'study-resource-player') }}
+{{ audio_player(resource.download_link, 'study-resource-player', 'study', study.study_id, resource.resource_id) }}
 {% endif %}
 </article>
 {% endfor %}
@@ -83,16 +83,16 @@
 </div>
 </div>
 <div class="study-resource-actions">
-<a href="{{ resource.source_url }}" target="_blank" rel="noopener noreferrer">
+<a href="{{ resource.source_url }}" target="_blank" rel="noopener noreferrer" data-analytics-event="{% if 'youtu' in resource.source_url|lower %}youtube_click{% else %}site_click{% endif %}" data-content-type="study" data-content-id="{{ study.study_id }}" data-resource-id="{{ resource.resource_id }}">
 {{ icon('external-link') }}<span>Original</span>
 </a>
 {% if resource.download_link %}
-<a class="study-resource-download" href="{{ resource.download_link }}" download>
+<a class="study-resource-download" href="{{ resource.download_link }}" download data-analytics-event="download" data-content-type="study" data-content-id="{{ study.study_id }}" data-resource-id="{{ resource.resource_id }}">
 {{ icon('download') }}<span>Download</span>
 </a>
 {% endif %}
 {% if resource.transcript_available %}
-<a href="/study-transcripts/{{ resource.resource_id | urlencode }}">
+<a href="/study-transcripts/{{ resource.resource_id | urlencode }}" data-analytics-event="transcript_click" data-content-type="study" data-content-id="{{ study.study_id }}" data-resource-id="{{ resource.resource_id }}">
 {{ icon('file-text') }}<span>Transcri&ccedil;&atilde;o</span>
 </a>
 {% endif %}

@@ -77,6 +77,37 @@ LOCAL_TIMEZONE = os.getenv(
     "America/Sao_Paulo",
 ).strip()
 
+QUALITY_START_DATE = os.getenv(
+    "ARCHIVE_QUALITY_START_DATE",
+    "2009-01-01",
+).strip()
+QUALITY_SUNDAY_GRACE_DAYS = int(
+    os.getenv("ARCHIVE_QUALITY_SUNDAY_GRACE_DAYS", "7")
+)
+QUALITY_SHORT_TRANSCRIPT_WORDS = int(
+    os.getenv("ARCHIVE_QUALITY_SHORT_TRANSCRIPT_WORDS", "100")
+)
+QUALITY_MIN_AUDIO_MINUTES = int(
+    os.getenv("ARCHIVE_QUALITY_MIN_AUDIO_MINUTES", "10")
+)
+QUALITY_MAX_AUDIO_MINUTES = int(
+    os.getenv("ARCHIVE_QUALITY_MAX_AUDIO_MINUTES", "150")
+)
+QUALITY_CHECK_EXTERNAL_LINKS = os.getenv(
+    "ARCHIVE_QUALITY_CHECK_EXTERNAL_LINKS", "true"
+).strip().lower() in {"1", "true", "yes", "y", "on"}
+QUALITY_LINK_TIMEOUT_SECONDS = int(
+    os.getenv("ARCHIVE_QUALITY_LINK_TIMEOUT_SECONDS", "10")
+)
+
+ANALYTICS_ENABLED = os.getenv(
+    "ARCHIVE_ANALYTICS_ENABLED", "true"
+).strip().lower() in {"1", "true", "yes", "y", "on"}
+ANALYTICS_RETENTION_DAYS = max(
+    1,
+    int(os.getenv("ARCHIVE_ANALYTICS_RETENTION_DAYS", "180")),
+)
+
 WHATSAPP_SCHEDULER_BASE_URL = os.getenv(
     "ARCHIVE_WHATSAPP_SCHEDULER_BASE_URL",
     "",
