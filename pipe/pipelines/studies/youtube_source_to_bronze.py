@@ -332,6 +332,8 @@ def build_bronze_payload(
             "CTB ",
             "Confer\u00eancia ",
             "Retiro ",
+            "Palestras ",
+            "Palestra ",
         ],
         "playlists": study_playlists,
     }

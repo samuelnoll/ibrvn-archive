@@ -8,6 +8,8 @@ SUPPORTED_PLAYLIST_PREFIXES = (
     "ctb ",
     "conferencia ",
     "retiro ",
+    "palestras ",
+    "palestra ",
 )
 
 
@@ -35,7 +37,7 @@ def infer_study_type(playlist_titles: list[str]) -> str:
         return "pfd"
 
     if (
-        normalized.startswith(("conferencia ", "retiro "))
+        normalized.startswith(("conferencia ", "retiro ", "palestras ", "palestra "))
         or "palestra" in normalized
         or "conferencia" in normalized
     ):

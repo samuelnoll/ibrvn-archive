@@ -288,6 +288,17 @@ class PublicWordpressStudyParserTest(unittest.TestCase):
             infer_study_type(["Retiro de Jovens"]),
         )
 
+    def test_palestras_playlist_is_ingested_as_lecture_or_conference(self):
+        for title in (
+            "Palestras Homens da Palavra", "PALESTRAS Homens da Palavra",
+            "Palestra Homens da Palavra", "PALESTRA Homens da Palavra",
+        ):
+            with self.subTest(title=title):
+                self.assertTrue(is_study_playlist(title))
+                self.assertEqual("lecture_or_conference", infer_study_type([title]))
+        self.assertFalse(is_study_playlist("Serie Palestras Homens da Palavra"))
+        self.assertFalse(is_study_playlist("Serie Palestra Homens da Palavra"))
+
     def test_study_titles_remove_editorial_markers_but_keep_retiro(self):
         self.assertEqual(
             "Hist\u00f3ria da Igreja",
